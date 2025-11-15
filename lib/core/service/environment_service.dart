@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:relay/core/constant/app_constants.dart';
 import 'package:relay/core/constant/app_paths.dart';
 
@@ -35,14 +36,22 @@ class EnvironmentService {
 
     for (final entity in entities) {
       if (entity is File && entity.path.endsWith('.json')) {
-        final fileName = entity.uri.pathSegments.last;
+        // Use path package to reliably extract file name
+        final fileName = p.basename(entity.path);
         final name = fileName.replaceAll('.json', '');
+        
+        // Skip if name is empty
+        if (name.isEmpty) {
+          continue;
+        }
+        
         final relativePath = AppPaths.environmentFile(name);
         try {
           final json = await _fileStorageService.readJson(relativePath);
           envs.add(EnvironmentModel.fromJson(json));
-        } catch (_) {
-          // You might want to log or handle invalid files
+        } catch (e) {
+          // Log error but continue with other environments
+          print('Error loading environment $name: $e');
         }
       }
     }

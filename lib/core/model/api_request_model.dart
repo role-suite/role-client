@@ -10,6 +10,7 @@ class ApiRequestModel {
   final String? body;
   final String? description;
   final String? filePath;
+  final String collectionId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -23,6 +24,7 @@ class ApiRequestModel {
     this.body,
     this.description,
     this.filePath,
+    this.collectionId = 'default',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -37,6 +39,7 @@ class ApiRequestModel {
     String? body,
     String? description,
     String? filePath,
+    String? collectionId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -50,6 +53,7 @@ class ApiRequestModel {
       body: body ?? this.body,
       description: description ?? this.description,
       filePath: filePath ?? this.filePath,
+      collectionId: collectionId ?? this.collectionId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -66,6 +70,7 @@ class ApiRequestModel {
       'body': body,
       'description': description,
       'filePath': filePath,
+      'collectionId': collectionId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -82,6 +87,7 @@ class ApiRequestModel {
       body: json['body'] as String?,
       description: json['description'] as String?,
       filePath: json['filePath'] as String?,
+      collectionId: json['collectionId'] as String? ?? 'default',
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
