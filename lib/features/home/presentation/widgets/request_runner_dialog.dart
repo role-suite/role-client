@@ -167,6 +167,74 @@ class _RequestRunnerDialogState extends ConsumerState<RequestRunnerDialog> {
                 ),
                 const SizedBox(height: 12),
               ],
+              // Request details (body / headers) paginated via tabs
+              DefaultTabController(
+                length: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TabBar(
+                      isScrollable: true,
+                      labelColor: Theme.of(context).colorScheme.primary,
+                      indicatorColor: Theme.of(context).colorScheme.primary,
+                      unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      tabs: const [
+                        Tab(text: 'Request Body'),
+                        Tab(text: 'Request Headers'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 180,
+                      child: TabBarView(
+                        children: [
+                          // Request body
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withOpacity(0.5),
+                            ),
+                            child: SingleChildScrollView(
+                              child: SelectableText(
+                                widget.request.body == null || widget.request.body!.trim().isEmpty
+                                    ? 'No request body'
+                                    : _formatBody(widget.request.body),
+                                style: const TextStyle(fontFamily: 'monospace'),
+                              ),
+                            ),
+                          ),
+                          // Request headers
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withOpacity(0.5),
+                            ),
+                            child: SingleChildScrollView(
+                              child: SelectableText(
+                                widget.request.headers.isEmpty
+                                    ? 'No request headers'
+                                    : widget.request.headers.entries
+                                        .map((e) => '${e.key}: ${e.value}')
+                                        .join('\n'),
+                                style: const TextStyle(fontFamily: 'monospace'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               // Send button + meta
               Row(
                 children: [
@@ -299,49 +367,69 @@ class _RequestRunnerDialogState extends ConsumerState<RequestRunnerDialog> {
 
     final bodyText = _formatBody(_response!.data);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Response Body',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TabBar(
+            isScrollable: true,
+            labelColor: Theme.of(context).colorScheme.primary,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            tabs: const [
+              Tab(text: 'Response Body'),
+              Tab(text: 'Response Headers'),
+            ],
           ),
-          constraints: const BoxConstraints(maxHeight: 300),
-          child: SingleChildScrollView(
-            child: SelectableText(
-              bodyText,
-              style: const TextStyle(fontFamily: 'monospace'),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 260,
+            child: TabBarView(
+              children: [
+                // Response body
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withOpacity(0.5),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      bodyText.isEmpty ? 'No response body' : bodyText,
+                      style: const TextStyle(fontFamily: 'monospace'),
+                    ),
+                  ),
+                ),
+                // Response headers
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withOpacity(0.5),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      headers.isEmpty
+                          ? 'No response headers'
+                          : headers.entries
+                              .map((e) => '${e.key}: ${e.value}')
+                              .join('\n'),
+                      style: const TextStyle(fontFamily: 'monospace'),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Response Headers',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-          ),
-          constraints: const BoxConstraints(maxHeight: 200),
-          child: SingleChildScrollView(
-            child: SelectableText(
-              headers.entries.map((e) => '${e.key}: ${e.value}').join('\n'),
-              style: const TextStyle(fontFamily: 'monospace'),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
