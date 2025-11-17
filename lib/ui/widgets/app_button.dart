@@ -137,22 +137,22 @@ class AppButton extends StatelessWidget {
   EdgeInsetsGeometry _getPadding() {
     switch (size) {
       case AppButtonSize.small:
-        return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+        return const EdgeInsets.symmetric(horizontal: 10, vertical: 6);
       case AppButtonSize.medium:
-        return const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+        return const EdgeInsets.symmetric(horizontal: 14, vertical: 10);
       case AppButtonSize.large:
-        return const EdgeInsets.symmetric(horizontal: 24, vertical: 16);
+        return const EdgeInsets.symmetric(horizontal: 20, vertical: 14);
     }
   }
 
   double? _getHeight() {
     switch (size) {
       case AppButtonSize.small:
-        return 32;
+        return 28;
       case AppButtonSize.medium:
-        return 40;
+        return 34;
       case AppButtonSize.large:
-        return 48;
+        return 42;
     }
   }
 

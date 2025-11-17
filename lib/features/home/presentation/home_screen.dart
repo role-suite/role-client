@@ -8,6 +8,10 @@ import 'package:relay/core/model/environment_model.dart';
 import 'package:relay/core/util/extension.dart';
 import 'package:relay/core/util/uuid.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
+import 'package:relay/features/home/presentation/widgets/collection_selector.dart';
+import 'package:relay/features/home/presentation/widgets/environment_selector.dart';
+import 'package:relay/features/home/presentation/widgets/home_requests_view.dart';
+import 'package:relay/features/home/presentation/widgets/request_runner_dialog.dart';
 import 'package:relay/ui/layout/max_width_layout.dart';
 import 'package:relay/ui/layout/scaffold.dart';
 import 'package:relay/ui/widgets/widgets.dart';
@@ -40,7 +44,16 @@ class HomeScreen extends ConsumerWidget {
       actions: [
         // Collection selector
         collectionsAsync.when(
-          data: (collections) => _buildCollectionSelector(context, ref, collections, selectedCollectionId),
+          data: (collections) => CollectionSelector(
+            collections: collections,
+            selectedCollectionId: selectedCollectionId,
+            onSelect: (id) {
+              ref.read(selectedCollectionIdProvider.notifier).state = id;
+            },
+            onDelete: (collection) {
+              _confirmDeleteCollection(context, ref, collection);
+            },
+          ),
           loading: () => const Padding(
             padding: EdgeInsets.all(8.0),
             child: SizedBox(
@@ -54,7 +67,24 @@ class HomeScreen extends ConsumerWidget {
         const SizedBox(width: 8),
         // Environment selector
         environmentsAsync.when(
-          data: (envs) => _buildEnvironmentSelector(context, ref, envs, activeEnvName),
+          data: (envs) => EnvironmentSelector(
+            envs: envs,
+            activeEnvName: activeEnvName,
+            onSelect: (name) {
+              if (name != null && name.startsWith('__action__')) {
+                // Handle special actions
+                return;
+              }
+              ref.read(activeEnvironmentNameProvider.notifier).state = name;
+              ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
+            },
+            onEdit: (env) {
+              _showEditEnvironmentDialog(context, ref, env);
+            },
+            onDelete: (env) {
+              _confirmDeleteEnvironment(context, ref, env);
+            },
+          ),
           loading: () => const Padding(
             padding: EdgeInsets.all(8.0),
             child: SizedBox(
@@ -110,163 +140,8 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCollectionSelector(
-    BuildContext context,
-    WidgetRef ref,
-    List<CollectionModel> collections,
-    String? selectedCollectionId,
-  ) {
-    // Ensure default collection exists
-    final allCollections = [
-      if (!collections.any((c) => c.id == 'default'))
-        CollectionModel(
-          id: 'default',
-          name: 'Default',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      ...collections,
-    ];
-
-    return PopupMenuButton<String>(
-      icon: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.folder, size: 20),
-          const SizedBox(width: 4),
-          Text(
-            () {
-              final collection = allCollections.firstWhere(
-                (c) => c.id == selectedCollectionId,
-                orElse: () => allCollections.first,
-              );
-              return collection.name.isNotEmpty ? collection.name : collection.id;
-            }(),
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-        ],
-      ),
-      onSelected: (id) {
-        ref.read(selectedCollectionIdProvider.notifier).state = id;
-      },
-      itemBuilder: (context) => [
-        ...allCollections.map((collection) {
-          // Ensure we have a valid name to display
-          final displayName = collection.name.isNotEmpty ? collection.name : collection.id;
-          final isDefault = collection.id == 'default';
-          return PopupMenuItem(
-            value: collection.id,
-            child: Row(
-              children: [
-                if (selectedCollectionId == collection.id)
-                  const Icon(Icons.check, size: 18)
-                else
-                  const SizedBox(width: 18),
-                const SizedBox(width: 8),
-                Expanded(child: Text(displayName)),
-                if (!isDefault) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop(); // Close the menu
-                      _confirmDeleteCollection(context, ref, collection);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildEnvironmentSelector(
-    BuildContext context,
-    WidgetRef ref,
-    List<EnvironmentModel> envs,
-    String? activeEnvName,
-  ) {
-    return PopupMenuButton<String>(
-      icon: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud, size: 20),
-          const SizedBox(width: 4),
-          Text(
-            activeEnvName ?? 'No Env',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-        ],
-      ),
-      onSelected: (name) {
-        if (name != null && name.startsWith('__action__')) {
-          // Handle special actions
-          return;
-        }
-        ref.read(activeEnvironmentNameProvider.notifier).state = name;
-        ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
-      },
-      itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: null,
-          child: Text('No Environment'),
-        ),
-        if (envs.isNotEmpty) const PopupMenuDivider(),
-        ...envs.map((env) => PopupMenuItem(
-              value: env.name,
-              child: Row(
-                children: [
-                  if (activeEnvName == env.name)
-                    const Icon(Icons.check, size: 18)
-                  else
-                    const SizedBox(width: 18),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(env.name)),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _showEditEnvironmentDialog(context, ref, env);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.edit_outlined,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _confirmDeleteEnvironment(context, ref, env);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.delete_outline,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )),
-      ],
-    );
-  }
+  // Collection and environment selectors are implemented as separate widgets
+  // in `CollectionSelector` and `EnvironmentSelector`.
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     final selectedCollectionId = ref.watch(selectedCollectionIdProvider);
@@ -288,90 +163,10 @@ class HomeScreen extends ConsumerWidget {
     WidgetRef ref,
     List<ApiRequestModel> requests,
   ) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: requests.length,
-      itemBuilder: (context, index) {
-        final request = requests[index];
-        return _buildRequestCard(context, ref, request);
-      },
-    );
-  }
-
-  Widget _buildRequestCard(
-    BuildContext context,
-    WidgetRef ref,
-    ApiRequestModel request,
-  ) {
-    return AppCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      onTap: () => _showRequestDetails(context, ref, request),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: () => _confirmDeleteRequest(context, ref, request),
-          tooltip: 'Delete',
-        ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              MethodBadge(method: request.method),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  request.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          if (request.urlTemplate.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              request.urlTemplate,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontFamily: 'monospace',
-                  ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          if (request.description != null && request.description!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              request.description!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.access_time,
-                size: 14,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                _formatDate(request.updatedAt),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    return HomeRequestsView(
+      requests: requests,
+      onTapRequest: (request) => _showRequestDetails(context, ref, request),
+      onEditRequest: (request) => _showEditRequestDialog(context, ref, request),
     );
   }
 
@@ -467,149 +262,521 @@ class HomeScreen extends ConsumerWidget {
   void _showCreateRequestDialog(BuildContext context, WidgetRef ref, String? collectionId) {
     final nameController = TextEditingController();
     final urlController = TextEditingController();
+    final bodyController = TextEditingController();
+    final paramKeys = <TextEditingController>[];
+    final paramValues = <TextEditingController>[];
     final methodController = ValueNotifier<HttpMethod>(HttpMethod.get);
     final selectedCollectionId = ValueNotifier<String?>(collectionId ?? 'default');
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
 
+    void addParamRow() {
+      paramKeys.add(TextEditingController());
+      paramValues.add(TextEditingController());
+    }
+
+    // Start with a single empty parameter row for convenience
+    addParamRow();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create New Request'),
-        content: SizedBox(
-          width: 500,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppTextField(
-                  controller: nameController,
-                  label: 'Request Name',
-                  hint: 'My API Request',
-                ),
-                const SizedBox(height: 16),
-                collectionsAsync.when(
-                  data: (collections) {
-                    // Ensure default collection exists
-                    final allCollections = [
-                      if (!collections.any((c) => c.id == 'default'))
-                        CollectionModel(
-                          id: 'default',
-                          name: 'Default',
-                          createdAt: DateTime.now(),
-                          updatedAt: DateTime.now(),
-                        ),
-                      ...collections,
-                    ];
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Create New Request'),
+          content: SizedBox(
+            width: 600,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppTextField(
+                    controller: nameController,
+                    label: 'Request Name',
+                    hint: 'My API Request',
+                  ),
+                  const SizedBox(height: 16),
+                  collectionsAsync.when(
+                    data: (collections) {
+                      // Ensure default collection exists
+                      final allCollections = [
+                        if (!collections.any((c) => c.id == 'default'))
+                          CollectionModel(
+                            id: 'default',
+                            name: 'Default',
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                          ),
+                        ...collections,
+                      ];
 
-                    return AppDropdown<String>(
-                      label: 'Collection',
-                      value: selectedCollectionId.value,
-                      items: allCollections.map((collection) {
-                        final displayName = collection.name.isNotEmpty ? collection.name : collection.id;
-                        return DropdownMenuItem(
-                          value: collection.id,
-                          child: Text(displayName),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        selectedCollectionId.value = value;
-                      },
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: AppDropdown<HttpMethod>(
-                        label: 'Method',
-                        value: methodController.value,
-                        items: HttpMethod.values.map((method) {
+                      return AppDropdown<String>(
+                        label: 'Collection',
+                        value: selectedCollectionId.value,
+                        items: allCollections.map((collection) {
+                          final displayName = collection.name.isNotEmpty ? collection.name : collection.id;
                           return DropdownMenuItem(
-                            value: method,
-                            child: Text(method.name),
+                            value: collection.id,
+                            child: Text(displayName),
                           );
                         }).toList(),
                         onChanged: (value) {
-                          if (value != null) {
-                            methodController.value = value;
-                          }
+                          selectedCollectionId.value = value;
                         },
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: AppDropdown<HttpMethod>(
+                          label: 'Method',
+                          value: methodController.value,
+                          items: HttpMethod.values.map((method) {
+                            return DropdownMenuItem(
+                              value: method,
+                              child: Text(method.name),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                methodController.value = value;
+                              });
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 5,
-                      child: AppTextField(
-                        controller: urlController,
-                        label: 'URL',
-                        hint: 'https://api.example.com/endpoint',
-                        keyboardType: TextInputType.url,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 5,
+                        child: AppTextField(
+                          controller: urlController,
+                          label: 'URL',
+                          hint: 'https://api.example.com/endpoint',
+                          keyboardType: TextInputType.url,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Optional body (mainly for non-GET methods)
+                  AppTextField(
+                    controller: bodyController,
+                    label: 'Body (optional)',
+                    hint: '{ "key": "value" }',
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 16),
+                  // Query / path parameters
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Query / Path Parameters (optional)',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            addParamRow();
+                          });
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Add Param'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...List.generate(paramKeys.length, (index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              controller: paramKeys[index],
+                              label: 'Key',
+                              hint: 'userId',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: AppTextField(
+                              controller: paramValues[index],
+                              label: 'Value',
+                              hint: '123',
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: 'Remove param',
+                            onPressed: () {
+                              setState(() {
+                                paramKeys[index].dispose();
+                                paramValues[index].dispose();
+                                paramKeys.removeAt(index);
+                                paramValues.removeAt(index);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          AppButton(
-            label: 'Create',
-            onPressed: () async {
-              if (nameController.text.trim().isNotEmpty &&
-                  urlController.text.trim().isNotEmpty) {
-                final now = DateTime.now();
-                final request = ApiRequestModel(
-                  id: UuidUtils.generate(),
-                  name: nameController.text.trim(),
-                  method: methodController.value,
-                  urlTemplate: urlController.text.trim(),
-                  collectionId: selectedCollectionId.value ?? 'default',
-                  createdAt: now,
-                  updatedAt: now,
-                );
-                
+          actions: [
+            TextButton(
+              onPressed: () {
+                for (final c in paramKeys) c.dispose();
+                for (final c in paramValues) c.dispose();
+                nameController.dispose();
+                urlController.dispose();
+                bodyController.dispose();
                 Navigator.of(context).pop();
-                
-                try {
-                  await ref.read(requestsNotifierProvider.notifier).addRequest(request);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Request "${request.name}" created successfully'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+              },
+              child: const Text('Cancel'),
+            ),
+            AppButton(
+              label: 'Create',
+              onPressed: () async {
+                if (nameController.text.trim().isNotEmpty &&
+                    urlController.text.trim().isNotEmpty) {
+                  final now = DateTime.now();
+
+                  // Build query/path params map (ignore empty keys)
+                  final params = <String, String>{};
+                  for (int i = 0; i < paramKeys.length; i++) {
+                    final key = paramKeys[i].text.trim();
+                    final value = paramValues[i].text.trim();
+                    if (key.isNotEmpty) {
+                      params[key] = value;
+                    }
                   }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to create request: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+
+                  final bodyText = bodyController.text.trim();
+
+                  final request = ApiRequestModel(
+                    id: UuidUtils.generate(),
+                    name: nameController.text.trim(),
+                    method: methodController.value,
+                    urlTemplate: urlController.text.trim(),
+                    queryParams: params, // may be empty
+                    body: bodyText.isNotEmpty ? bodyText : null, // null if empty
+                    collectionId: selectedCollectionId.value ?? 'default',
+                    createdAt: now,
+                    updatedAt: now,
+                  );
+
+                  for (final c in paramKeys) c.dispose();
+                  for (final c in paramValues) c.dispose();
+                  nameController.dispose();
+                  urlController.dispose();
+                  bodyController.dispose();
+
+                  Navigator.of(context).pop();
+
+                  try {
+                    await ref.read(requestsNotifierProvider.notifier).addRequest(request);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Request "${request.name}" created successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to create request: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please fill in all required fields'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
                 }
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please fill in all required fields'),
-                    backgroundColor: Colors.orange,
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditRequestDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ApiRequestModel request,
+  ) {
+    final nameController = TextEditingController(text: request.name);
+    final urlController = TextEditingController(text: request.urlTemplate);
+    final bodyController = TextEditingController(text: request.body ?? '');
+    final methodController = ValueNotifier<HttpMethod>(request.method);
+    final selectedCollectionId = ValueNotifier<String?>(request.collectionId);
+    final collectionsAsync = ref.watch(collectionsNotifierProvider);
+
+    final paramKeys = <TextEditingController>[];
+    final paramValues = <TextEditingController>[];
+
+    request.queryParams.forEach((key, value) {
+      paramKeys.add(TextEditingController(text: key));
+      paramValues.add(TextEditingController(text: value));
+    });
+
+    if (paramKeys.isEmpty) {
+      paramKeys.add(TextEditingController());
+      paramValues.add(TextEditingController());
+    }
+
+    void addParamRow() {
+      paramKeys.add(TextEditingController());
+      paramValues.add(TextEditingController());
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Edit Request'),
+          content: SizedBox(
+            width: 600,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppTextField(
+                    controller: nameController,
+                    label: 'Request Name',
+                    hint: 'My API Request',
                   ),
-                );
-              }
-            },
+                  const SizedBox(height: 16),
+                  collectionsAsync.when(
+                    data: (collections) {
+                      final allCollections = [
+                        if (!collections.any((c) => c.id == 'default'))
+                          CollectionModel(
+                            id: 'default',
+                            name: 'Default',
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                          ),
+                        ...collections,
+                      ];
+
+                      return AppDropdown<String>(
+                        label: 'Collection',
+                        value: selectedCollectionId.value,
+                        items: allCollections.map((collection) {
+                          final displayName = collection.name.isNotEmpty ? collection.name : collection.id;
+                          return DropdownMenuItem(
+                            value: collection.id,
+                            child: Text(displayName),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          selectedCollectionId.value = value;
+                        },
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: AppDropdown<HttpMethod>(
+                          label: 'Method',
+                          value: methodController.value,
+                          items: HttpMethod.values.map((method) {
+                            return DropdownMenuItem(
+                              value: method,
+                              child: Text(method.name),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                methodController.value = value;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 5,
+                        child: AppTextField(
+                          controller: urlController,
+                          label: 'URL',
+                          hint: 'https://api.example.com/endpoint',
+                          keyboardType: TextInputType.url,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  AppTextField(
+                    controller: bodyController,
+                    label: 'Body (optional)',
+                    hint: '{ "key": "value" }',
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Query / Path Parameters (optional)',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            addParamRow();
+                          });
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Add Param'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...List.generate(paramKeys.length, (index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              controller: paramKeys[index],
+                              label: 'Key',
+                              hint: 'userId',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: AppTextField(
+                              controller: paramValues[index],
+                              label: 'Value',
+                              hint: '123',
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: 'Remove param',
+                            onPressed: () {
+                              setState(() {
+                                paramKeys[index].dispose();
+                                paramValues[index].dispose();
+                                paramKeys.removeAt(index);
+                                paramValues.removeAt(index);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () {
+                for (final c in paramKeys) c.dispose();
+                for (final c in paramValues) c.dispose();
+                nameController.dispose();
+                urlController.dispose();
+                bodyController.dispose();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            AppButton(
+              label: 'Save',
+              onPressed: () async {
+                if (nameController.text.trim().isNotEmpty &&
+                    urlController.text.trim().isNotEmpty) {
+                  final now = DateTime.now();
+
+                  final params = <String, String>{};
+                  for (int i = 0; i < paramKeys.length; i++) {
+                    final key = paramKeys[i].text.trim();
+                    final value = paramValues[i].text.trim();
+                    if (key.isNotEmpty) {
+                      params[key] = value;
+                    }
+                  }
+
+                  final bodyText = bodyController.text.trim();
+
+                  final updatedRequest = request.copyWith(
+                    name: nameController.text.trim(),
+                    method: methodController.value,
+                    urlTemplate: urlController.text.trim(),
+                    queryParams: params,
+                    body: bodyText.isNotEmpty ? bodyText : null,
+                    collectionId: selectedCollectionId.value ?? 'default',
+                    updatedAt: now,
+                  );
+
+                  for (final c in paramKeys) c.dispose();
+                  for (final c in paramValues) c.dispose();
+                  nameController.dispose();
+                  urlController.dispose();
+                  bodyController.dispose();
+
+                  Navigator.of(context).pop();
+
+                  try {
+                    await ref.read(requestsNotifierProvider.notifier).updateRequest(updatedRequest);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Request "${updatedRequest.name}" updated successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to update request: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please fill in all required fields'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -619,46 +786,14 @@ class HomeScreen extends ConsumerWidget {
     WidgetRef ref,
     ApiRequestModel request,
   ) {
-    // TODO: Navigate to request detail/edit screen
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(request.name),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  MethodBadge(method: request.method),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      request.urlTemplate,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
-                  ),
-                ],
-              ),
-              if (request.description != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Description',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: 4),
-                Text(request.description!),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (dialogContext) => RequestRunnerDialog(
+        request: request,
+        onDelete: () {
+          Navigator.of(dialogContext).pop();
+          _confirmDeleteRequest(context, ref, request);
+        },
       ),
     );
   }
@@ -1151,24 +1286,4 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      if (difference.inHours == 0) {
-        if (difference.inMinutes == 0) {
-          return 'Just now';
-        }
-        return '${difference.inMinutes}m ago';
-      }
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
-  }
 }
