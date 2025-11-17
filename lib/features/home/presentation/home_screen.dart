@@ -11,7 +11,7 @@ import 'package:relay/features/home/presentation/providers/providers.dart';
 import 'package:relay/features/home/presentation/widgets/collection_selector.dart';
 import 'package:relay/features/home/presentation/widgets/environment_selector.dart';
 import 'package:relay/features/home/presentation/widgets/home_requests_view.dart';
-import 'package:relay/features/home/presentation/widgets/request_runner_dialog.dart';
+import 'package:relay/features/home/presentation/widgets/request_runner_screen.dart';
 import 'package:relay/ui/layout/max_width_layout.dart';
 import 'package:relay/ui/layout/scaffold.dart';
 import 'package:relay/ui/widgets/widgets.dart';
@@ -166,7 +166,12 @@ class HomeScreen extends ConsumerWidget {
     return HomeRequestsView(
       requests: requests,
       onTapRequest: (request) => _showRequestDetails(context, ref, request),
-      onEditRequest: (request) => _showEditRequestDialog(context, ref, request),
+      onEditRequest: (request) => _showRequestDetails(
+        context,
+        ref,
+        request,
+        startInEditMode: true,
+      ),
     );
   }
 
@@ -517,283 +522,22 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _showEditRequestDialog(
-    BuildContext context,
-    WidgetRef ref,
-    ApiRequestModel request,
-  ) {
-    final nameController = TextEditingController(text: request.name);
-    final urlController = TextEditingController(text: request.urlTemplate);
-    final bodyController = TextEditingController(text: request.body ?? '');
-    final methodController = ValueNotifier<HttpMethod>(request.method);
-    final selectedCollectionId = ValueNotifier<String?>(request.collectionId);
-    final collectionsAsync = ref.watch(collectionsNotifierProvider);
-
-    final paramKeys = <TextEditingController>[];
-    final paramValues = <TextEditingController>[];
-
-    request.queryParams.forEach((key, value) {
-      paramKeys.add(TextEditingController(text: key));
-      paramValues.add(TextEditingController(text: value));
-    });
-
-    if (paramKeys.isEmpty) {
-      paramKeys.add(TextEditingController());
-      paramValues.add(TextEditingController());
-    }
-
-    void addParamRow() {
-      paramKeys.add(TextEditingController());
-      paramValues.add(TextEditingController());
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Edit Request'),
-          content: SizedBox(
-            width: 600,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    controller: nameController,
-                    label: 'Request Name',
-                    hint: 'My API Request',
-                  ),
-                  const SizedBox(height: 16),
-                  collectionsAsync.when(
-                    data: (collections) {
-                      final allCollections = [
-                        if (!collections.any((c) => c.id == 'default'))
-                          CollectionModel(
-                            id: 'default',
-                            name: 'Default',
-                            createdAt: DateTime.now(),
-                            updatedAt: DateTime.now(),
-                          ),
-                        ...collections,
-                      ];
-
-                      return AppDropdown<String>(
-                        label: 'Collection',
-                        value: selectedCollectionId.value,
-                        items: allCollections.map((collection) {
-                          final displayName = collection.name.isNotEmpty ? collection.name : collection.id;
-                          return DropdownMenuItem(
-                            value: collection.id,
-                            child: Text(displayName),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          selectedCollectionId.value = value;
-                        },
-                      );
-                    },
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: AppDropdown<HttpMethod>(
-                          label: 'Method',
-                          value: methodController.value,
-                          items: HttpMethod.values.map((method) {
-                            return DropdownMenuItem(
-                              value: method,
-                              child: Text(method.name),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                methodController.value = value;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 5,
-                        child: AppTextField(
-                          controller: urlController,
-                          label: 'URL',
-                          hint: 'https://api.example.com/endpoint',
-                          keyboardType: TextInputType.url,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: bodyController,
-                    label: 'Body (optional)',
-                    hint: '{ "key": "value" }',
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Query / Path Parameters (optional)',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            addParamRow();
-                          });
-                        },
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Add Param'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ...List.generate(paramKeys.length, (index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: AppTextField(
-                              controller: paramKeys[index],
-                              label: 'Key',
-                              hint: 'userId',
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: AppTextField(
-                              controller: paramValues[index],
-                              label: 'Value',
-                              hint: '123',
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            tooltip: 'Remove param',
-                            onPressed: () {
-                              setState(() {
-                                paramKeys[index].dispose();
-                                paramValues[index].dispose();
-                                paramKeys.removeAt(index);
-                                paramValues.removeAt(index);
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                for (final c in paramKeys) c.dispose();
-                for (final c in paramValues) c.dispose();
-                nameController.dispose();
-                urlController.dispose();
-                bodyController.dispose();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            AppButton(
-              label: 'Save',
-              onPressed: () async {
-                if (nameController.text.trim().isNotEmpty &&
-                    urlController.text.trim().isNotEmpty) {
-                  final now = DateTime.now();
-
-                  final params = <String, String>{};
-                  for (int i = 0; i < paramKeys.length; i++) {
-                    final key = paramKeys[i].text.trim();
-                    final value = paramValues[i].text.trim();
-                    if (key.isNotEmpty) {
-                      params[key] = value;
-                    }
-                  }
-
-                  final bodyText = bodyController.text.trim();
-
-                  final updatedRequest = request.copyWith(
-                    name: nameController.text.trim(),
-                    method: methodController.value,
-                    urlTemplate: urlController.text.trim(),
-                    queryParams: params,
-                    body: bodyText.isNotEmpty ? bodyText : null,
-                    collectionId: selectedCollectionId.value ?? 'default',
-                    updatedAt: now,
-                  );
-
-                  for (final c in paramKeys) c.dispose();
-                  for (final c in paramValues) c.dispose();
-                  nameController.dispose();
-                  urlController.dispose();
-                  bodyController.dispose();
-
-                  Navigator.of(context).pop();
-
-                  try {
-                    await ref.read(requestsNotifierProvider.notifier).updateRequest(updatedRequest);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Request "${updatedRequest.name}" updated successfully'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to update request: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please fill in all required fields'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showRequestDetails(
     BuildContext context,
     WidgetRef ref,
-    ApiRequestModel request,
-  ) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => RequestRunnerDialog(
-        request: request,
-        onDelete: () {
-          Navigator.of(dialogContext).pop();
-          _confirmDeleteRequest(context, ref, request);
-        },
+    ApiRequestModel request, {
+    bool startInEditMode = false,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (pageContext) => RequestRunnerPage(
+          request: request,
+          startInEditMode: startInEditMode,
+          onDelete: () {
+            Navigator.of(pageContext).pop();
+            _confirmDeleteRequest(context, ref, request);
+          },
+        ),
       ),
     );
   }

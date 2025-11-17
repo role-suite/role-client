@@ -3,12 +3,16 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:relay/core/model/api_request_model.dart';
+import 'package:relay/core/model/collection_model.dart';
 import 'package:relay/core/service/api_service.dart';
 import 'package:relay/core/util/json.dart';
+import 'package:relay/core/util/extension.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
+import 'package:relay/features/home/presentation/providers/collection_providers.dart';
+import 'package:relay/features/home/presentation/providers/request_providers.dart';
 import 'package:relay/ui/widgets/widgets.dart';
 
 class RequestRunnerPage extends ConsumerStatefulWidget {
@@ -16,10 +20,12 @@ class RequestRunnerPage extends ConsumerStatefulWidget {
     super.key,
     required this.request,
     this.onDelete,
+    this.startInEditMode = false,
   });
 
   final ApiRequestModel request;
   final VoidCallback? onDelete;
+  final bool startInEditMode;
 
   @override
   ConsumerState<RequestRunnerPage> createState() => _RequestRunnerPageState();
@@ -31,6 +37,52 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
   DioException? _error;
   Duration? _duration;
   bool _isPermissionError = false;
+  late ApiRequestModel _currentRequest;
+  bool _isEditing = false;
+  bool _isSavingEdits = false;
+
+  late TextEditingController _nameController;
+  late TextEditingController _urlController;
+  late TextEditingController _bodyController;
+  final List<TextEditingController> _paramKeyControllers = [];
+  final List<TextEditingController> _paramValueControllers = [];
+  late HttpMethod _selectedMethod;
+  String? _selectedCollectionId;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentRequest = widget.request;
+    _selectedMethod = _currentRequest.method;
+    _selectedCollectionId = _currentRequest.collectionId;
+    _nameController = TextEditingController(text: _currentRequest.name);
+    _urlController = TextEditingController(text: _currentRequest.urlTemplate);
+    _bodyController = TextEditingController(text: _currentRequest.body ?? '');
+    _rebuildParamControllersFrom(_currentRequest);
+    _isEditing = widget.startInEditMode;
+  }
+
+  @override
+  void didUpdateWidget(covariant RequestRunnerPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.request.id != widget.request.id ||
+        oldWidget.startInEditMode != widget.startInEditMode) {
+      setState(() {
+        _currentRequest = widget.request;
+        _isEditing = widget.startInEditMode;
+        _syncEditorsFromCurrentRequest();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _urlController.dispose();
+    _bodyController.dispose();
+    _disposeParamControllers();
+    super.dispose();
+  }
 
   Future<void> _sendRequest() async {
     setState(() {
@@ -43,26 +95,27 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
 
     final envRepository = ref.read(environmentRepositoryProvider);
     final activeEnv = await envRepository.getActiveEnvironment();
+    final request = _currentRequest;
 
     // Resolve templates using the active environment
-    final resolvedUrl = envRepository.resolveTemplate(widget.request.urlTemplate, activeEnv);
+    final resolvedUrl = envRepository.resolveTemplate(request.urlTemplate, activeEnv);
     final resolvedHeaders = <String, String>{
-      for (final entry in widget.request.headers.entries)
+      for (final entry in request.headers.entries)
         entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
     };
     final resolvedQueryParams = <String, String>{
-      for (final entry in widget.request.queryParams.entries)
+      for (final entry in request.queryParams.entries)
         entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
     };
-    final rawBody = widget.request.body;
+    final rawBody = request.body;
     final resolvedBody = (rawBody != null && rawBody.trim().isNotEmpty)
         ? envRepository.resolveTemplate(rawBody, activeEnv)
         : null;
 
     // Debug logging for easier troubleshooting
     debugPrint('==== Relay Request ====');
-    debugPrint('Name: ${widget.request.name}');
-    debugPrint('Method: ${widget.request.method.name}');
+    debugPrint('Name: ${request.name}');
+    debugPrint('Method: ${request.method.name}');
     debugPrint('Active environment: ${activeEnv?.name}');
     debugPrint('Resolved URL: $resolvedUrl');
     debugPrint('Resolved headers: $resolvedHeaders');
@@ -76,7 +129,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       final response = await dio.request<dynamic>(
         resolvedUrl,
         options: Options(
-          method: widget.request.method.name,
+          method: request.method.name,
           headers: resolvedHeaders.isEmpty ? null : resolvedHeaders,
         ),
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
@@ -134,7 +187,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final request = widget.request;
+    final request = _currentRequest;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -159,6 +212,11 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
               icon: const Icon(Icons.delete_outline),
               onPressed: widget.onDelete,
             ),
+          IconButton(
+            tooltip: _isEditing ? 'Close editor' : 'Edit request',
+            icon: Icon(_isEditing ? Icons.edit_off : Icons.edit),
+            onPressed: _toggleEditingMode,
+          ),
         ],
       ),
       body: SafeArea(
@@ -183,6 +241,10 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                         style: theme.textTheme.bodySmall,
                       ),
                       const SizedBox(height: 12),
+                    ],
+                    if (_isEditing) ...[
+                      _buildEditForm(context),
+                      const SizedBox(height: 24),
                     ],
                     // Request/response details combined into a single tab controller
                     DefaultTabController(
@@ -217,7 +279,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
                     // Send button + meta
                     Row(
                       children: [
@@ -242,6 +304,283 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildEditForm(BuildContext context) {
+    final theme = Theme.of(context);
+    final collectionsAsync = ref.watch(collectionsNotifierProvider);
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Edit Request',
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            AppTextField(
+              controller: _nameController,
+              label: 'Request Name',
+              hint: 'My API Request',
+            ),
+            const SizedBox(height: 16),
+            collectionsAsync.when(
+              data: (collections) {
+                final allCollections = [...collections];
+                if (!allCollections.any((c) => c.id == 'default')) {
+                  allCollections.insert(
+                    0,
+                    CollectionModel(
+                      id: 'default',
+                      name: 'Default',
+                      createdAt: DateTime.now(),
+                      updatedAt: DateTime.now(),
+                    ),
+                  );
+                }
+
+                return AppDropdown<String>(
+                  label: 'Collection',
+                  value: _selectedCollectionId ?? 'default',
+                  items: allCollections
+                      .map(
+                        (collection) => DropdownMenuItem(
+                          value: collection.id,
+                          child: Text(collection.name.isNotEmpty ? collection.name : collection.id),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCollectionId = value;
+                    });
+                  },
+                );
+              },
+              loading: () => const SizedBox(
+                height: 48,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: AppDropdown<HttpMethod>(
+                    label: 'Method',
+                    value: _selectedMethod,
+                    items: HttpMethod.values
+                        .map(
+                          (method) => DropdownMenuItem(
+                            value: method,
+                            child: Text(method.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedMethod = value;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 5,
+                  child: AppTextField(
+                    controller: _urlController,
+                    label: 'URL',
+                    hint: 'https://api.example.com/endpoint',
+                    keyboardType: TextInputType.url,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            AppTextField(
+              controller: _bodyController,
+              label: 'Body (optional)',
+              hint: '{ "key": "value" }',
+              maxLines: 4,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Query / Path Parameters (optional)',
+                  style: theme.textTheme.titleSmall,
+                ),
+                TextButton.icon(
+                  onPressed: _isSavingEdits ? null : _handleAddParamRow,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Param'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...List.generate(_paramKeyControllers.length, (index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: AppTextField(
+                        controller: _paramKeyControllers[index],
+                        label: 'Key',
+                        hint: 'userId',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: AppTextField(
+                        controller: _paramValueControllers[index],
+                        label: 'Value',
+                        hint: '123',
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Remove param',
+                      onPressed: _isSavingEdits ? null : () => _handleRemoveParamRow(index),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: _isSavingEdits ? null : _cancelEditing,
+                  child: const Text('Cancel'),
+                ),
+                const Spacer(),
+                AppButton(
+                  label: _isSavingEdits ? 'Saving...' : 'Save Changes',
+                  icon: Icons.save_outlined,
+                  onPressed: _isSavingEdits ? null : () => _saveEdits(context),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleAddParamRow() {
+    setState(() {
+      _paramKeyControllers.add(TextEditingController());
+      _paramValueControllers.add(TextEditingController());
+    });
+  }
+
+  void _handleRemoveParamRow(int index) {
+    setState(() {
+      _paramKeyControllers[index].dispose();
+      _paramValueControllers[index].dispose();
+      _paramKeyControllers.removeAt(index);
+      _paramValueControllers.removeAt(index);
+      if (_paramKeyControllers.isEmpty) {
+        _paramKeyControllers.add(TextEditingController());
+        _paramValueControllers.add(TextEditingController());
+      }
+    });
+  }
+
+  void _toggleEditingMode() {
+    setState(() {
+      if (_isEditing) {
+        _syncEditorsFromCurrentRequest();
+        _isSavingEdits = false;
+      }
+      _isEditing = !_isEditing;
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _syncEditorsFromCurrentRequest();
+      _isSavingEdits = false;
+      _isEditing = false;
+    });
+  }
+
+  Future<void> _saveEdits(BuildContext context) async {
+    final name = _nameController.text.trim();
+    final url = _urlController.text.trim();
+    if (name.isEmpty || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Name and URL are required to update a request.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final params = <String, String>{};
+    for (int i = 0; i < _paramKeyControllers.length; i++) {
+      final key = _paramKeyControllers[i].text.trim();
+      final value = _paramValueControllers[i].text.trim();
+      if (key.isNotEmpty) {
+        params[key] = value;
+      }
+    }
+
+    final bodyText = _bodyController.text.trim();
+    final updatedRequest = _currentRequest.copyWith(
+      name: name,
+      method: _selectedMethod,
+      urlTemplate: url,
+      queryParams: params,
+      body: bodyText.isNotEmpty ? bodyText : null,
+      collectionId: _selectedCollectionId ?? 'default',
+      updatedAt: DateTime.now(),
+    );
+
+    setState(() {
+      _isSavingEdits = true;
+    });
+
+    try {
+      await ref.read(requestsNotifierProvider.notifier).updateRequest(updatedRequest);
+      if (!mounted) return;
+      setState(() {
+        _currentRequest = updatedRequest;
+        _isEditing = false;
+        _isSavingEdits = false;
+      });
+      _syncEditorsFromCurrentRequest();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Request "${updatedRequest.name}" updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSavingEdits = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update request: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildMetaInfo(BuildContext context) {
@@ -276,13 +615,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
   }
 
   Widget _buildRequestBodyTab(BuildContext context) {
-    final body = widget.request.body;
+    final body = _currentRequest.body;
     final content = body == null || body.trim().isEmpty ? 'No request body' : _prettifyContent(body);
     return _buildMonospacePanel(context, content);
   }
 
   Widget _buildRequestHeadersTab(BuildContext context) {
-    final headers = widget.request.headers;
+    final headers = _currentRequest.headers;
     final content = headers.isEmpty ? 'No request headers' : _prettifyMap(headers);
     return _buildMonospacePanel(context, content);
   }
@@ -508,6 +847,40 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
 
   String _prettifyMap(Map data) {
     return JsonUtils.pretty(data);
+  }
+
+  void _rebuildParamControllersFrom(ApiRequestModel request) {
+    _disposeParamControllers();
+    if (request.queryParams.isEmpty) {
+      _paramKeyControllers.add(TextEditingController());
+      _paramValueControllers.add(TextEditingController());
+      return;
+    }
+
+    request.queryParams.forEach((key, value) {
+      _paramKeyControllers.add(TextEditingController(text: key));
+      _paramValueControllers.add(TextEditingController(text: value));
+    });
+  }
+
+  void _disposeParamControllers() {
+    for (final controller in _paramKeyControllers) {
+      controller.dispose();
+    }
+    for (final controller in _paramValueControllers) {
+      controller.dispose();
+    }
+    _paramKeyControllers.clear();
+    _paramValueControllers.clear();
+  }
+
+  void _syncEditorsFromCurrentRequest() {
+    _nameController.text = _currentRequest.name;
+    _urlController.text = _currentRequest.urlTemplate;
+    _bodyController.text = _currentRequest.body ?? '';
+    _selectedMethod = _currentRequest.method;
+    _selectedCollectionId = _currentRequest.collectionId;
+    _rebuildParamControllersFrom(_currentRequest);
   }
 }
 
