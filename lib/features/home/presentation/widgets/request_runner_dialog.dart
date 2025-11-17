@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/model/api_request_model.dart';
 import 'package:relay/core/service/api_service.dart';
+import 'package:relay/core/util/json.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 import 'package:relay/ui/widgets/widgets.dart';
 
@@ -167,9 +169,9 @@ class _RequestRunnerDialogState extends ConsumerState<RequestRunnerDialog> {
                 ),
                 const SizedBox(height: 12),
               ],
-              // Request details (body / headers) paginated via tabs
+              // Request/response details combined into a single tab controller
               DefaultTabController(
-                length: 2,
+                length: 4,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -181,53 +183,19 @@ class _RequestRunnerDialogState extends ConsumerState<RequestRunnerDialog> {
                       tabs: const [
                         Tab(text: 'Request Body'),
                         Tab(text: 'Request Headers'),
+                        Tab(text: 'Response Body'),
+                        Tab(text: 'Response Headers'),
                       ],
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
-                      height: 180,
+                      height: 260,
                       child: TabBarView(
                         children: [
-                          // Request body
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest
-                                  .withOpacity(0.5),
-                            ),
-                            child: SingleChildScrollView(
-                              child: SelectableText(
-                                widget.request.body == null || widget.request.body!.trim().isEmpty
-                                    ? 'No request body'
-                                    : _formatBody(widget.request.body),
-                                style: const TextStyle(fontFamily: 'monospace'),
-                              ),
-                            ),
-                          ),
-                          // Request headers
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest
-                                  .withOpacity(0.5),
-                            ),
-                            child: SingleChildScrollView(
-                              child: SelectableText(
-                                widget.request.headers.isEmpty
-                                    ? 'No request headers'
-                                    : widget.request.headers.entries
-                                        .map((e) => '${e.key}: ${e.value}')
-                                        .join('\n'),
-                                style: const TextStyle(fontFamily: 'monospace'),
-                              ),
-                            ),
-                          ),
+                          _buildRequestBodyTab(context),
+                          _buildRequestHeadersTab(context),
+                          _buildResponseBodyTab(context),
+                          _buildResponseHeadersTab(context),
                         ],
                       ),
                     ),
@@ -250,9 +218,6 @@ class _RequestRunnerDialogState extends ConsumerState<RequestRunnerDialog> {
               ),
               const SizedBox(height: 16),
               if (_isSending) const LinearProgressIndicator(),
-              const SizedBox(height: 8),
-              // Response section
-              _buildResponseSection(context),
             ],
           ),
         ),
@@ -303,34 +268,106 @@ class _RequestRunnerDialogState extends ConsumerState<RequestRunnerDialog> {
     );
   }
 
-  Widget _buildResponseSection(BuildContext context) {
+  Widget _buildRequestBodyTab(BuildContext context) {
+    final body = widget.request.body;
+    final content = body == null || body.trim().isEmpty ? 'No request body' : _prettifyContent(body);
+    return _buildMonospacePanel(context, content);
+  }
+
+  Widget _buildRequestHeadersTab(BuildContext context) {
+    final headers = widget.request.headers;
+    final content = headers.isEmpty ? 'No request headers' : _prettifyMap(headers);
+    return _buildMonospacePanel(context, content);
+  }
+
+  Widget _buildResponseBodyTab(BuildContext context) {
     if (_isSending) {
-      return Text(
-        'Sending request...',
-        style: Theme.of(context).textTheme.bodySmall,
-      );
+      return _buildStatusPanel(context, 'Sending request...');
     }
 
     if (_error != null && _response == null) {
-      final baseError =
-          _error!.message ?? _error!.error?.toString() ?? _error.toString();
-
+      final baseError = _error!.message ?? _error!.error?.toString() ?? _error.toString();
       if (_isPermissionError) {
-        return Column(
+        return _buildPermissionErrorPanel(context, baseError);
+      }
+      return _buildStatusPanel(
+        context,
+        'Error: $baseError',
+        color: Theme.of(context).colorScheme.error,
+      );
+    }
+
+    if (_response == null) {
+      return _buildStatusPanel(
+        context,
+        'Send the request to see the response.',
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      );
+    }
+
+    final isHtml = _isHtmlResponseBody();
+    final rawBody = _extractResponseBodyAsString();
+    if (isHtml && rawBody != null && rawBody.trim().isNotEmpty) {
+      return _buildHtmlPanel(context, rawBody);
+    }
+
+    final bodyText = _prettifyContent(_response!.data);
+    final content = bodyText.isEmpty ? 'No response body' : bodyText;
+    return _buildMonospacePanel(context, content);
+  }
+
+  Widget _buildResponseHeadersTab(BuildContext context) {
+    if (_isSending) {
+      return _buildStatusPanel(context, 'Sending request...');
+    }
+
+    if (_error != null && _response == null) {
+      final baseError = _error!.message ?? _error!.error?.toString() ?? _error.toString();
+      if (_isPermissionError) {
+        return _buildPermissionErrorPanel(context, baseError);
+      }
+      return _buildStatusPanel(
+        context,
+        'Error: $baseError',
+        color: Theme.of(context).colorScheme.error,
+      );
+    }
+
+    if (_response == null) {
+      return _buildStatusPanel(
+        context,
+        'Send the request to see the response headers.',
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      );
+    }
+
+    final headers = _response!.headers.map.map(
+      (key, values) => MapEntry(key, values.join(', ')),
+    );
+    final content = headers.isEmpty ? 'No response headers' : _prettifyMap(headers);
+    return _buildMonospacePanel(context, content);
+  }
+
+  Widget _buildPermissionErrorPanel(BuildContext context, String baseError) {
+    final theme = Theme.of(context);
+    return _buildPanelContainer(
+      context,
+      SingleChildScrollView(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Network access is blocked by the operating system (permission error).',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
+              style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
                     fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: 4),
             Text(
               baseError,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
+              style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
                   ),
             ),
             const SizedBox(height: 8),
@@ -338,115 +375,132 @@ class _RequestRunnerDialogState extends ConsumerState<RequestRunnerDialog> {
               'On macOS, please:\n'
               '- Ensure any firewall or security tool allows this app to access the network.\n'
               '- If using a VPN or proxy, verify it permits outbound HTTPS connections.',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: theme.textTheme.bodySmall,
             ),
           ],
-        );
-      }
-
-      return Text(
-        'Error: $baseError',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.error,
-            ),
-      );
-    }
-
-    if (_response == null) {
-      return Text(
-        'Send the request to see the response.',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-      );
-    }
-
-    final headers = _response!.headers.map.map(
-      (key, values) => MapEntry(key, values.join(', ')),
-    );
-
-    final bodyText = _formatBody(_response!.data);
-
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TabBar(
-            isScrollable: true,
-            labelColor: Theme.of(context).colorScheme.primary,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-            tabs: const [
-              Tab(text: 'Response Body'),
-              Tab(text: 'Response Headers'),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 260,
-            child: TabBarView(
-              children: [
-                // Response body
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest
-                        .withOpacity(0.5),
-                  ),
-                  child: SingleChildScrollView(
-                    child: SelectableText(
-                      bodyText.isEmpty ? 'No response body' : bodyText,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
-                  ),
-                ),
-                // Response headers
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest
-                        .withOpacity(0.5),
-                  ),
-                  child: SingleChildScrollView(
-                    child: SelectableText(
-                      headers.isEmpty
-                          ? 'No response headers'
-                          : headers.entries
-                              .map((e) => '${e.key}: ${e.value}')
-                              .join('\n'),
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  String _formatBody(dynamic data) {
-    try {
-      if (data is Map<String, dynamic> || data is List<dynamic>) {
-        return const JsonEncoder.withIndent('  ').convert(data);
-      }
-      if (data is String) {
-        // Try to pretty-print JSON if possible
-        final dynamic decoded = json.decode(data);
-        return const JsonEncoder.withIndent('  ').convert(decoded);
-      }
-      return data.toString();
-    } catch (_) {
-      return data?.toString() ?? '';
+  Widget _buildStatusPanel(BuildContext context, String message, {Color? color}) {
+    final theme = Theme.of(context);
+    return _buildPanelContainer(
+      context,
+      SingleChildScrollView(
+        child: Text(
+          message,
+          style: theme.textTheme.bodySmall?.copyWith(color: color),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonospacePanel(BuildContext context, String content) {
+    return _buildPanelContainer(
+      context,
+      SingleChildScrollView(
+        child: SelectableText(
+          content,
+          style: const TextStyle(fontFamily: 'monospace'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPanelContainer(BuildContext context, Widget child) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildHtmlPanel(BuildContext context, String html) {
+    final theme = Theme.of(context);
+    return _buildPanelContainer(
+      context,
+      SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            HtmlWidget(
+              html,
+              textStyle: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+            const SizedBox(height: 8),
+            Text(
+              'Raw HTML',
+              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            SelectableText(
+              html,
+              style: const TextStyle(fontFamily: 'monospace'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isHtmlResponseBody() {
+    if (_response == null) {
+      return false;
     }
+
+    final contentType = _response!.headers.value('content-type')?.toLowerCase() ?? '';
+    if (contentType.contains('text/html') || contentType.contains('application/xhtml')) {
+      return true;
+    }
+
+    final body = _extractResponseBodyAsString();
+    if (body == null) {
+      return false;
+    }
+
+    final snippet = body.trimLeft().toLowerCase();
+    if (snippet.isEmpty) {
+      return false;
+    }
+
+    return snippet.startsWith('<!doctype html') ||
+        snippet.startsWith('<html') ||
+        (snippet.contains('<html') && snippet.contains('</html>'));
+  }
+
+  String? _extractResponseBodyAsString() {
+    final data = _response?.data;
+    if (data == null) {
+      return null;
+    }
+
+    if (data is String) {
+      return data;
+    }
+
+    if (data is List<int>) {
+      try {
+        return utf8.decode(data);
+      } catch (_) {
+        return String.fromCharCodes(data);
+      }
+    }
+
+    return null;
+  }
+
+  String _prettifyContent(dynamic data) {
+    return JsonUtils.pretty(data);
+  }
+
+  String _prettifyMap(Map data) {
+    return JsonUtils.pretty(data);
   }
 }
 
