@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = 'Relay App';
+  static const String appName = 'Röle';
   static const String defaultRequestName = 'Untitled Request';
   static const String defaultEnvironment = 'local';
 

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:relay/core/model/api_request_model.dart';
+import 'package:relay/core/model/environment_model.dart';
 import 'package:relay/core/model/collection_model.dart';
 import 'package:relay/core/service/api_service.dart';
 import 'package:relay/core/util/json.dart';
@@ -13,6 +14,7 @@ import 'package:relay/core/util/extension.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 import 'package:relay/features/home/presentation/providers/collection_providers.dart';
 import 'package:relay/features/home/presentation/providers/request_providers.dart';
+import 'package:relay/features/home/presentation/providers/environment_providers.dart';
 import 'package:relay/ui/widgets/widgets.dart';
 
 class RequestRunnerPage extends ConsumerStatefulWidget {
@@ -189,6 +191,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
   Widget build(BuildContext context) {
     final request = _currentRequest;
     final theme = Theme.of(context);
+    final environmentsAsync = ref.watch(environmentsNotifierProvider);
+    final activeEnvName = ref.watch(activeEnvironmentNameProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -206,6 +210,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
           ],
         ),
         actions: [
+          _buildEnvironmentAction(context, environmentsAsync, activeEnvName),
+          const SizedBox(width: 8),
           if (widget.onDelete != null)
             IconButton(
               tooltip: 'Delete request',
@@ -477,6 +483,91 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildEnvironmentAction(
+    BuildContext context,
+    AsyncValue<List<EnvironmentModel>> envsAsync,
+    String? activeEnvName,
+  ) {
+    final theme = Theme.of(context);
+    return envsAsync.when(
+      data: (envs) => PopupMenuButton<String?>(
+        tooltip: 'Select environment',
+        onSelected: _handleEnvironmentSelection,
+        itemBuilder: (context) => _buildEnvironmentMenuItems(envs, activeEnvName),
+        icon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud, size: 20),
+            const SizedBox(width: 4),
+            Text(
+              activeEnvName ?? 'No Env',
+              style: theme.textTheme.labelMedium,
+            ),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  List<PopupMenuEntry<String?>> _buildEnvironmentMenuItems(
+    List<EnvironmentModel> envs,
+    String? activeEnvName,
+  ) {
+    final items = <PopupMenuEntry<String?>>[
+      PopupMenuItem<String?>(
+        value: null,
+        child: Row(
+          children: [
+            if (activeEnvName == null)
+              const Icon(Icons.check, size: 18)
+            else
+              const SizedBox(width: 18),
+            const SizedBox(width: 8),
+            const Text('No Environment'),
+          ],
+        ),
+      ),
+    ];
+
+    if (envs.isNotEmpty) {
+      items.add(const PopupMenuDivider());
+      items.addAll(
+        envs.map(
+          (env) => PopupMenuItem<String?>(
+            value: env.name,
+            child: Row(
+              children: [
+                if (activeEnvName == env.name)
+                  const Icon(Icons.check, size: 18)
+                else
+                  const SizedBox(width: 18),
+                const SizedBox(width: 8),
+                Text(env.name),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  void _handleEnvironmentSelection(String? name) {
+    ref.read(activeEnvironmentNameProvider.notifier).state = name;
+    ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
   }
 
   void _handleAddParamRow() {

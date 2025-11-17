@@ -41,6 +41,7 @@ class HomeScreen extends ConsumerWidget {
 
     return AppScaffold(
       title: AppConstants.appName,
+      drawer: _buildHomeDrawer(context, ref),
       actions: [
         // Collection selector
         collectionsAsync.when(
@@ -96,19 +97,6 @@ class HomeScreen extends ConsumerWidget {
           error: (_, __) => const SizedBox.shrink(),
         ),
         const SizedBox(width: 8),
-        // Create environment button
-        IconButton(
-          icon: const Icon(Icons.cloud),
-          onPressed: () => _showCreateEnvironmentDialog(context, ref),
-          tooltip: 'Create Environment',
-        ),
-        const SizedBox(width: 8),
-        // Create collection button
-        IconButton(
-          icon: const Icon(Icons.add_box),
-          onPressed: () => _showCreateCollectionDialog(context, ref),
-          tooltip: 'Create Collection',
-        ),
       ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateRequestDialog(context, ref, selectedCollectionId),
@@ -171,6 +159,65 @@ class HomeScreen extends ConsumerWidget {
         ref,
         request,
         startInEditMode: true,
+      ),
+    );
+  }
+
+  Drawer _buildHomeDrawer(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Drawer(
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    AppConstants.appName,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Quick actions',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_box_outlined),
+              title: const Text('Create New Collection'),
+              subtitle: const Text('Group and share related requests'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showCreateCollectionDialog(context, ref);
+              },
+            ),
+            const Divider(height: 0),
+            ListTile(
+              leading: const Icon(Icons.cloud_outlined),
+              title: const Text('Create New Environment'),
+              subtitle: const Text('Store URLs, secrets, and configs'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showCreateEnvironmentDialog(context, ref);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -273,6 +320,9 @@ class HomeScreen extends ConsumerWidget {
     final methodController = ValueNotifier<HttpMethod>(HttpMethod.get);
     final selectedCollectionId = ValueNotifier<String?>(collectionId ?? 'default');
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
+    final environmentsAsync = ref.watch(environmentsNotifierProvider);
+    final activeEnvironmentName = ref.watch(activeEnvironmentNameProvider);
+    String? selectedEnvironmentName = activeEnvironmentName;
 
     void addParamRow() {
       paramKeys.add(TextEditingController());
@@ -281,6 +331,111 @@ class HomeScreen extends ConsumerWidget {
 
     // Start with a single empty parameter row for convenience
     addParamRow();
+
+    EnvironmentModel? findEnvironmentByName(String? name) {
+      if (name == null) return null;
+      return environmentsAsync.maybeWhen(
+        data: (envs) {
+          for (final env in envs) {
+            if (env.name == name) {
+              return env;
+            }
+          }
+          return null;
+        },
+        orElse: () => null,
+      );
+    }
+
+    Future<String?> showVariablePicker(BuildContext dialogContext, EnvironmentModel environment) {
+      final entries = environment.variables.entries.toList()
+        ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+      return showModalBottomSheet<String>(
+        context: dialogContext,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (sheetContext) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Insert Environment Variable',
+                    style: Theme.of(dialogContext).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap a variable to insert its placeholder into the focused field.',
+                    style: Theme.of(dialogContext).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 320),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: entries.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, index) {
+                        final entry = entries[index];
+                        return ListTile(
+                          title: Text(entry.key),
+                          subtitle: entry.value.isNotEmpty ? Text(entry.value) : null,
+                          trailing: const Icon(Icons.add_circle_outline),
+                          onTap: () => Navigator.of(sheetContext).pop(entry.key),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    Future<void> insertVariableIntoController(TextEditingController controller, BuildContext dialogContext) async {
+      final environment = findEnvironmentByName(selectedEnvironmentName);
+      if (environment == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Select an environment with variables to insert.'),
+          ),
+        );
+        return;
+      }
+
+      if (environment.variables.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Environment "${environment.name}" has no variables yet.'),
+          ),
+        );
+        return;
+      }
+
+      final variableKey = await showVariablePicker(dialogContext, environment);
+      if (variableKey == null || variableKey.isEmpty) return;
+
+      final placeholder = '{{${variableKey.trim()}}}';
+      final selection = controller.selection;
+      final baseText = controller.text;
+      final start = selection.start >= 0 ? selection.start : baseText.length;
+      final end = selection.end >= 0 ? selection.end : selection.start;
+      final newText = baseText.replaceRange(
+        start,
+        end,
+        placeholder,
+      );
+      controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: start + placeholder.length),
+      );
+    }
 
     showDialog(
       context: context,
@@ -332,6 +487,68 @@ class HomeScreen extends ConsumerWidget {
                     error: (_, __) => const SizedBox.shrink(),
                   ),
                   const SizedBox(height: 16),
+                  environmentsAsync.when(
+                    data: (envs) {
+                      if (envs.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      final selectedEnvironment = findEnvironmentByName(selectedEnvironmentName);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AppDropdown<String?>(
+                            label: 'Environment (optional)',
+                            value: selectedEnvironmentName,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('No environment'),
+                              ),
+                              ...envs.map(
+                                (env) => DropdownMenuItem<String?>(
+                                  value: env.name,
+                                  child: Text(env.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedEnvironmentName = value;
+                              });
+                            },
+                            isExpanded: true,
+                          ),
+                          if (selectedEnvironmentName != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                selectedEnvironment != null && selectedEnvironment.variables.isNotEmpty
+                                    ? 'Variables from "$selectedEnvironmentName" can be inserted as {{variableName}}.'
+                                    : 'No variables defined for "$selectedEnvironmentName".',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          if (selectedEnvironment != null && selectedEnvironment.variables.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: selectedEnvironment.variables.entries.map((entry) {
+                                  return Chip(
+                                    label: Text('{{${entry.key}}}'),
+                                    //tooltip: entry.value.isNotEmpty ? entry.value : null,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
@@ -362,6 +579,11 @@ class HomeScreen extends ConsumerWidget {
                           label: 'URL',
                           hint: 'https://api.example.com/endpoint',
                           keyboardType: TextInputType.url,
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.data_object),
+                            tooltip: 'Insert environment variable',
+                            onPressed: () => insertVariableIntoController(urlController, context),
+                          ),
                         ),
                       ),
                     ],
@@ -373,6 +595,11 @@ class HomeScreen extends ConsumerWidget {
                     label: 'Body (optional)',
                     hint: '{ "key": "value" }',
                     maxLines: 4,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.data_object),
+                      tooltip: 'Insert environment variable',
+                      onPressed: () => insertVariableIntoController(bodyController, context),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   // Query / path parameters
@@ -413,6 +640,11 @@ class HomeScreen extends ConsumerWidget {
                               controller: paramValues[index],
                               label: 'Value',
                               hint: '123',
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.data_object),
+                                tooltip: 'Insert environment variable',
+                                onPressed: () => insertVariableIntoController(paramValues[index], context),
+                              ),
                             ),
                           ),
                           IconButton(
@@ -464,15 +696,13 @@ class HomeScreen extends ConsumerWidget {
                     }
                   }
 
-                  final bodyText = bodyController.text.trim();
-
                   final request = ApiRequestModel(
                     id: UuidUtils.generate(),
                     name: nameController.text.trim(),
                     method: methodController.value,
                     urlTemplate: urlController.text.trim(),
                     queryParams: params, // may be empty
-                    body: bodyText.isNotEmpty ? bodyText : null, // null if empty
+                    body: bodyController.text.trim().isNotEmpty ? bodyController.text.trim() : null,
                     collectionId: selectedCollectionId.value ?? 'default',
                     createdAt: now,
                     updatedAt: now,

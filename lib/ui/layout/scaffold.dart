@@ -11,7 +11,8 @@ class AppScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.centerTitle = true,
     this.resizeToAvoidBottomInset = true,
-    this.leading
+    this.leading,
+    this.drawer,
   });
 
   final String? title;
@@ -20,6 +21,7 @@ class AppScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final Widget? bottomNavigationBar;
   final Widget? leading;
+  final Widget? drawer;
   final bool centerTitle;
   final bool resizeToAvoidBottomInset;
 
@@ -38,6 +40,7 @@ class AppScaffold extends StatelessWidget {
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: bottomNavigationBar,
+      drawer: drawer,
     );
   }
 }
