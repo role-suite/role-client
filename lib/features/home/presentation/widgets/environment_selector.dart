@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:relay/core/model/environment_model.dart';
 
+const String _noEnvironmentMenuValue = '__menu_no_environment__';
+
 class EnvironmentSelector extends StatelessWidget {
   const EnvironmentSelector({
     super.key,
@@ -31,15 +33,15 @@ class EnvironmentSelector extends StatelessWidget {
           ),
         ],
       ),
-      onSelected: (name) => onSelect(name),
+      onSelected: (name) => onSelect(name == _noEnvironmentMenuValue ? null : name),
       itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: null,
+        const PopupMenuItem<String>(
+          value: _noEnvironmentMenuValue,
           child: Text('No Environment'),
         ),
         if (envs.isNotEmpty) const PopupMenuDivider(),
         ...envs.map(
-          (env) => PopupMenuItem(
+          (env) => PopupMenuItem<String>(
             value: env.name,
             child: Row(
               children: [

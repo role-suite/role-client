@@ -19,7 +19,7 @@ class EnvironmentService {
   final FileStorageService _fileStorageService;
   final WorkspaceService _workspaceService;
 
-  String? _activeEnvironmentName;
+  String? _activeEnvironmentName = AppConstants.defaultEnvironment;
 
   Future<List<EnvironmentModel>> loadAllEnvironments() async {
     final dirPath = await _workspaceService.resolvePath([AppPaths.environments]);
@@ -83,12 +83,15 @@ class EnvironmentService {
     }
   }
 
-  Future<void> setActiveEnvironment(String name) async {
+  Future<void> setActiveEnvironment(String? name) async {
     _activeEnvironmentName = name;
   }
 
   Future<EnvironmentModel?> getActiveEnvironment() async {
-    final name = _activeEnvironmentName ?? AppConstants.defaultEnvironment;
+    final name = _activeEnvironmentName;
+    if (name == null || name.isEmpty) {
+      return null;
+    }
     return loadEnvironmentByName(name);
   }
 

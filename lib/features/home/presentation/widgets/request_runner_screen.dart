@@ -17,6 +17,8 @@ import 'package:relay/features/home/presentation/providers/request_providers.dar
 import 'package:relay/features/home/presentation/providers/environment_providers.dart';
 import 'package:relay/ui/widgets/widgets.dart';
 
+const String _noEnvironmentMenuValue = '__menu_no_environment__';
+
 class RequestRunnerPage extends ConsumerStatefulWidget {
   const RequestRunnerPage({
     super.key,
@@ -492,7 +494,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
   ) {
     final theme = Theme.of(context);
     return envsAsync.when(
-      data: (envs) => PopupMenuButton<String?>(
+      data: (envs) => PopupMenuButton<String>(
         tooltip: 'Select environment',
         onSelected: _handleEnvironmentSelection,
         itemBuilder: (context) => _buildEnvironmentMenuItems(envs, activeEnvName),
@@ -521,13 +523,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     );
   }
 
-  List<PopupMenuEntry<String?>> _buildEnvironmentMenuItems(
+  List<PopupMenuEntry<String>> _buildEnvironmentMenuItems(
     List<EnvironmentModel> envs,
     String? activeEnvName,
   ) {
-    final items = <PopupMenuEntry<String?>>[
-      PopupMenuItem<String?>(
-        value: null,
+    final items = <PopupMenuEntry<String>>[
+      PopupMenuItem<String>(
+        value: _noEnvironmentMenuValue,
         child: Row(
           children: [
             if (activeEnvName == null)
@@ -545,7 +547,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       items.add(const PopupMenuDivider());
       items.addAll(
         envs.map(
-          (env) => PopupMenuItem<String?>(
+          (env) => PopupMenuItem<String>(
             value: env.name,
             child: Row(
               children: [
@@ -565,9 +567,10 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     return items;
   }
 
-  void _handleEnvironmentSelection(String? name) {
-    ref.read(activeEnvironmentNameProvider.notifier).state = name;
-    ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
+  void _handleEnvironmentSelection(String name) {
+    final selectedName = name == _noEnvironmentMenuValue ? null : name;
+    ref.read(activeEnvironmentNameProvider.notifier).state = selectedName;
+    ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(selectedName);
   }
 
   void _handleAddParamRow() {

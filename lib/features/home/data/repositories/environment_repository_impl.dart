@@ -30,9 +30,7 @@ class EnvironmentRepositoryImpl implements EnvironmentRepository {
 
   @override
   Future<void> setActiveEnvironment(String? name) async {
-    if (name != null) {
-      await _environmentService.setActiveEnvironment(name);
-    }
+    await _environmentService.setActiveEnvironment(name);
   }
 
   @override
