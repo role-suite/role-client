@@ -35,7 +35,8 @@ class RequestRunnerPage extends ConsumerStatefulWidget {
   ConsumerState<RequestRunnerPage> createState() => _RequestRunnerPageState();
 }
 
-class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
+class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
+    with SingleTickerProviderStateMixin {
   bool _isSending = false;
   Response<dynamic>? _response;
   DioException? _error;
@@ -48,10 +49,14 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
   late TextEditingController _nameController;
   late TextEditingController _urlController;
   late TextEditingController _bodyController;
+  late TextEditingController _requestBodyController;
   final List<TextEditingController> _paramKeyControllers = [];
   final List<TextEditingController> _paramValueControllers = [];
   late HttpMethod _selectedMethod;
   String? _selectedCollectionId;
+  late final TabController _tabController;
+  late final ScrollController _scrollController;
+  final GlobalKey _responseSectionKey = GlobalKey();
 
   @override
   void initState() {
@@ -62,8 +67,11 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     _nameController = TextEditingController(text: _currentRequest.name);
     _urlController = TextEditingController(text: _currentRequest.urlTemplate);
     _bodyController = TextEditingController(text: _currentRequest.body ?? '');
+    _requestBodyController = TextEditingController(text: _currentRequest.body ?? '');
     _rebuildParamControllersFrom(_currentRequest);
     _isEditing = widget.startInEditMode;
+    _tabController = TabController(length: 4, vsync: this);
+    _scrollController = ScrollController();
   }
 
   @override
@@ -84,11 +92,15 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     _nameController.dispose();
     _urlController.dispose();
     _bodyController.dispose();
+    _requestBodyController.dispose();
+    _tabController.dispose();
+    _scrollController.dispose();
     _disposeParamControllers();
     super.dispose();
   }
 
   Future<void> _sendRequest() async {
+    _focusResponseBodySection();
     setState(() {
       _isSending = true;
       _error = null;
@@ -111,9 +123,9 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       for (final entry in request.queryParams.entries)
         entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
     };
-    final rawBody = request.body;
-    final resolvedBody = (rawBody != null && rawBody.trim().isNotEmpty)
-        ? envRepository.resolveTemplate(rawBody, activeEnv)
+    final runtimeBody = _requestBodyController.text;
+    final resolvedBody = runtimeBody.trim().isNotEmpty
+        ? envRepository.resolveTemplate(runtimeBody, activeEnv)
         : null;
 
     // Debug logging for easier troubleshooting
@@ -195,6 +207,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     final theme = Theme.of(context);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
     final activeEnvName = ref.watch(activeEnvironmentNameProvider);
+    final envList = environmentsAsync.asData?.value;
 
     return Scaffold(
       appBar: AppBar(
@@ -233,7 +246,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
             constraints: const BoxConstraints(maxWidth: 900),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: SingleChildScrollView(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -255,37 +269,37 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                       const SizedBox(height: 24),
                     ],
                     // Request/response details combined into a single tab controller
-                    DefaultTabController(
-                      length: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TabBar(
-                            isScrollable: true,
-                            labelColor: theme.colorScheme.primary,
-                            indicatorColor: theme.colorScheme.primary,
-                            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                            tabs: const [
-                              Tab(text: 'Request Body'),
-                              Tab(text: 'Request Headers'),
-                              Tab(text: 'Response Body'),
-                              Tab(text: 'Response Headers'),
+                    Column(
+                      key: _responseSectionKey,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TabBar(
+                          controller: _tabController,
+                          isScrollable: true,
+                          labelColor: theme.colorScheme.primary,
+                          indicatorColor: theme.colorScheme.primary,
+                          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                          tabs: const [
+                            Tab(text: 'Request Body'),
+                            Tab(text: 'Request Headers'),
+                            Tab(text: 'Response Body'),
+                            Tab(text: 'Response Headers'),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 320,
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildRequestBodyTab(context, envList),
+                              _buildRequestHeadersTab(context),
+                              _buildResponseBodyTab(context),
+                              _buildResponseHeadersTab(context),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            height: 320,
-                            child: TabBarView(
-                              children: [
-                                _buildRequestBodyTab(context),
-                                _buildRequestHeadersTab(context),
-                                _buildResponseBodyTab(context),
-                                _buildResponseHeadersTab(context),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   const SizedBox(height: 24),
                     // Send button + meta
@@ -410,7 +424,12 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                     label: 'URL',
                     hint: 'https://api.example.com/endpoint',
                     keyboardType: TextInputType.url,
-                    suffixIcon: _buildEnvVariableInsertButton(context, envList, _urlController),
+                    suffixIcon: _buildEnvVariableInsertButton(
+                      context,
+                      envList,
+                      _urlController,
+                      isDisabled: _isSavingEdits,
+                    ),
                   ),
                 ],
               )
@@ -446,7 +465,12 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                       label: 'URL',
                       hint: 'https://api.example.com/endpoint',
                       keyboardType: TextInputType.url,
-                      suffixIcon: _buildEnvVariableInsertButton(context, envList, _urlController),
+                      suffixIcon: _buildEnvVariableInsertButton(
+                        context,
+                        envList,
+                        _urlController,
+                        isDisabled: _isSavingEdits,
+                      ),
                     ),
                   ),
                 ],
@@ -457,7 +481,12 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
               label: 'Body (optional)',
               hint: '{ "key": "value" }',
               maxLines: 4,
-              suffixIcon: _buildEnvVariableInsertButton(context, envList, _bodyController),
+              suffixIcon: _buildEnvVariableInsertButton(
+                context,
+                envList,
+                _bodyController,
+                isDisabled: _isSavingEdits,
+              ),
             ),
             const SizedBox(height: 16),
             environmentsAsync.when(
@@ -578,6 +607,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                                     context,
                                     envList,
                                     _paramValueControllers[index],
+                                    isDisabled: _isSavingEdits,
                                   ),
                                 ),
                               ),
@@ -610,6 +640,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                                 context,
                                 envList,
                                 _paramValueControllers[index],
+                                isDisabled: _isSavingEdits,
                               ),
                             ),
                           ),
@@ -664,15 +695,16 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
   Widget? _buildEnvVariableInsertButton(
     BuildContext context,
     List<EnvironmentModel>? envs,
-    TextEditingController controller,
-  ) {
+    TextEditingController controller, {
+    bool isDisabled = false,
+  }) {
     if (envs == null) {
       return null;
     }
     return IconButton(
       icon: const Icon(Icons.data_object),
       tooltip: 'Insert environment variable',
-      onPressed: _isSavingEdits ? null : () => _insertEnvironmentVariable(context, envs, controller),
+      onPressed: isDisabled ? null : () => _insertEnvironmentVariable(context, envs, controller),
     );
   }
 
@@ -788,6 +820,22 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       text: newText,
       selection: TextSelection.collapsed(offset: start + placeholder.length),
     );
+  }
+
+  void _focusResponseBodySection() {
+    _tabController.animateTo(2);
+    final context = _responseSectionKey.currentContext;
+    if (context == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   Widget _buildEnvironmentAction(
@@ -1011,10 +1059,46 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     );
   }
 
-  Widget _buildRequestBodyTab(BuildContext context) {
-    final body = _currentRequest.body;
-    final content = body == null || body.trim().isEmpty ? 'No request body' : _prettifyContent(body);
-    return _buildMonospacePanel(context, content);
+  Widget _buildRequestBodyTab(
+    BuildContext context,
+    List<EnvironmentModel>? envs,
+  ) {
+    final insertButton = _buildEnvVariableInsertButton(
+      context,
+      envs,
+      _requestBodyController,
+      isDisabled: _isSending,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (insertButton != null) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: insertButton,
+          ),
+          const SizedBox(height: 8),
+        ],
+        Expanded(
+          child: _buildPanelContainer(
+            context,
+            TextField(
+              controller: _requestBodyController,
+              expands: true,
+              maxLines: null,
+              minLines: null,
+              keyboardType: TextInputType.multiline,
+              textAlignVertical: TextAlignVertical.top,
+              style: const TextStyle(fontFamily: 'monospace'),
+              decoration: const InputDecoration.collapsed(
+                hintText: 'Enter request body (JSON, raw text, etc.)',
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildRequestHeadersTab(BuildContext context) {
@@ -1275,6 +1359,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     _nameController.text = _currentRequest.name;
     _urlController.text = _currentRequest.urlTemplate;
     _bodyController.text = _currentRequest.body ?? '';
+    _requestBodyController.text = _currentRequest.body ?? '';
     _selectedMethod = _currentRequest.method;
     _selectedCollectionId = _currentRequest.collectionId;
     _rebuildParamControllersFrom(_currentRequest);

@@ -209,8 +209,18 @@ class RequestFormController extends ChangeNotifier {
     final placeholder = '{{${variableKey.trim()}}}';
     final selection = controller.selection;
     final baseText = controller.text;
-    final start = selection.start >= 0 ? selection.start : baseText.length;
-    final end = selection.end >= 0 ? selection.end : selection.start;
+    final textLength = baseText.length;
+
+    int normalizePosition(int value, int fallback) {
+      final raw = value >= 0 ? value : fallback;
+      final clamped = raw.clamp(0, textLength);
+      return clamped;
+    }
+
+    final normalizedStart = normalizePosition(selection.start, textLength);
+    final normalizedEnd = normalizePosition(selection.end, normalizedStart);
+    final start = normalizedStart <= normalizedEnd ? normalizedStart : normalizedEnd;
+    final end = normalizedStart <= normalizedEnd ? normalizedEnd : normalizedStart;
     final newText = baseText.replaceRange(start, end, placeholder);
     controller.value = TextEditingValue(
       text: newText,
