@@ -8,12 +8,14 @@ class CollectionSelector extends StatelessWidget {
     required this.selectedCollectionId,
     required this.onSelect,
     required this.onDelete,
+    this.iconOnly = false,
   });
 
   final List<CollectionModel> collections;
   final String? selectedCollectionId;
   final ValueChanged<String> onSelect;
   final void Function(CollectionModel collection) onDelete;
+  final bool iconOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -29,24 +31,33 @@ class CollectionSelector extends StatelessWidget {
       ...collections,
     ];
 
+    final theme = Theme.of(context);
+    final bool isDefaultSelected = selectedCollectionId == null || selectedCollectionId == 'default';
+    final Color iconColor = isDefaultSelected ? theme.colorScheme.onSurface.withOpacity(0.6) : theme.colorScheme.primary;
+
+    final selectedLabel = () {
+      final collection = allCollections.firstWhere(
+        (c) => c.id == selectedCollectionId,
+        orElse: () => allCollections.first,
+      );
+      return collection.name.isNotEmpty ? collection.name : collection.id;
+    }();
+
     return PopupMenuButton<String>(
-      icon: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.folder, size: 20),
-          const SizedBox(width: 4),
-          Text(
-            () {
-              final collection = allCollections.firstWhere(
-                (c) => c.id == selectedCollectionId,
-                orElse: () => allCollections.first,
-              );
-              return collection.name.isNotEmpty ? collection.name : collection.id;
-            }(),
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-        ],
-      ),
+      tooltip: 'Select Collection',
+      icon: iconOnly
+          ? Icon(Icons.folder, size: 24, color: iconColor)
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.folder, size: 20, color: iconColor),
+                const SizedBox(width: 4),
+                Text(
+                  selectedLabel,
+                  style: theme.textTheme.labelMedium,
+                ),
+              ],
+            ),
       onSelected: onSelect,
       itemBuilder: (context) => [
         ...allCollections.map((collection) {

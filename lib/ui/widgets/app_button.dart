@@ -45,24 +45,24 @@ class AppButton extends StatelessWidget {
       return TextButton(
         onPressed: isLoading ? null : onPressed,
         style: buttonStyle,
-        child: _buildContent(textStyle, padding, height),
+        child: _buildContent(context, textStyle, padding, height),
       );
     } else if (variant == AppButtonVariant.outlined) {
       return OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: buttonStyle,
-        child: _buildContent(textStyle, padding, height),
+        child: _buildContent(context, textStyle, padding, height),
       );
     } else {
       return ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: buttonStyle,
-        child: _buildContent(textStyle, padding, height),
+        child: _buildContent(context, textStyle, padding, height),
       );
     }
   }
 
-  Widget _buildContent(TextStyle? textStyle, EdgeInsetsGeometry padding, double? height) {
+  Widget _buildContent(BuildContext context, TextStyle? textStyle, EdgeInsetsGeometry padding, double? height) {
     if (isLoading) {
       return SizedBox(
         height: height,
@@ -77,12 +77,15 @@ class AppButton extends StatelessWidget {
       );
     }
 
+    final contentColor = _getContentColor(context);
+    final resolvedTextStyle = (textStyle ?? Theme.of(context).textTheme.labelLarge)?.copyWith(color: contentColor);
+
     final children = <Widget>[];
     if (icon != null) {
-      children.add(Icon(icon, size: _getIconSize()));
+      children.add(Icon(icon, size: _getIconSize(), color: contentColor));
       children.add(const SizedBox(width: 8));
     }
-    children.add(Text(label, style: textStyle));
+    children.add(Text(label, style: resolvedTextStyle));
 
     return Padding(
       padding: padding,
@@ -124,13 +127,29 @@ class AppButton extends StatelessWidget {
   }
 
   TextStyle? _getTextStyle(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     switch (size) {
       case AppButtonSize.small:
-        return Theme.of(context).textTheme.labelMedium;
+        return textTheme.labelMedium;
       case AppButtonSize.medium:
-        return Theme.of(context).textTheme.labelLarge;
+        return textTheme.labelLarge;
       case AppButtonSize.large:
-        return Theme.of(context).textTheme.titleMedium;
+        return textTheme.titleMedium;
+    }
+  }
+
+  Color _getContentColor(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    switch (variant) {
+      case AppButtonVariant.primary:
+        return colorScheme.onPrimary;
+      case AppButtonVariant.secondary:
+        return colorScheme.onSecondary;
+      case AppButtonVariant.danger:
+        return Colors.white;
+      case AppButtonVariant.outlined:
+      case AppButtonVariant.text:
+        return colorScheme.primary;
     }
   }
 

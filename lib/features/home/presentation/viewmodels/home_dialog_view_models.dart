@@ -19,7 +19,7 @@ class CreateCollectionViewModel {
   }
 }
 
-final createCollectionViewModelProvider = Provider.autoDispose<CreateCollectionViewModel>(
+final createCollectionViewModelProvider = Provider<CreateCollectionViewModel>(
   (ref) => CreateCollectionViewModel(ref),
 );
 
@@ -89,7 +89,7 @@ class DeleteEntitiesViewModel {
   }
 }
 
-final deleteEntitiesViewModelProvider = Provider.autoDispose<DeleteEntitiesViewModel>(
+final deleteEntitiesViewModelProvider = Provider<DeleteEntitiesViewModel>(
   (ref) => DeleteEntitiesViewModel(ref),
 );
 

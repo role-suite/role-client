@@ -32,6 +32,7 @@ class HomeScreen extends ConsumerWidget {
     final requestsAsync = ref.watch(requestsNotifierProvider);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
     final activeEnvName = ref.watch(activeEnvironmentNameProvider);
+    final isMobileLayout = MediaQuery.of(context).size.width < 600;
 
     // Filter requests by selected collection
     final filteredRequests = requestsAsync.when(
@@ -58,6 +59,7 @@ class HomeScreen extends ConsumerWidget {
               ref.read(selectedCollectionIdProvider.notifier).state = id;
             },
             onDelete: (collection) => _onDeleteCollection(context, collection),
+            iconOnly: isMobileLayout,
           ),
           loading: () => const Padding(
             padding: EdgeInsets.all(8.0),
@@ -85,6 +87,7 @@ class HomeScreen extends ConsumerWidget {
             },
             onEdit: (env) => _openEditEnvironmentDialog(context, env),
             onDelete: (env) => _onDeleteEnvironment(context, env),
+            iconOnly: isMobileLayout,
           ),
           loading: () => const Padding(
             padding: EdgeInsets.all(8.0),

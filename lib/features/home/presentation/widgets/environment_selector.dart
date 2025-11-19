@@ -11,6 +11,7 @@ class EnvironmentSelector extends StatelessWidget {
     required this.onSelect,
     required this.onEdit,
     required this.onDelete,
+    this.iconOnly = false,
   });
 
   final List<EnvironmentModel> envs;
@@ -18,21 +19,30 @@ class EnvironmentSelector extends StatelessWidget {
   final ValueChanged<String?> onSelect;
   final void Function(EnvironmentModel env) onEdit;
   final void Function(EnvironmentModel env) onDelete;
+  final bool iconOnly;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bool hasEnvironment = activeEnvName != null && activeEnvName!.isNotEmpty;
+    final Color iconColor =
+        hasEnvironment ? theme.colorScheme.secondary : theme.colorScheme.onSurface.withOpacity(0.6);
+
     return PopupMenuButton<String>(
-      icon: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud, size: 20),
-          const SizedBox(width: 4),
-          Text(
-            activeEnvName ?? 'No Env',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-        ],
-      ),
+      tooltip: 'Select Environment',
+      icon: iconOnly
+          ? Icon(Icons.cloud, size: 24, color: iconColor)
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud, size: 20, color: iconColor),
+                const SizedBox(width: 4),
+                Text(
+                  activeEnvName ?? 'No Env',
+                  style: theme.textTheme.labelMedium,
+                ),
+              ],
+            ),
       onSelected: (name) => onSelect(name == _noEnvironmentMenuValue ? null : name),
       itemBuilder: (context) => [
         const PopupMenuItem<String>(

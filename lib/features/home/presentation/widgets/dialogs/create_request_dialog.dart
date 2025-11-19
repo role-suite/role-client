@@ -83,10 +83,16 @@ class _CreateRequestDialogState extends ConsumerState<CreateRequestDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final availableWidth = mediaQuery.size.width - 32; // respect default dialog margin
+    final contentMaxWidth = availableWidth > 600 ? 600.0 : availableWidth;
+    final safeMaxWidth = contentMaxWidth > 0 ? contentMaxWidth : mediaQuery.size.width;
+
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: const Text('Create New Request'),
-      content: SizedBox(
-        width: 600,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: safeMaxWidth),
         child: SingleChildScrollView(
           child: RequestForm(
             controller: _formController,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constant/app_constants.dart';
+import 'package:relay/features/home/presentation/providers/theme_providers.dart';
 
-class HomeDrawer extends StatelessWidget {
+class HomeDrawer extends ConsumerWidget {
   const HomeDrawer({
     super.key,
     required this.onCreateCollection,
@@ -12,8 +14,24 @@ class HomeDrawer extends StatelessWidget {
   final VoidCallback onCreateEnvironment;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    final themeMode = ref.watch(themeModeNotifierProvider);
+    final isSystemMode = themeMode == ThemeMode.system;
+    final bool isSystemDark = mediaQuery.platformBrightness == Brightness.dark;
+    final bool isDarkMode = themeMode == ThemeMode.dark || (isSystemMode && isSystemDark);
+
+    void updateThemeMode(ThemeMode mode) {
+      ref.read(themeModeNotifierProvider.notifier).setThemeMode(mode);
+    }
+
+    final themeSubtitle = isSystemMode
+        ? 'Following system theme (${isSystemDark ? 'Dark' : 'Light'})'
+        : isDarkMode
+            ? 'Dark mode is on'
+            : 'Light mode is on';
+
     return Drawer(
       child: SafeArea(
         child: ListView(
@@ -64,6 +82,68 @@ class HomeDrawer extends StatelessWidget {
                 Navigator.of(context).pop();
                 onCreateEnvironment();
               },
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isDarkMode ? Icons.nightlight_round : Icons.wb_sunny_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Appearance',
+                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                themeSubtitle,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: isDarkMode,
+                          onChanged: (value) => updateThemeMode(value ? ThemeMode.dark : ThemeMode.light),
+                          activeColor: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Toggle to quickly switch between light and dark themes.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    if (!isSystemMode)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => updateThemeMode(ThemeMode.system),
+                          child: const Text('Use system'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

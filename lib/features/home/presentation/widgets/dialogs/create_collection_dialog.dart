@@ -62,6 +62,7 @@ class _CreateCollectionDialogState extends ConsumerState<CreateCollectionDialog>
       );
     } catch (e) {
       if (!mounted) return;
+      print(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to create collection: $e'),

@@ -23,161 +23,222 @@ class RequestForm extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
+    final isCompact = MediaQuery.of(context).size.width < 600;
 
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        final paramKeyControllers = controller.paramKeyControllers;
-        final paramValueControllers = controller.paramValueControllers;
+            final paramKeyControllers = controller.paramKeyControllers;
+            final paramValueControllers = controller.paramValueControllers;
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppTextField(
-              controller: controller.nameController,
-              label: 'Request Name',
-              hint: 'My API Request',
-              enabled: !isSubmitting,
-            ),
-            const SizedBox(height: 16),
-            collectionsAsync.when(
-              data: (collections) {
-                final allCollections = [
-                  if (!collections.any((c) => c.id == 'default'))
-                    CollectionModel(
-                      id: 'default',
-                      name: 'Default',
-                      createdAt: DateTime.now(),
-                      updatedAt: DateTime.now(),
-                    ),
-                  ...collections,
-                ];
-                return AppDropdown<String>(
-                  label: 'Collection',
-                  value: controller.selectedCollectionId ?? 'default',
-                  items: allCollections
-                      .map(
-                        (collection) => DropdownMenuItem(
-                          value: collection.id,
-                          child: Text(collection.name.isNotEmpty ? collection.name : collection.id),
-                        ),
-                      )
-                      .toList(),
-                  enabled: !isSubmitting,
-                  onChanged: (value) {
-                    if (isSubmitting) return;
-                    controller.selectedCollectionId = value;
-                  },
-                );
-              },
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
-            ),
-            const SizedBox(height: 16),
-            environmentsAsync.when(
-              data: (envs) => _EnvironmentSection(
+        Widget buildMethodAndUrlFields() {
+              final methodDropdown = AppDropdown<HttpMethod>(
+                label: 'Method',
+                value: controller.selectedMethod,
+                items: HttpMethod.values
+                    .map(
+                      (method) => DropdownMenuItem(
+                        value: method,
+                        child: Text(method.name),
+                      ),
+                    )
+                    .toList(),
+                enabled: !isSubmitting,
+                isExpanded: true,
+                onChanged: (value) {
+                  if (value == null || isSubmitting) return;
+                  controller.selectedMethod = value;
+                },
+              );
+
+              final urlField = _EnvAwareTextField(
                 controller: controller,
-                environments: envs,
+                targetController: controller.urlController,
+                label: 'URL',
+                hint: 'https://api.example.com/endpoint',
+                keyboardType: TextInputType.url,
                 isSubmitting: isSubmitting,
-              ),
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: AppDropdown<HttpMethod>(
-                    label: 'Method',
-                    value: controller.selectedMethod,
-                    items: HttpMethod.values
-                        .map(
-                          (method) => DropdownMenuItem(
-                            value: method,
-                            child: Text(method.name),
-                          ),
-                        )
-                        .toList(),
-                    enabled: !isSubmitting,
-                    onChanged: (value) {
-                      if (value == null || isSubmitting) return;
-                      controller.selectedMethod = value;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 5,
-                  child: _EnvAwareTextField(
-                    controller: controller,
-                    targetController: controller.urlController,
-                    label: 'URL',
-                    hint: 'https://api.example.com/endpoint',
-                    keyboardType: TextInputType.url,
-                    isSubmitting: isSubmitting,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _EnvAwareTextField(
-              controller: controller,
-              targetController: controller.bodyController,
-              label: 'Body (optional)',
-              hint: '{ "key": "value" }',
-              maxLines: 4,
-              isSubmitting: isSubmitting,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Query / Path Parameters (optional)',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                TextButton.icon(
-                  onPressed: isSubmitting ? null : controller.addParamRow,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Param'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ...List.generate(paramKeyControllers.length, (index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: AppTextField(
-                        controller: paramKeyControllers[index],
-                        label: 'Key',
-                        hint: 'userId',
-                        enabled: !isSubmitting,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _EnvAwareTextField(
-                        controller: controller,
-                        targetController: paramValueControllers[index],
-                        label: 'Value',
-                        hint: '123',
-                        isSubmitting: isSubmitting,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Remove param',
-                      onPressed: isSubmitting ? null : () => controller.removeParamRow(index),
+                    methodDropdown,
+                    const SizedBox(height: 12),
+                    urlField,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 2, child: methodDropdown),
+                  const SizedBox(width: 12),
+                  Expanded(flex: 5, child: urlField),
+                ],
+              );
+            }
+
+        Widget buildParamHeader() {
+              final headerText = Text(
+                'Query / Path Parameters (optional)',
+                style: Theme.of(context).textTheme.titleSmall,
+                softWrap: true,
+              );
+              final addButton = TextButton.icon(
+                onPressed: isSubmitting ? null : controller.addParamRow,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add Param'),
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    headerText,
+                    const SizedBox(height: 8),
+                    addButton,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: headerText),
+                  const SizedBox(width: 8),
+                  addButton,
+                ],
+              );
+            }
+
+        Widget buildParamRow(int index) {
+              final keyField = AppTextField(
+                controller: paramKeyControllers[index],
+                label: 'Key',
+                hint: 'userId',
+                enabled: !isSubmitting,
+              );
+              final valueField = _EnvAwareTextField(
+                controller: controller,
+                targetController: paramValueControllers[index],
+                label: 'Value',
+                hint: '123',
+                isSubmitting: isSubmitting,
+              );
+              final removeButton = IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Remove param',
+                onPressed: isSubmitting ? null : () => controller.removeParamRow(index),
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    keyField,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: valueField),
+                        const SizedBox(width: 8),
+                        removeButton,
+                      ],
                     ),
                   ],
-                ),
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: keyField),
+                  const SizedBox(width: 8),
+                  Expanded(child: valueField),
+                  const SizedBox(width: 8),
+                  removeButton,
+                ],
               );
-            }),
-          ],
+            }
+
+        return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppTextField(
+                  controller: controller.nameController,
+                  label: 'Request Name',
+                  hint: 'My API Request',
+                  enabled: !isSubmitting,
+                ),
+                const SizedBox(height: 16),
+                collectionsAsync.when(
+                  data: (collections) {
+                    final allCollections = [
+                      if (!collections.any((c) => c.id == 'default'))
+                        CollectionModel(
+                          id: 'default',
+                          name: 'Default',
+                          createdAt: DateTime.now(),
+                          updatedAt: DateTime.now(),
+                        ),
+                      ...collections,
+                    ];
+                    return AppDropdown<String>(
+                      label: 'Collection',
+                      value: controller.selectedCollectionId ?? 'default',
+                      items: allCollections
+                          .map(
+                            (collection) => DropdownMenuItem(
+                              value: collection.id,
+                              child: Text(collection.name.isNotEmpty ? collection.name : collection.id),
+                            ),
+                          )
+                          .toList(),
+                      enabled: !isSubmitting,
+                      isExpanded: true,
+                      onChanged: (value) {
+                        if (isSubmitting) return;
+                        controller.selectedCollectionId = value;
+                      },
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                const SizedBox(height: 16),
+                environmentsAsync.when(
+                  data: (envs) => _EnvironmentSection(
+                    controller: controller,
+                    environments: envs,
+                    isSubmitting: isSubmitting,
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                const SizedBox(height: 16),
+                buildMethodAndUrlFields(),
+                const SizedBox(height: 16),
+                _EnvAwareTextField(
+                  controller: controller,
+                  targetController: controller.bodyController,
+                  label: 'Body (optional)',
+                  hint: '{ "key": "value" }',
+                  maxLines: 4,
+                  isSubmitting: isSubmitting,
+                ),
+                const SizedBox(height: 16),
+                buildParamHeader(),
+                const SizedBox(height: 8),
+                ...List.generate(paramKeyControllers.length, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: buildParamRow(index),
+                  );
+                }),
+              ],
         );
       },
     );
