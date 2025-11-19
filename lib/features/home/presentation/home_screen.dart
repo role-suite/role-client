@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -5,6 +10,10 @@ import 'package:relay/core/constant/app_constants.dart';
 import 'package:relay/core/model/api_request_model.dart';
 import 'package:relay/core/model/collection_model.dart';
 import 'package:relay/core/model/environment_model.dart';
+import 'package:relay/core/model/workspace_bundle.dart';
+import 'package:relay/core/util/uuid.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 import 'package:relay/features/home/presentation/widgets/collection_selector.dart';
 import 'package:relay/features/home/presentation/widgets/environment_selector.dart';
@@ -48,6 +57,8 @@ class HomeScreen extends ConsumerWidget {
       drawer: HomeDrawer(
         onCreateCollection: () => _openCreateCollectionDialog(context),
         onCreateEnvironment: () => _openCreateEnvironmentDialog(context),
+        onImportWorkspace: () => _handleImportWorkspace(context, ref),
+        onExportWorkspace: () => _handleExportWorkspace(context, ref),
       ),
       actions: [
         // Collection selector
@@ -223,4 +234,226 @@ class HomeScreen extends ConsumerWidget {
       builder: (_) => DeleteEnvironmentDialog(environment: environment),
     );
   }
+
+  Future<void> _handleExportWorkspace(BuildContext context, WidgetRef ref) async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export is not supported on web.')),
+      );
+      return;
+    }
+
+    try {
+      final service = ref.read(workspaceImportExportServiceProvider);
+      final bundle = await service.buildBundle();
+      final json = const JsonEncoder.withIndent('  ').convert(bundle.toJson());
+      final defaultFileName = 'relay_workspace_${DateTime.now().millisecondsSinceEpoch}.json';
+      Directory? targetDir;
+      try {
+        targetDir = await getDownloadsDirectory();
+      } catch (_) {
+        targetDir = null;
+      }
+      targetDir ??= await getApplicationDocumentsDirectory();
+      final filePath = p.join(targetDir.path, defaultFileName);
+      await File(filePath).writeAsString(json);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Workspace exported to $filePath'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export workspace: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleImportWorkspace(BuildContext context, WidgetRef ref) async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Import is not supported on web.')),
+      );
+      return;
+    }
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) {
+        return;
+      }
+      final file = result.files.first;
+      final rawJson = file.path != null
+          ? await File(file.path!).readAsString()
+          : utf8.decode(file.bytes ?? []);
+      if (rawJson.isEmpty) {
+        throw const FormatException('Selected file is empty.');
+      }
+      final service = ref.read(workspaceImportExportServiceProvider);
+      final bundle = await service.parseImportFile(rawJson);
+      await _importBundle(context, ref, bundle);
+      await _refreshData(ref);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Imported ${bundle.collections.length} collections and ${bundle.environments.length} environments.',
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to import workspace: $e')),
+      );
+    }
+  }
+
+  Future<void> _importBundle(
+    BuildContext context,
+    WidgetRef ref,
+    WorkspaceBundle bundle,
+  ) async {
+    final collectionRepository = ref.read(collectionRepositoryProvider);
+    final requestRepository = ref.read(requestRepositoryProvider);
+    final environmentRepository = ref.read(environmentRepositoryProvider);
+
+    final existingCollections = await collectionRepository.getAllCollections();
+    final existingCollectionNames = {
+      for (final collection in existingCollections) collection.name.toLowerCase(): collection,
+    };
+    final existingEnvironments = await environmentRepository.getAllEnvironments();
+    final existingEnvironmentNames = {
+      for (final env in existingEnvironments) env.name.toLowerCase(): env,
+    };
+
+    for (final env in bundle.environments) {
+      var targetEnv = env;
+      final conflict = existingEnvironmentNames[targetEnv.name.toLowerCase()];
+      if (conflict != null) {
+        final resolution = await _showConflictDialog(
+          context: context,
+          title: 'Environment conflict',
+          message:
+              'An environment named "${targetEnv.name}" already exists. What would you like to do?',
+        );
+        if (resolution == ConflictResolution.skip) {
+          continue;
+        } else if (resolution == ConflictResolution.keepBoth) {
+          final uniqueName =
+              _generateUniqueName(targetEnv.name, existingEnvironmentNames.keys);
+          targetEnv = targetEnv.copyWith(name: uniqueName);
+        }
+        // overwrite simply falls through and saves with same name
+      }
+      await environmentRepository.saveEnvironment(targetEnv);
+      existingEnvironmentNames[targetEnv.name.toLowerCase()] = targetEnv;
+    }
+
+    for (final bundleCollection in bundle.collections) {
+      var targetCollection = bundleCollection.collection;
+      final conflict = existingCollectionNames[targetCollection.name.toLowerCase()];
+
+      if (conflict != null) {
+        final resolution = await _showConflictDialog(
+          context: context,
+          title: 'Collection conflict',
+          message:
+              'A collection named "${targetCollection.name}" already exists. What would you like to do?',
+        );
+        if (resolution == ConflictResolution.skip) {
+          continue;
+        } else if (resolution == ConflictResolution.keepBoth ||
+            (resolution == ConflictResolution.overwrite && conflict.id == 'default')) {
+          final uniqueName =
+              _generateUniqueName(targetCollection.name, existingCollectionNames.keys);
+          targetCollection = targetCollection.copyWith(
+            id: '${targetCollection.id}-${UuidUtils.generate()}',
+            name: uniqueName,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+        } else if (resolution == ConflictResolution.overwrite) {
+          await collectionRepository.deleteCollection(conflict.id);
+        }
+      } else {
+        targetCollection = targetCollection.copyWith(
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      await collectionRepository.saveCollection(targetCollection);
+      existingCollectionNames[targetCollection.name.toLowerCase()] = targetCollection;
+
+      for (final request in bundleCollection.requests) {
+        final normalizedRequest = request.copyWith(
+          id: UuidUtils.generate(),
+          collectionId: targetCollection.id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await requestRepository.saveRequest(normalizedRequest);
+      }
+    }
+  }
+
+  Future<void> _refreshData(WidgetRef ref) async {
+    ref.read(collectionsNotifierProvider.notifier).refresh();
+    ref.read(requestsNotifierProvider.notifier).refresh();
+    ref.read(environmentsNotifierProvider.notifier).refresh();
+  }
+
+  String _generateUniqueName(String baseName, Iterable<String> existingNames) {
+    final normalized = baseName.trim().isEmpty ? 'Untitled' : baseName.trim();
+    final lowerSet = existingNames.map((e) => e.toLowerCase()).toSet();
+    var candidate = normalized;
+    var index = 2;
+    while (lowerSet.contains(candidate.toLowerCase())) {
+      candidate = '$normalized ($index)';
+      index++;
+    }
+    return candidate;
+  }
+
+  Future<ConflictResolution> _showConflictDialog({
+    required BuildContext context,
+    required String title,
+    required String message,
+  }) async {
+    final result = await showDialog<ConflictResolution>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(ConflictResolution.skip),
+              child: const Text('Skip'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(ConflictResolution.keepBoth),
+              child: const Text('Keep both'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(ConflictResolution.overwrite),
+              child: const Text('Overwrite'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? ConflictResolution.skip;
+  }
 }
+
+enum ConflictResolution { overwrite, keepBoth, skip }
+
+bool get _isDesktop =>
+    !kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux);

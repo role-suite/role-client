@@ -1,0 +1,392 @@
+{
+	"info": {
+		"_postman_id": "26b6b162-c690-4456-bbbd-459a54306148",
+		"name": "Club",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39571121",
+		"_collection_link": "https://test99-0137.postman.co/workspace/IEU-Workspace~645ae040-fc13-4c5e-8e85-2abaf494ee37/collection/29253861-26b6b162-c690-4456-bbbd-459a54306148?action=share&source=collection_link&creator=39571121"
+	},
+	"item": [
+		{
+			"name": "clubs",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "email",
+							"value": "umut.arslanturkoglu@std.izmirekonomi.edu.tr",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/clubs",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"clubs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "events",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/events",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"events"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "user-memberships",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "email",
+							"value": "ahyed.kurtulmus@std.ieu.edu.tr",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/user-memberships",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"user-memberships"
+					],
+					"query": [
+						{
+							"key": "email",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check-user",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "email",
+							"value": "ybs.test@std.izmirekonomi.edu.tr",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/check-user",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"check-user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create-user",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "student_no",
+							"value": "",
+							"description": "'nullable|string|max:255',",
+							"type": "text"
+						},
+						{
+							"key": "ekoid",
+							"value": "ybstest",
+							"description": "'required|string|max:255|unique:users,ekoid'",
+							"type": "text"
+						},
+						{
+							"key": "name",
+							"value": "ybs",
+							"description": "'required|string|max:255',",
+							"type": "text"
+						},
+						{
+							"key": "surname",
+							"value": "test",
+							"description": "'required|string|max:255',",
+							"type": "text"
+						},
+						{
+							"key": "phone",
+							"value": "05523747745",
+							"description": "'required|string|max:255|unique:users,ekoid',",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "ybs.test@std.izmirekonomi.edu.tr",
+							"description": "'required|email|unique:users,email',",
+							"type": "text"
+						},
+						{
+							"key": "kvkk",
+							"value": "1",
+							"description": "'required|integer|in:0,1',",
+							"type": "text"
+						},
+						{
+							"key": "lang",
+							"value": "tr",
+							"description": "'nullable|string|in:tr,en',",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/create-user",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"create-user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "club-join",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "email",
+							"value": "ahyed.kurtulmus@std.ieu.edu.tr",
+							"type": "text"
+						},
+						{
+							"key": "club_id",
+							"value": "2",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/club-join",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"club-join"
+					],
+					"query": [
+						{
+							"key": "email",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "club-leave",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "email",
+							"value": "ahyed.kurtulmus@std.ieu.edu.tr",
+							"type": "text"
+						},
+						{
+							"key": "club_id",
+							"value": "2",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/club-leave",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"club-leave"
+					],
+					"query": [
+						{
+							"key": "email",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "statistics",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "Z3xL7cV1bR9nM4tK6pQ2yH8wF0sG5a",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "start_date",
+							"value": "2025-09-01",
+							"type": "text"
+						},
+						{
+							"key": "end_date",
+							"value": "2025-09-30",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://club.ieu.edu.tr/api/club-statistics-by-date-range",
+					"protocol": "https",
+					"host": [
+						"club",
+						"ieu",
+						"edu",
+						"tr"
+					],
+					"path": [
+						"api",
+						"club-statistics-by-date-range"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

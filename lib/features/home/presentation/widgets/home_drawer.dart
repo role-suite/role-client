@@ -8,10 +8,14 @@ class HomeDrawer extends ConsumerWidget {
     super.key,
     required this.onCreateCollection,
     required this.onCreateEnvironment,
+    required this.onImportWorkspace,
+    required this.onExportWorkspace,
   });
 
   final VoidCallback onCreateCollection;
   final VoidCallback onCreateEnvironment;
+  final Future<void> Function() onImportWorkspace;
+  final Future<void> Function() onExportWorkspace;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -81,6 +85,25 @@ class HomeDrawer extends ConsumerWidget {
               onTap: () {
                 Navigator.of(context).pop();
                 onCreateEnvironment();
+              },
+            ),
+            const Divider(height: 0),
+            ListTile(
+              leading: const Icon(Icons.file_download_outlined),
+              title: const Text('Import JSON'),
+              subtitle: const Text('Relay or Postman exports'),
+              onTap: () async {
+                Navigator.of(context).pop();
+                await onImportWorkspace();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_upload_outlined),
+              title: const Text('Export Workspace'),
+              subtitle: const Text('Collections & environments'),
+              onTap: () async {
+                Navigator.of(context).pop();
+                await onExportWorkspace();
               },
             ),
             Padding(
