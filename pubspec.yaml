@@ -33,10 +33,10 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   windows:
     generate: true
-    image_path: "assets/image/app_logo.png"
+    image_path: "assets/image/app_logo_rounded.png"
   macos:
     generate: true
-    image_path: "assets/image/app_logo.png"
+    image_path: "assets/image/app_logo_rounded.png"
 
 flutter:
   uses-material-design: true
