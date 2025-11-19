@@ -30,6 +30,8 @@ class EnvironmentSelector extends StatelessWidget {
 
     return PopupMenuButton<String>(
       tooltip: 'Select Environment',
+      color: theme.colorScheme.surfaceContainerHighest,
+      surfaceTintColor: theme.colorScheme.surfaceContainerHighest,
       icon: iconOnly
           ? Icon(Icons.cloud, size: 24, color: iconColor)
           : Row(

@@ -45,6 +45,8 @@ class CollectionSelector extends StatelessWidget {
 
     return PopupMenuButton<String>(
       tooltip: 'Select Collection',
+      color: theme.colorScheme.surfaceContainerHighest,
+      surfaceTintColor: theme.colorScheme.surfaceContainerHighest,
       icon: iconOnly
           ? Icon(Icons.folder, size: 24, color: iconColor)
           : Row(

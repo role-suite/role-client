@@ -317,6 +317,10 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
   Widget _buildEditForm(BuildContext context) {
     final theme = Theme.of(context);
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
+    final environmentsAsync = ref.watch(environmentsNotifierProvider);
+    final selectedEnvName = ref.watch(activeEnvironmentNameProvider);
+    final envList = environmentsAsync.asData?.value;
+    final isCompact = MediaQuery.of(context).size.width < 600;
 
     return Card(
       elevation: 0,
@@ -378,11 +382,11 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
               error: (_, __) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: AppDropdown<HttpMethod>(
+            if (isCompact)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppDropdown<HttpMethod>(
                     label: 'Method',
                     value: _selectedMethod,
                     items: HttpMethod.values
@@ -400,90 +404,389 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                       });
                     },
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 5,
-                  child: AppTextField(
+                  const SizedBox(height: 12),
+                  AppTextField(
                     controller: _urlController,
                     label: 'URL',
                     hint: 'https://api.example.com/endpoint',
                     keyboardType: TextInputType.url,
+                    suffixIcon: _buildEnvVariableInsertButton(context, envList, _urlController),
                   ),
-                ),
-              ],
-            ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: AppDropdown<HttpMethod>(
+                      label: 'Method',
+                      value: _selectedMethod,
+                      items: HttpMethod.values
+                          .map(
+                            (method) => DropdownMenuItem(
+                              value: method,
+                              child: Text(method.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedMethod = value;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 5,
+                    child: AppTextField(
+                      controller: _urlController,
+                      label: 'URL',
+                      hint: 'https://api.example.com/endpoint',
+                      keyboardType: TextInputType.url,
+                      suffixIcon: _buildEnvVariableInsertButton(context, envList, _urlController),
+                    ),
+                  ),
+                ],
+              ),
             const SizedBox(height: 16),
             AppTextField(
               controller: _bodyController,
               label: 'Body (optional)',
               hint: '{ "key": "value" }',
               maxLines: 4,
+              suffixIcon: _buildEnvVariableInsertButton(context, envList, _bodyController),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Query / Path Parameters (optional)',
-                  style: theme.textTheme.titleSmall,
-                ),
-                TextButton.icon(
+            environmentsAsync.when(
+              data: (envs) {
+                if (envs.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                final selectedEnvironment = _findEnvironmentByName(envs, selectedEnvName);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Environment',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String?>(
+                      value: selectedEnvName,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('No Environment'),
+                        ),
+                        ...envs.map(
+                          (env) => DropdownMenuItem<String?>(
+                            value: env.name,
+                            child: Text(env.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        ref.read(activeEnvironmentNameProvider.notifier).state = value;
+                        ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(value);
+                      },
+                    ),
+                    if (selectedEnvName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          selectedEnvironment != null && selectedEnvironment.variables.isNotEmpty
+                              ? 'Variables from "$selectedEnvName" can be inserted as {{variableName}}.'
+                              : 'No variables defined for "$selectedEnvName".',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    if (selectedEnvironment != null && selectedEnvironment.variables.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: selectedEnvironment.variables.entries
+                              .map((entry) => Chip(label: Text('{{${entry.key}}}')))
+                              .toList(),
+                        ),
+                      ),
+                  ],
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 16),
+            if (isCompact) ...[
+              Text(
+                'Query / Path Parameters (optional)',
+                style: theme.textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
                   onPressed: _isSavingEdits ? null : _handleAddParamRow,
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Add Param'),
                 ),
-              ],
-            ),
+              ),
+            ] else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Query / Path Parameters (optional)',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  TextButton.icon(
+                    onPressed: _isSavingEdits ? null : _handleAddParamRow,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add Param'),
+                  ),
+                ],
+              ),
             const SizedBox(height: 8),
             ...List.generate(_paramKeyControllers.length, (index) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        controller: _paramKeyControllers[index],
-                        label: 'Key',
-                        hint: 'userId',
+                child: isCompact
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AppTextField(
+                            controller: _paramKeyControllers[index],
+                            label: 'Key',
+                            hint: 'userId',
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppTextField(
+                                  controller: _paramValueControllers[index],
+                                  label: 'Value',
+                                  hint: '123',
+                                  suffixIcon: _buildEnvVariableInsertButton(
+                                    context,
+                                    envList,
+                                    _paramValueControllers[index],
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                tooltip: 'Remove param',
+                                onPressed: _isSavingEdits ? null : () => _handleRemoveParamRow(index),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              controller: _paramKeyControllers[index],
+                              label: 'Key',
+                              hint: 'userId',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: AppTextField(
+                              controller: _paramValueControllers[index],
+                              label: 'Value',
+                              hint: '123',
+                              suffixIcon: _buildEnvVariableInsertButton(
+                                context,
+                                envList,
+                                _paramValueControllers[index],
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: 'Remove param',
+                            onPressed: _isSavingEdits ? null : () => _handleRemoveParamRow(index),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: AppTextField(
-                        controller: _paramValueControllers[index],
-                        label: 'Value',
-                        hint: '123',
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Remove param',
-                      onPressed: _isSavingEdits ? null : () => _handleRemoveParamRow(index),
-                    ),
-                  ],
-                ),
               );
             }),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: _isSavingEdits ? null : _cancelEditing,
-                  child: const Text('Cancel'),
-                ),
-                const Spacer(),
-                AppButton(
-                  label: _isSavingEdits ? 'Saving...' : 'Save Changes',
-                  icon: Icons.save_outlined,
-                  onPressed: _isSavingEdits ? null : () => _saveEdits(context),
-                ),
-              ],
-            ),
+            if (isCompact)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextButton(
+                    onPressed: _isSavingEdits ? null : _cancelEditing,
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(height: 8),
+                  AppButton(
+                    label: _isSavingEdits ? 'Saving...' : 'Save Changes',
+                    icon: Icons.save_outlined,
+                    onPressed: _isSavingEdits ? null : () => _saveEdits(context),
+                    isFullWidth: true,
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: _isSavingEdits ? null : _cancelEditing,
+                    child: const Text('Cancel'),
+                  ),
+                  const Spacer(),
+                  AppButton(
+                    label: _isSavingEdits ? 'Saving...' : 'Save Changes',
+                    icon: Icons.save_outlined,
+                    onPressed: _isSavingEdits ? null : () => _saveEdits(context),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget? _buildEnvVariableInsertButton(
+    BuildContext context,
+    List<EnvironmentModel>? envs,
+    TextEditingController controller,
+  ) {
+    if (envs == null) {
+      return null;
+    }
+    return IconButton(
+      icon: const Icon(Icons.data_object),
+      tooltip: 'Insert environment variable',
+      onPressed: _isSavingEdits ? null : () => _insertEnvironmentVariable(context, envs, controller),
+    );
+  }
+
+  EnvironmentModel? _findEnvironmentByName(
+    List<EnvironmentModel>? envs,
+    String? name,
+  ) {
+    if (envs == null || name == null) {
+      return null;
+    }
+    for (final env in envs) {
+      if (env.name == name) {
+        return env;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _insertEnvironmentVariable(
+    BuildContext context,
+    List<EnvironmentModel> environments,
+    TextEditingController controller,
+  ) async {
+    final selectedName = ref.read(activeEnvironmentNameProvider);
+    final environment = _findEnvironmentByName(environments, selectedName);
+    if (environment == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select an environment with variables to insert.'),
+        ),
+      );
+      return;
+    }
+    if (environment.variables.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Environment "${environment.name}" has no variables yet.'),
+        ),
+      );
+      return;
+    }
+
+    final entries = environment.variables.entries.toList()
+      ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+
+    final variableKey = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Insert Environment Variable',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap a variable to insert its placeholder into the focused field.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 320),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: entries.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (_, index) {
+                      final entry = entries[index];
+                      return ListTile(
+                        title: Text(entry.key),
+                        subtitle: entry.value.isNotEmpty ? Text(entry.value) : null,
+                        trailing: const Icon(Icons.add_circle_outline),
+                        onTap: () => Navigator.of(sheetContext).pop(entry.key),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (variableKey == null || variableKey.isEmpty) {
+      return;
+    }
+
+    final placeholder = '{{${variableKey.trim()}}}';
+    final selection = controller.selection;
+    final baseText = controller.text;
+    final textLength = baseText.length;
+    int normalizePosition(int value, int fallback) {
+      final raw = value >= 0 ? value : fallback;
+      final clamped = raw.clamp(0, textLength);
+      return clamped;
+    }
+
+    final normalizedStart = normalizePosition(selection.start, textLength);
+    final normalizedEnd = normalizePosition(selection.end, normalizedStart);
+    final start = normalizedStart <= normalizedEnd ? normalizedStart : normalizedEnd;
+    final end = normalizedStart <= normalizedEnd ? normalizedEnd : normalizedStart;
+    final newText = baseText.replaceRange(start, end, placeholder);
+    controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + placeholder.length),
     );
   }
 
