@@ -11,6 +11,7 @@ import 'package:relay/core/model/api_request_model.dart';
 import 'package:relay/core/model/collection_model.dart';
 import 'package:relay/core/model/environment_model.dart';
 import 'package:relay/core/model/workspace_bundle.dart';
+import 'package:relay/core/util/logger.dart';
 import 'package:relay/core/util/uuid.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -264,6 +265,7 @@ class HomeScreen extends ConsumerWidget {
         ),
       );
     } catch (e) {
+      AppLogger.debug(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to export workspace: $e')),
       );
@@ -281,23 +283,29 @@ class HomeScreen extends ConsumerWidget {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: const ['json'],
-        withData: true,
+        allowedExtensions: ['json'],
+        withData: false, // IMPORTANT FIX FOR DESKTOP
       );
-      if (result == null || result.files.isEmpty) {
-        return;
-      }
+
+      if (result == null || result.files.isEmpty) return;
+
       final file = result.files.first;
+
+      // SAFEST cross-platform read:
       final rawJson = file.path != null
           ? await File(file.path!).readAsString()
           : utf8.decode(file.bytes ?? []);
+
       if (rawJson.isEmpty) {
         throw const FormatException('Selected file is empty.');
       }
+
       final service = ref.read(workspaceImportExportServiceProvider);
       final bundle = await service.parseImportFile(rawJson);
+
       await _importBundle(context, ref, bundle);
       await _refreshData(ref);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -306,6 +314,7 @@ class HomeScreen extends ConsumerWidget {
         ),
       );
     } catch (e) {
+      AppLogger.debug(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to import workspace: $e')),
       );

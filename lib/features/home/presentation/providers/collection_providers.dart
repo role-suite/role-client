@@ -54,7 +54,6 @@ class CollectionsNotifier extends StateNotifier<AsyncValue<List<CollectionModel>
     try {
       await _deleteCollectionUseCase(id);
       await _loadCollections();
-      // Refresh requests to remove deleted collection's requests from the list
       _ref.read(requestsNotifierProvider.notifier).refresh();
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);

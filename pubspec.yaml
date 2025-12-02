@@ -14,7 +14,7 @@ dependencies:
   dio: ^5.9.0
   path: ^1.9.1
   path_provider: ^2.1.5
-  file_picker: ^8.1.2
+  file_picker: ^10.3.7
   json_annotation: ^4.9.0
   flutter_riverpod: ^3.0.3
   flutter_widget_from_html_core: ^0.17.0
