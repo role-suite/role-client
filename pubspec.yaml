@@ -19,6 +19,7 @@ dependencies:
   flutter_riverpod: ^3.0.3
   flutter_widget_from_html_core: ^0.17.0
   shared_preferences: ^2.3.3
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

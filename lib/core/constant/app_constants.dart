@@ -1,5 +1,11 @@
 class AppConstants {
   static const String appName = 'Röle';
+  static const String appVersion = '1.0.0';
+  
+  // GitHub repository for update checking
+  static const String githubRepoOwner = 'battletech45';
+  static const String githubRepoName = 'relay';
+  
   static const String defaultRequestName = 'Untitled Request';
   static const String defaultEnvironment = 'local';
 

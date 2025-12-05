@@ -31,12 +31,42 @@ import 'package:relay/features/home/presentation/widgets/request_runner_screen.d
 import 'package:relay/ui/layout/max_width_layout.dart';
 import 'package:relay/ui/layout/scaffold.dart';
 import 'package:relay/ui/widgets/widgets.dart';
+import 'package:relay/features/home/presentation/providers/update_providers.dart';
+import 'package:relay/features/home/presentation/widgets/dialogs/update_dialog.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _hasCheckedForUpdates = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen for update availability and show dialog
+    ref.listen<AsyncValue<dynamic>>(updateAvailableProvider, (previous, next) {
+      if (!_hasCheckedForUpdates && next.hasValue && next.value != null) {
+        _hasCheckedForUpdates = true;
+        final release = next.value;
+        final updateService = ref.read(updateServiceProvider);
+        final downloadUrl = updateService.getDownloadUrl(release);
+        
+        // Show update dialog after the current frame
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            showUpdateDialog(
+              context: context,
+              release: release,
+              downloadUrl: downloadUrl,
+            );
+          }
+        });
+      }
+    });
+
     final selectedCollectionId = ref.watch(selectedCollectionIdProvider);
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
     final requestsAsync = ref.watch(requestsNotifierProvider);
