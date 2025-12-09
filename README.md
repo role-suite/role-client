@@ -22,7 +22,7 @@
 
 ## Overview
 
-**Röle** (Turkish for "Relay") is a lightweight, modern API client designed for developers who need a fast, cross-platform tool for testing REST APIs. Built with Flutter and following clean architecture principles, Röle offers a beautiful native experience on Windows, macOS, Linux, Android, iOS, and Web.
+**Röle** (Turkish for "Relay") is a lightweight, modern API client designed for developers who need a fast, cross-platform tool for testing REST APIs. Built with Flutter and following clean architecture principles, Röle offers a beautiful native experience on Windows, macOS, Linux, Android, and iOS.
 
 Whether you're debugging backend endpoints, testing microservices, or documenting API behavior, Röle provides an intuitive interface with powerful features like environment variable substitution, request collections, and Postman import support.
 
@@ -54,7 +54,6 @@ Whether you're debugging backend endpoints, testing microservices, or documentin
 ### Cross-Platform
 - 💻 Windows, macOS, Linux desktop support
 - 📱 Android and iOS mobile support
-- 🌐 Web browser support
 
 ## Screenshots
 
@@ -94,9 +93,6 @@ Whether you're debugging backend endpoints, testing microservices, or documentin
    # For mobile
    flutter run -d android
    flutter run -d ios
-
-   # For web
-   flutter run -d chrome
    ```
 
 ### Build for Release
@@ -116,9 +112,6 @@ flutter build apk --release
 
 # iOS
 flutter build ios --release
-
-# Web
-flutter build web --release
 ```
 
 ### Pre-built Releases
@@ -318,7 +311,6 @@ Contributions are welcome! Here's how you can help:
 All data is stored locally on your device using the platform's standard storage mechanisms:
 - **Desktop**: Application documents directory
 - **Mobile**: Application-specific storage
-- **Web**: Browser local storage (SharedPreferences)
 
 No data is ever sent to external servers.
 
@@ -328,7 +320,7 @@ Currently, Röle focuses on REST APIs. GraphQL support is on the roadmap for fut
 
 ## License
 
-This project is open source. See the repository for license details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 

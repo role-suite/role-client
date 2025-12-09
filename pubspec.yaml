@@ -1,5 +1,5 @@
 name: relay
-description: "A new Flutter project."
+description: "A modern, cross-platform API testing client built with Flutter."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -34,9 +34,6 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  web:
-    generate: true
-    image_path: "assets/image/app_logo_rounded.png"
   windows:
     generate: true
     image_path: "assets/image/app_logo_rounded.png"
