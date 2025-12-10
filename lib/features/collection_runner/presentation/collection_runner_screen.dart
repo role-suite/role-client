@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
@@ -8,6 +14,7 @@ import 'package:relay/core/presentation/widgets/app_dropdown.dart';
 import 'package:relay/features/collection_runner/domain/models/collection_run_result.dart';
 import 'package:relay/features/collection_runner/presentation/controllers/collection_runner_controller.dart';
 import 'package:relay/features/collection_runner/presentation/providers/collection_runner_providers.dart';
+import 'package:relay/features/collection_runner/presentation/collection_run_history_screen.dart';
 import 'package:relay/features/collection_runner/presentation/widgets/collection_run_result_card.dart';
 import 'package:relay/features/home/presentation/providers/collection_providers.dart';
 import 'package:relay/features/home/presentation/providers/environment_providers.dart';
@@ -56,6 +63,19 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Collection Runner'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'View Test Run History',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CollectionRunHistoryScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -118,6 +138,10 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
               ],
               if (runnerState.hasResults) ...[
                 _buildProgressSection(context, runnerState),
+                const SizedBox(height: 16),
+              ],
+              if (_isRunComplete(runnerState)) ...[
+                _buildExportButton(context, runnerState),
                 const SizedBox(height: 16),
               ],
               Expanded(
@@ -452,6 +476,97 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
       }
     }
     return null;
+  }
+
+  bool _isRunComplete(CollectionRunnerState state) {
+    return !state.isRunning && state.completedAt != null && state.hasResults;
+  }
+
+  Widget _buildExportButton(BuildContext context, CollectionRunnerState state) {
+    return AppButton(
+      label: 'Export Results',
+      icon: Icons.file_download,
+      variant: AppButtonVariant.outlined,
+      onPressed: () => _exportResults(context, state),
+    );
+  }
+
+  Future<void> _exportResults(BuildContext context, CollectionRunnerState state) async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export is not supported on web.')),
+      );
+      return;
+    }
+
+    try {
+      final collection = state.collection;
+      if (collection == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No collection information available.')),
+        );
+        return;
+      }
+
+      // Build export data
+      final exportData = {
+        'collection': {
+          'id': collection.id,
+          'name': collection.name,
+        },
+        'environment': state.environment != null
+            ? {
+                'name': state.environment!.name,
+                'variables': state.environment!.variables,
+              }
+            : null,
+        'completedAt': state.completedAt?.toIso8601String(),
+        'summary': {
+          'totalRequests': state.totalRequests,
+          'completedRequests': state.completedRequests,
+          'successfulRequests': state.results.where((r) => r.isSuccess).length,
+          'failedRequests': state.results.where((r) => r.status == CollectionRunStatus.failed).length,
+        },
+        'results': state.results.map((result) {
+          return {
+            'request': result.request.toJson(),
+            'status': result.status.name,
+            'statusCode': result.statusCode,
+            'statusMessage': result.statusMessage,
+            'duration': result.duration?.inMilliseconds,
+            'durationFormatted': result.duration != null
+                ? '${result.duration!.inSeconds}s ${result.duration!.inMilliseconds % 1000}ms'
+                : null,
+            'errorMessage': result.errorMessage,
+            'isSuccess': result.isSuccess,
+            'isComplete': result.isComplete,
+          };
+        }).toList(),
+      };
+
+      // Convert to JSON
+      final json = const JsonEncoder.withIndent('  ').convert(exportData);
+      final defaultFileName = 'collection_run_${collection.name.replaceAll(RegExp(r'[^\w\s-]'), '_')}_${DateTime.now().millisecondsSinceEpoch}.json';
+      Directory? targetDir;
+      try {
+        targetDir = await getDownloadsDirectory();
+      } catch (_) {
+        targetDir = null;
+      }
+      targetDir ??= await getApplicationDocumentsDirectory();
+      final filePath = p.join(targetDir.path, defaultFileName);
+      await File(filePath).writeAsString(json);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Results exported to $filePath'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export results: $e')),
+      );
+    }
   }
 }
 

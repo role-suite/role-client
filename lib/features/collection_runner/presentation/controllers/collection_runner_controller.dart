@@ -4,6 +4,7 @@ import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/services/api_service.dart';
+import 'package:relay/features/collection_runner/data/services/collection_run_history_service.dart';
 import 'package:relay/features/collection_runner/domain/models/collection_run_result.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
 import 'package:relay/features/home/domain/usecases/get_requests_by_collection_usecase.dart';
@@ -83,10 +84,12 @@ class CollectionRunnerController extends StateNotifier<CollectionRunnerState> {
   CollectionRunnerController(
     this._getRequestsByCollectionUseCase,
     this._environmentRepository,
+    this._historyService,
   ) : super(CollectionRunnerState.initial());
 
   final GetRequestsByCollectionUseCase _getRequestsByCollectionUseCase;
   final EnvironmentRepository _environmentRepository;
+  final CollectionRunHistoryService _historyService;
 
   Future<void> runCollection({
     required CollectionModel collection,
@@ -137,10 +140,26 @@ class CollectionRunnerController extends StateNotifier<CollectionRunnerState> {
         state = state.copyWith(results: resultList);
       }
 
+      final completedAt = DateTime.now();
       state = state.copyWith(
         isRunning: false,
-        completedAt: DateTime.now(),
+        completedAt: completedAt,
       );
+
+      // Auto-save results to history
+      if (state.collection != null && state.results.isNotEmpty) {
+        try {
+          await _historyService.saveHistory(
+            collection: state.collection!,
+            environment: state.environment,
+            completedAt: completedAt,
+            results: state.results,
+          );
+        } catch (e) {
+          // Log error but don't fail the run
+          print('Failed to save collection run history: $e');
+        }
+      }
     } catch (e) {
       state = state.copyWith(
         isRunning: false,

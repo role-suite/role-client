@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/app_constants.dart';
+import 'package:relay/features/collection_runner/presentation/collection_run_history_screen.dart';
+import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
 import 'package:relay/features/home/presentation/providers/theme_providers.dart';
 
 class HomeDrawer extends ConsumerWidget {
@@ -104,6 +106,33 @@ class HomeDrawer extends ConsumerWidget {
               onTap: () async {
                 Navigator.of(context).pop();
                 await onExportWorkspace();
+              },
+            ),
+            const Divider(height: 0),
+            ListTile(
+              leading: const Icon(Icons.play_arrow),
+              title: const Text('Collection Runner'),
+              subtitle: const Text('Run collections sequentially'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CollectionRunnerScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Test Run History'),
+              subtitle: const Text('View previous collection test runs'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CollectionRunHistoryScreen(),
+                  ),
+                );
               },
             ),
             Padding(
