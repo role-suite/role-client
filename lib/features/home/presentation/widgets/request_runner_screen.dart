@@ -20,6 +20,7 @@ import '../../../../core/presentation/widgets/app_button.dart';
 import '../../../../core/presentation/widgets/app_dropdown.dart';
 import '../../../../core/presentation/widgets/app_text_field.dart';
 import '../../../../core/presentation/widgets/method_badge.dart';
+import '../../../../core/presentation/widgets/variable_highlight_text.dart';
 
 const String _noEnvironmentMenuValue = '__menu_no_environment__';
 
@@ -256,8 +257,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // URL
-                    Text(
-                      request.urlTemplate,
+                    VariableHighlightText(
+                      text: request.urlTemplate,
                       style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'monospace'),
                     ),
                     const SizedBox(height: 8),
@@ -546,7 +547,16 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                           spacing: 8,
                           runSpacing: 8,
                           children: selectedEnvironment.variables.entries
-                              .map((entry) => Chip(label: Text('{{${entry.key}}}')))
+                              .map((entry) => Chip(
+                                    label: Text(
+                                      '{{${entry.key}}}',
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    backgroundColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                                  ))
                               .toList(),
                         ),
                       ),
@@ -1231,8 +1241,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
-        child: SelectableText(
-          content,
+        child: VariableHighlightText(
+          text: content,
           style: const TextStyle(fontFamily: 'monospace'),
         ),
       ),

@@ -12,6 +12,7 @@ import 'package:relay/features/home/presentation/providers/repository_providers.
 
 import '../../../../core/presentation/widgets/app_button.dart';
 import '../../../../core/presentation/widgets/method_badge.dart';
+import '../../../../core/presentation/widgets/variable_highlight_text.dart';
 
 class RequestRunnerPage extends ConsumerStatefulWidget {
   const RequestRunnerPage({
@@ -174,8 +175,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // URL
-                    Text(
-                      request.urlTemplate,
+                    VariableHighlightText(
+                      text: request.urlTemplate,
                       style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'monospace'),
                     ),
                     const SizedBox(height: 8),
@@ -409,8 +410,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
-        child: SelectableText(
-          content,
+        child: VariableHighlightText(
+          text: content,
           style: const TextStyle(fontFamily: 'monospace'),
         ),
       ),

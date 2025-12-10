@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
@@ -306,7 +305,16 @@ class _EnvironmentSection extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: selectedEnvironment.variables.entries
-                  .map((entry) => Chip(label: Text('{{${entry.key}}}')))
+                  .map((entry) => Chip(
+                        label: Text(
+                          '{{${entry.key}}}',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                      ))
                   .toList(),
             ),
           ),
