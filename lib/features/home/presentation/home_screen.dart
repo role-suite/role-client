@@ -29,6 +29,7 @@ import 'package:relay/features/home/presentation/widgets/dialogs/environment_dia
 import 'package:relay/features/home/presentation/widgets/request_runner_screen.dart';
 import 'package:relay/features/home/presentation/providers/update_providers.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/update_dialog.dart';
+import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
 
 import '../../../core/presentation/layout/max_width_layout.dart';
 import '../../../core/presentation/layout/scaffold.dart';
@@ -143,6 +144,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           error: (_, __) => const SizedBox.shrink(),
         ),
         const SizedBox(width: 8),
+        IconButton(
+          tooltip: 'Run collection',
+          icon: const Icon(Icons.playlist_add_check),
+          onPressed: () => _openCollectionRunner(context, selectedCollectionId),
+        ),
+        const SizedBox(width: 8),
       ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openCreateRequestDialog(context, selectedCollectionId),
@@ -203,6 +210,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Navigator.of(pageContext).pop();
             _onDeleteRequest(context, request);
           },
+        ),
+      ),
+    );
+  }
+
+  void _openCollectionRunner(BuildContext context, String? collectionId) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CollectionRunnerScreen(
+          initialCollectionId: collectionId,
         ),
       ),
     );
