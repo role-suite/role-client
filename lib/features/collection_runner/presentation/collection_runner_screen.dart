@@ -27,6 +27,14 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
   CollectionModel? _selectedCollection;
   EnvironmentModel? _selectedEnvironment;
   bool _didSyncInitialCollection = false;
+  final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _itemKeys = {};
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +42,16 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
     final runnerState = ref.watch(collectionRunnerControllerProvider);
     final envs = environmentsAsync.asData?.value ?? const <EnvironmentModel>[];
+
+    // Listen for state changes and scroll to running request
+    ref.listen<CollectionRunnerState>(
+      collectionRunnerControllerProvider,
+      (previous, next) {
+        if (next.isRunning && next.results.isNotEmpty) {
+          _scrollToRunningRequest(next.results);
+        }
+      },
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -110,6 +128,36 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
         ),
       ),
     );
+  }
+
+  void _scrollToRunningRequest(List<CollectionRunResult> results) {
+    // Find the index of the currently running request
+    final runningIndex = results.indexWhere(
+      (result) => result.status == CollectionRunStatus.running,
+    );
+
+    if (runningIndex == -1) {
+      return;
+    }
+
+    // Ensure the key exists for this index
+    if (!_itemKeys.containsKey(runningIndex)) {
+      _itemKeys[runningIndex] = GlobalKey();
+    }
+
+    // Scroll to the item after the frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = _itemKeys[runningIndex];
+      final context = key?.currentContext;
+      if (context != null && mounted) {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: 0.1, // Position item near the top (10% from top)
+        );
+      }
+    });
   }
 
   void _syncInitialCollectionSelection(List<CollectionModel> collections) {
@@ -301,15 +349,27 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
       );
     }
 
+    // Clear and rebuild keys when results change
+    if (_itemKeys.length != state.results.length) {
+      _itemKeys.clear();
+      for (int i = 0; i < state.results.length; i++) {
+        _itemKeys[i] = GlobalKey();
+      }
+    }
+
     return ListView.separated(
+      controller: _scrollController,
       padding: EdgeInsets.zero,
       itemCount: state.results.length,
       itemBuilder: (_, index) {
         final result = state.results[index];
         final isActive = result.status == CollectionRunStatus.running;
-        return CollectionRunResultCard(
-          result: result,
-          isActive: isActive,
+        return Container(
+          key: _itemKeys[index],
+          child: CollectionRunResultCard(
+            result: result,
+            isActive: isActive,
+          ),
         );
       },
       separatorBuilder: (_, __) => const SizedBox(height: 12),
