@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:relay/core/constant/app_constants.dart';
-import 'package:relay/core/model/app_release_model.dart';
+import 'package:relay/core/constants/app_constants.dart';
+import 'package:relay/core/models/app_release_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Dialog that shows when an app update is available.

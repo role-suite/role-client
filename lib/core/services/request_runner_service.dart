@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:relay/core/model/request_result_model.dart';
-import 'package:relay/core/service/api_service.dart';
+import 'package:relay/core/models/request_result_model.dart';
+import 'package:relay/core/services/api_service.dart';
 
 class RequestRunnerService {
   const RequestRunnerService._internal();

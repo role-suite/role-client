@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/service/environment_service.dart';
-import 'package:relay/core/service/file_storage_service.dart';
-import 'package:relay/core/service/workspace_service.dart';
+import 'package:relay/core/services/environment_service.dart';
+import 'package:relay/core/services/file_storage_service.dart';
+import 'package:relay/core/services/workspace_service.dart';
 import 'package:relay/features/home/data/datasources/collection_local_data_source.dart';
 import 'package:relay/features/home/data/datasources/request_local_data_source.dart';
 import 'package:relay/features/home/data/repositories/collection_repository_impl.dart';

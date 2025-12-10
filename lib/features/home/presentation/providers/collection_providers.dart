@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:relay/core/model/collection_model.dart';
+import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/features/home/presentation/providers/usecase_providers.dart';
 import 'package:relay/features/home/presentation/providers/request_providers.dart';
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/model/api_request_model.dart';
-import 'package:relay/ui/widgets/widgets.dart';
+import 'package:relay/core/models/api_request_model.dart';
+
+import '../../../../core/presentation/widgets/app_card.dart';
+import '../../../../core/presentation/widgets/method_badge.dart';
 
 class HomeRequestsView extends ConsumerWidget {
   const HomeRequestsView({

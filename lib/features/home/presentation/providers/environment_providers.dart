@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:relay/core/model/environment_model.dart';
+import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/features/home/presentation/providers/usecase_providers.dart';
 
 import '../../domain/usecases/create_environment_usecase.dart';

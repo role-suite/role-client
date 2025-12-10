@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:relay/core/constant/app_paths.dart';
+import 'package:relay/core/constants/app_paths.dart';
 
 class WorkspaceService {
   WorkspaceService._internal();

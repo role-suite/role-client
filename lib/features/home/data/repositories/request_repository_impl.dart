@@ -1,4 +1,4 @@
-import 'package:relay/core/model/api_request_model.dart';
+import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/features/home/data/datasources/request_local_data_source.dart';
 import 'package:relay/features/home/domain/repositories/request_repository.dart';
 

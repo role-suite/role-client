@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/model/api_request_model.dart';
-import 'package:relay/core/model/collection_model.dart';
-import 'package:relay/core/model/environment_model.dart';
+import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/models/collection_model.dart';
+import 'package:relay/core/models/environment_model.dart';
 
 import '../providers/providers.dart';
 

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/model/api_request_model.dart';
-import 'package:relay/core/model/collection_model.dart';
-import 'package:relay/core/model/environment_model.dart';
+import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/models/collection_model.dart';
+import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
-import 'package:relay/ui/widgets/widgets.dart';
-
-import '../../../../../core/util/extension.dart';
+import '../../../../../core/presentation/widgets/app_dropdown.dart';
+import '../../../../../core/presentation/widgets/app_text_field.dart';
+import '../../../../../core/utils/extension.dart';
 import '../../controllers/request_form_controller.dart';
 
 class RequestForm extends ConsumerWidget {

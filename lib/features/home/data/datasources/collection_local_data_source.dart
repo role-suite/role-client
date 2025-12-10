@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:relay/core/constant/app_paths.dart';
-import 'package:relay/core/model/collection_model.dart';
-import 'package:relay/core/service/file_storage_service.dart';
-import 'package:relay/core/service/workspace_service.dart';
+import 'package:relay/core/constants/app_paths.dart';
+import 'package:relay/core/models/collection_model.dart';
+import 'package:relay/core/services/file_storage_service.dart';
+import 'package:relay/core/services/workspace_service.dart';
 
 /// Data source for local file-based storage of collections
 class CollectionLocalDataSource {

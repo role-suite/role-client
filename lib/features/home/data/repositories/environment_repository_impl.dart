@@ -1,5 +1,5 @@
-import 'package:relay/core/model/environment_model.dart';
-import 'package:relay/core/service/environment_service.dart';
+import 'package:relay/core/models/environment_model.dart';
+import 'package:relay/core/services/environment_service.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
 
 /// Implementation of EnvironmentRepository using EnvironmentService

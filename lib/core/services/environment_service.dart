@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:relay/core/constant/app_constants.dart';
-import 'package:relay/core/constant/app_paths.dart';
+import 'package:relay/core/constants/app_constants.dart';
+import 'package:relay/core/constants/app_paths.dart';
 
-import '../model/environment_model.dart';
+import '../models/environment_model.dart';
 import 'file_storage_service.dart';
 import 'workspace_service.dart';
 

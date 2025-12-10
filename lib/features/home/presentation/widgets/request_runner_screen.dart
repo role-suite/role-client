@@ -5,17 +5,21 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
-import 'package:relay/core/model/api_request_model.dart';
-import 'package:relay/core/model/environment_model.dart';
-import 'package:relay/core/model/collection_model.dart';
-import 'package:relay/core/service/api_service.dart';
-import 'package:relay/core/util/json.dart';
-import 'package:relay/core/util/extension.dart';
+import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/models/environment_model.dart';
+import 'package:relay/core/models/collection_model.dart';
+import 'package:relay/core/services/api_service.dart';
+import 'package:relay/core/utils/json.dart';
+import 'package:relay/core/utils/extension.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 import 'package:relay/features/home/presentation/providers/collection_providers.dart';
 import 'package:relay/features/home/presentation/providers/request_providers.dart';
 import 'package:relay/features/home/presentation/providers/environment_providers.dart';
-import 'package:relay/ui/widgets/widgets.dart';
+
+import '../../../../core/presentation/widgets/app_button.dart';
+import '../../../../core/presentation/widgets/app_dropdown.dart';
+import '../../../../core/presentation/widgets/app_text_field.dart';
+import '../../../../core/presentation/widgets/method_badge.dart';
 
 const String _noEnvironmentMenuValue = '__menu_no_environment__';
 

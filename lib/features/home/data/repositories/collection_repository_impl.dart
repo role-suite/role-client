@@ -1,4 +1,4 @@
-import 'package:relay/core/model/collection_model.dart';
+import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/features/home/data/datasources/collection_local_data_source.dart';
 import 'package:relay/features/home/domain/repositories/collection_repository.dart';
 

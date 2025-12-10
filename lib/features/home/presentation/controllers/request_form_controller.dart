@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:relay/core/model/api_request_model.dart';
-import 'package:relay/core/model/environment_model.dart';
-import 'package:relay/core/util/uuid.dart';
+import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/models/environment_model.dart';
+import 'package:relay/core/utils/uuid.dart';
 
-import '../../../../core/util/extension.dart';
+import '../../../../core/utils/extension.dart';
 
 class RequestFormController extends ChangeNotifier {
   RequestFormController({

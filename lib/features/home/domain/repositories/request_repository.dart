@@ -1,4 +1,4 @@
-import 'package:relay/core/model/api_request_model.dart';
+import 'package:relay/core/models/api_request_model.dart';
 
 /// Repository interface for managing API requests
 /// This is part of the domain layer and defines the contract

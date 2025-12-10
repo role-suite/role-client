@@ -5,11 +5,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/model/api_request_model.dart';
-import 'package:relay/core/service/api_service.dart';
-import 'package:relay/core/util/json.dart';
+import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/services/api_service.dart';
+import 'package:relay/core/utils/json.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
-import 'package:relay/ui/widgets/widgets.dart';
+
+import '../../../../core/presentation/widgets/app_button.dart';
+import '../../../../core/presentation/widgets/method_badge.dart';
 
 class RequestRunnerPage extends ConsumerStatefulWidget {
   const RequestRunnerPage({

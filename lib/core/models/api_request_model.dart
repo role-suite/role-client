@@ -1,4 +1,4 @@
-import '../util/extension.dart';
+import '../utils/extension.dart';
 
 class ApiRequestModel {
   final String id;

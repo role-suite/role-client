@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:relay/core/model/collection_model.dart';
+import 'package:relay/core/models/collection_model.dart';
 
 class CollectionSelector extends StatelessWidget {
   const CollectionSelector({

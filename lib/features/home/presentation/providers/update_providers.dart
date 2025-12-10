@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/model/app_release_model.dart';
-import 'package:relay/core/service/update_service.dart';
+import 'package:relay/core/models/app_release_model.dart';
+import 'package:relay/core/services/update_service.dart';
 
 /// Provider for the UpdateService instance.
 final updateServiceProvider = Provider<UpdateService>((ref) {

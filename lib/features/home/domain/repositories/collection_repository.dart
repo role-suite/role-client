@@ -1,4 +1,4 @@
-import 'package:relay/core/model/collection_model.dart';
+import 'package:relay/core/models/collection_model.dart';
 
 /// Repository interface for managing collections
 /// This is part of the domain layer and defines the contract

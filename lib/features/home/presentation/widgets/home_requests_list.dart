@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:relay/core/model/api_request_model.dart';
+import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/features/home/presentation/widgets/home_requests_view.dart';
 
 class HomeRequestsList extends StatelessWidget {

@@ -1,6 +1,6 @@
 // lib/ui/layout/app_navigation_shell.dart
 import 'package:flutter/material.dart';
-import 'package:relay/core/util/extension.dart';
+import 'package:relay/core/utils/extension.dart';
 
 class AppNavigationShell extends StatelessWidget {
   const AppNavigationShell({

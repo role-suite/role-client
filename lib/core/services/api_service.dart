@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:relay/core/constant/app_constants.dart';
+import 'package:relay/core/constants/app_constants.dart';
 
 class ApiService {
   ApiService._internal() {

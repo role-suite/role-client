@@ -1,4 +1,4 @@
-import 'package:relay/core/model/environment_model.dart';
+import 'package:relay/core/models/environment_model.dart';
 
 /// Repository interface for managing environments
 /// This is part of the domain layer and defines the contract

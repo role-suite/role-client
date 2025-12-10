@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:relay/core/model/api_request_model.dart';
-import 'package:relay/core/model/collection_model.dart';
-import 'package:relay/core/model/environment_model.dart';
-import 'package:relay/core/model/workspace_bundle.dart';
-import 'package:relay/core/util/extension.dart';
-import 'package:relay/core/util/uuid.dart';
+import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/models/collection_model.dart';
+import 'package:relay/core/models/environment_model.dart';
+import 'package:relay/core/models/workspace_bundle.dart';
+import 'package:relay/core/utils/extension.dart';
+import 'package:relay/core/utils/uuid.dart';
 import 'package:relay/features/home/domain/repositories/collection_repository.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
 import 'package:relay/features/home/domain/repositories/request_repository.dart';

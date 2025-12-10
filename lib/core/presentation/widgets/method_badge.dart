@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:relay/core/util/extension.dart';
+import 'package:relay/core/utils/extension.dart';
 
 /// A badge widget for displaying HTTP methods with color coding
 class MethodBadge extends StatelessWidget {

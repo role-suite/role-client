@@ -1,4 +1,4 @@
-import 'package:relay/core/model/collection_model.dart';
+import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/features/home/domain/repositories/collection_repository.dart';
 
 /// Use case for getting all collections

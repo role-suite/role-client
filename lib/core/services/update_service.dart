@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:relay/core/constant/app_constants.dart';
-import 'package:relay/core/model/app_release_model.dart';
-import 'package:relay/core/util/logger.dart';
+import 'package:relay/core/constants/app_constants.dart';
+import 'package:relay/core/models/app_release_model.dart';
+import 'package:relay/core/utils/logger.dart';
 
 /// Service for checking GitHub releases and managing app updates.
 class UpdateService {

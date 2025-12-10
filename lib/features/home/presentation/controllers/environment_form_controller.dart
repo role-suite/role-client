@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:relay/core/model/environment_model.dart';
+import 'package:relay/core/models/environment_model.dart';
 
 class EnvironmentFormController extends ChangeNotifier {
   EnvironmentFormController({EnvironmentModel? initialEnvironment})

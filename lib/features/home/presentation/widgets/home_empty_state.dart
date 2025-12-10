@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:relay/ui/widgets/widgets.dart';
+
+import '../../../../core/presentation/widgets/app_button.dart';
+import '../../../../core/presentation/widgets/empty_state.dart';
 
 class HomeEmptyState extends StatelessWidget {
   const HomeEmptyState({

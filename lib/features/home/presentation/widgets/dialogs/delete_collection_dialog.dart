@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/model/collection_model.dart';
-import 'package:relay/ui/widgets/widgets.dart';
+import 'package:relay/core/models/collection_model.dart';
 
+import '../../../../../core/presentation/widgets/app_button.dart';
 import '../../viewmodels/home_dialog_view_models.dart';
 
 class DeleteCollectionDialog extends ConsumerStatefulWidget {
