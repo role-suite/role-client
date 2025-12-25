@@ -31,9 +31,9 @@ Whether you're debugging backend endpoints, testing microservices, or documentin
 ### Core Functionality
 - 🚀 **Full HTTP Method Support** - GET, POST, PUT, DELETE, PATCH, HEAD, and OPTIONS
 - 📝 **Request Editor** - Intuitive interface for composing requests with headers, query parameters, and body
-- 📊 **Response Viewer** - Beautiful formatted JSON/HTML response display with syntax highlighting
+- 📊 **Response Viewer** - Formatted JSON/HTML response display with syntax highlighting
 - ⏱️ **Performance Metrics** - Track response times and status codes
-- 🔄 **Request History** - Review up to 20 history entries per request
+- 🔄 **Request History** - Review history entries
 
 ### Organization
 - 📁 **Collections** - Organize requests into logical groups
@@ -181,6 +181,9 @@ lib/
 │   │   ├── file_storage_service.dart
 │   │   ├── theme_service.dart
 │   │   └── workspace_import_export_service.dart
+│   ├── presentation/       # Reusable UI components
+│   │   ├── layout/
+│   │   └── widgets/
 │   ├── theme/              # App theming
 │   └── util/               # Utilities
 ├── features/
@@ -196,9 +199,6 @@ lib/
 │           ├── providers/
 │           ├── viewmodels/
 │           └── widgets/
-├── ui/                     # Reusable UI components
-│   ├── layout/
-│   └── widgets/
 └── main.dart
 ```
 
@@ -262,14 +262,6 @@ This project uses Flutter's recommended lint rules. Check and fix issues with:
 
 ```bash
 flutter analyze
-```
-
-### Generating App Icons
-
-App icons are managed via `flutter_launcher_icons`:
-
-```bash
-flutter pub run flutter_launcher_icons
 ```
 
 ## Contributing

@@ -176,13 +176,13 @@ Follow the existing clean architecture pattern:
 
 ```
 lib/
-├── core/           # Shared utilities, models, services
+├── core/           # Shared utilities, models, services, and UI components
+│   └── presentation/  # Reusable UI components (layout, widgets)
 ├── features/       # Feature modules
 │   └── feature_name/
 │       ├── data/           # Data layer
 │       ├── domain/         # Business logic
 │       └── presentation/   # UI layer
-└── ui/             # Shared UI components
 ```
 
 ## Questions?

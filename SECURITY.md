@@ -14,7 +14,7 @@ Use this section to tell people about which versions of your project are current
 We take the security of Röle seriously. If you find a security vulnerability, please help us fix it by following these steps:
 
 1. **Do NOT open a public issue.** This gives malicious actors a chance to exploit the vulnerability before we can fix it.
-2. Send a report via email to [INSERT CONTACT EMAIL].
+2. Send a report via email to taneri862@gmail.com.
 3. Includes full details of the vulnerability, including steps to reproduce the issue.
 
 We will acknowledge your email within 48 hours, and we will send you a detailed response within 5 days indicating the next steps.
