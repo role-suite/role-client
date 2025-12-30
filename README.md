@@ -57,8 +57,40 @@ Whether you're debugging backend endpoints, testing microservices, or documentin
 
 ## Screenshots
 
-<!-- TODO: Add screenshots of the application -->
-*Coming soon*
+### Home Screen
+The main interface showing your API request collections and recent requests.
+
+<p align="center">
+  <img src="assets/screenshots/home-screen.png" alt="Röle Home Screen" width="800">
+</p>
+
+### Request Editor
+Create and edit API requests with support for environment variables, headers, and request bodies.
+
+<p align="center">
+  <img src="assets/screenshots/request-editor.png" alt="Röle Request Editor" width="800">
+</p>
+
+### Request Body
+Compose JSON request bodies with a clean, intuitive editor.
+
+<p align="center">
+  <img src="assets/screenshots/request-body.png" alt="Röle Request Body Editor" width="800">
+</p>
+
+### Response Viewer
+View formatted JSON responses with status codes and response times.
+
+<p align="center">
+  <img src="assets/screenshots/response-body.png" alt="Röle Response Body Viewer" width="800">
+</p>
+
+### Response Headers
+Inspect detailed response headers for debugging and analysis.
+
+<p align="center">
+  <img src="assets/screenshots/response-headers.png" alt="Röle Response Headers Viewer" width="800">
+</p>
 
 ## Installation
 
