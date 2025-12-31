@@ -5,12 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// Dialog that shows when an app update is available.
 /// Displays version info, release notes, and download options.
 class UpdateDialog extends StatelessWidget {
-  const UpdateDialog({
-    super.key,
-    required this.release,
-    required this.downloadUrl,
-    required this.currentVersion,
-  });
+  const UpdateDialog({super.key, required this.release, required this.downloadUrl, required this.currentVersion});
 
   final AppReleaseModel release;
   final String downloadUrl;
@@ -189,10 +184,6 @@ Future<void> showUpdateDialog({
 }) {
   return showDialog<void>(
     context: context,
-    builder: (context) => UpdateDialog(
-      release: release,
-      downloadUrl: downloadUrl,
-      currentVersion: currentVersion,
-    ),
+    builder: (context) => UpdateDialog(release: release, downloadUrl: downloadUrl, currentVersion: currentVersion),
   );
 }

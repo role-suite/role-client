@@ -40,4 +40,3 @@ class VersionService {
     _cachedVersion = null;
   }
 }
-
