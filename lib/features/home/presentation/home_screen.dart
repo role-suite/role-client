@@ -59,12 +59,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Show update dialog after the current frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            showUpdateDialog(
-              context: context,
-              release: release,
-              downloadUrl: downloadUrl,
-              currentVersion: currentVersion,
-            );
+            showUpdateDialog(context: context, release: release, downloadUrl: downloadUrl, currentVersion: currentVersion);
           }
         });
       }
