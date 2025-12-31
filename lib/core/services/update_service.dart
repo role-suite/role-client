@@ -9,9 +9,7 @@ import 'package:relay/core/utils/logger.dart';
 
 /// Service for checking GitHub releases and managing app updates.
 class UpdateService {
-  UpdateService({Dio? dio, VersionService? versionService})
-      : _dio = dio ?? Dio(),
-        _versionService = versionService;
+  UpdateService({Dio? dio, VersionService? versionService}) : _dio = dio ?? Dio(), _versionService = versionService;
 
   final Dio _dio;
   final VersionService? _versionService;
@@ -100,9 +98,7 @@ class UpdateService {
     if (latestRelease == null) return null;
 
     // Get the actual current version from the app metadata
-    final currentVersion = _versionService != null
-        ? await VersionService.getCurrentVersion()
-        : await VersionService.getCurrentVersion();
+    final currentVersion = _versionService != null ? await VersionService.getCurrentVersion() : await VersionService.getCurrentVersion();
 
     if (isNewerVersion(latestRelease.version, currentVersion)) {
       return latestRelease;
@@ -113,8 +109,6 @@ class UpdateService {
   /// Gets the current app version.
   /// Returns the version from package_info_plus, or falls back to AppConstants.appVersion.
   Future<String> getCurrentVersion() async {
-    return _versionService != null
-        ? await VersionService.getCurrentVersion()
-        : await VersionService.getCurrentVersion();
+    return _versionService != null ? await VersionService.getCurrentVersion() : await VersionService.getCurrentVersion();
   }
 }
