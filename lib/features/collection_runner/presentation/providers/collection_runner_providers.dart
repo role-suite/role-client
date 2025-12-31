@@ -21,5 +21,3 @@ final collectionRunnerControllerProvider = StateNotifierProvider.autoDispose<Col
   final historyService = ref.watch(collectionRunHistoryServiceProvider);
   return CollectionRunnerController(getRequestsByCollectionUseCase, environmentRepository, historyService);
 });
-
-

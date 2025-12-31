@@ -31,12 +31,7 @@ class AppScaffold extends StatelessWidget {
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       appBar: title == null && (actions == null || actions!.isEmpty)
           ? null
-          : AppAppBar(
-        title: title,
-        centerTitle: centerTitle,
-        actions: actions,
-        leading: leading,
-      ),
+          : AppAppBar(title: title, centerTitle: centerTitle, actions: actions, leading: leading),
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: bottomNavigationBar,

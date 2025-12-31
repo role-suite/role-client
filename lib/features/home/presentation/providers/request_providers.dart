@@ -21,12 +21,8 @@ class RequestsNotifier extends StateNotifier<AsyncValue<List<ApiRequestModel>>> 
   final UpdateRequestUseCase _updateRequestUseCase;
   final DeleteRequestUseCase _deleteRequestUseCase;
 
-  RequestsNotifier(
-    this._getAllRequestsUseCase,
-    this._createRequestUseCase,
-    this._updateRequestUseCase,
-    this._deleteRequestUseCase,
-  ) : super(const AsyncValue.loading()) {
+  RequestsNotifier(this._getAllRequestsUseCase, this._createRequestUseCase, this._updateRequestUseCase, this._deleteRequestUseCase)
+    : super(const AsyncValue.loading()) {
     _loadRequests();
   }
 
@@ -84,4 +80,3 @@ final requestsNotifierProvider = StateNotifierProvider<RequestsNotifier, AsyncVa
     ref.watch(deleteRequestUseCaseProvider),
   );
 });
-

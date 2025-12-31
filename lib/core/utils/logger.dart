@@ -16,12 +16,11 @@ class AppLogger {
     if (stackTrace != null && kDebugMode) {
       buffer.write('\n$stackTrace');
     }
-    print(buffer.toString());
+    AppLogger.info(buffer.toString());
   }
 
   static void debug(String message) => _log('DEBUG', message);
   static void info(String message) => _log('INFO', message);
   static void warn(String message) => _log('WARN', message);
-  static void error(String message, [Object? error, StackTrace? stackTrace]) =>
-      _log('ERROR', message, error, stackTrace);
+  static void error(String message, [Object? error, StackTrace? stackTrace]) => _log('ERROR', message, error, stackTrace);
 }

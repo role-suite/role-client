@@ -30,10 +30,7 @@ class ActiveEnvironmentNotifier extends StateNotifier<AsyncValue<EnvironmentMode
   final GetActiveEnvironmentUseCase _getActiveEnvironmentUseCase;
   final SetActiveEnvironmentUseCase _setActiveEnvironmentUseCase;
 
-  ActiveEnvironmentNotifier(
-    this._getActiveEnvironmentUseCase,
-    this._setActiveEnvironmentUseCase,
-  ) : super(const AsyncValue.loading()) {
+  ActiveEnvironmentNotifier(this._getActiveEnvironmentUseCase, this._setActiveEnvironmentUseCase) : super(const AsyncValue.loading()) {
     _loadActiveEnvironment();
   }
 
@@ -59,10 +56,7 @@ class ActiveEnvironmentNotifier extends StateNotifier<AsyncValue<EnvironmentMode
 
 /// Provider for ActiveEnvironmentNotifier
 final activeEnvironmentNotifierProvider = StateNotifierProvider<ActiveEnvironmentNotifier, AsyncValue<EnvironmentModel?>>((ref) {
-  return ActiveEnvironmentNotifier(
-    ref.watch(getActiveEnvironmentUseCaseProvider),
-    ref.watch(setActiveEnvironmentUseCaseProvider),
-  );
+  return ActiveEnvironmentNotifier(ref.watch(getActiveEnvironmentUseCaseProvider), ref.watch(setActiveEnvironmentUseCaseProvider));
 });
 
 /// Notifier for managing environment state
@@ -135,4 +129,3 @@ final environmentsNotifierProvider = StateNotifierProvider<EnvironmentsNotifier,
     ref.watch(deleteEnvironmentUseCaseProvider),
   );
 });
-

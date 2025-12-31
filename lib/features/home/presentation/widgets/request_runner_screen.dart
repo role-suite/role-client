@@ -25,12 +25,7 @@ import '../../../../core/presentation/widgets/variable_highlight_text.dart';
 const String _noEnvironmentMenuValue = '__menu_no_environment__';
 
 class RequestRunnerPage extends ConsumerStatefulWidget {
-  const RequestRunnerPage({
-    super.key,
-    required this.request,
-    this.onDelete,
-    this.startInEditMode = false,
-  });
+  const RequestRunnerPage({super.key, required this.request, this.onDelete, this.startInEditMode = false});
 
   final ApiRequestModel request;
   final VoidCallback? onDelete;
@@ -40,8 +35,7 @@ class RequestRunnerPage extends ConsumerStatefulWidget {
   ConsumerState<RequestRunnerPage> createState() => _RequestRunnerPageState();
 }
 
-class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
-    with SingleTickerProviderStateMixin {
+class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with SingleTickerProviderStateMixin {
   bool _isSending = false;
   Response<dynamic>? _response;
   DioException? _error;
@@ -82,8 +76,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
   @override
   void didUpdateWidget(covariant RequestRunnerPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.request.id != widget.request.id ||
-        oldWidget.startInEditMode != widget.startInEditMode) {
+    if (oldWidget.request.id != widget.request.id || oldWidget.startInEditMode != widget.startInEditMode) {
       setState(() {
         _currentRequest = widget.request;
         _isEditing = widget.startInEditMode;
@@ -121,17 +114,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     // Resolve templates using the active environment
     final resolvedUrl = envRepository.resolveTemplate(request.urlTemplate, activeEnv);
     final resolvedHeaders = <String, String>{
-      for (final entry in request.headers.entries)
-        entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
+      for (final entry in request.headers.entries) entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
     };
     final resolvedQueryParams = <String, String>{
-      for (final entry in request.queryParams.entries)
-        entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
+      for (final entry in request.queryParams.entries) entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
     };
     final runtimeBody = _requestBodyController.text;
-    final resolvedBody = runtimeBody.trim().isNotEmpty
-        ? envRepository.resolveTemplate(runtimeBody, activeEnv)
-        : null;
+    final resolvedBody = runtimeBody.trim().isNotEmpty ? envRepository.resolveTemplate(runtimeBody, activeEnv) : null;
 
     // Debug logging for easier troubleshooting
     debugPrint('==== Relay Request ====');
@@ -149,10 +138,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     try {
       final response = await dio.request<dynamic>(
         resolvedUrl,
-        options: Options(
-          method: request.method.name,
-          headers: resolvedHeaders.isEmpty ? null : resolvedHeaders,
-        ),
+        options: Options(method: request.method.name, headers: resolvedHeaders.isEmpty ? null : resolvedHeaders),
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
         data: resolvedBody,
       );
@@ -221,23 +207,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
           children: [
             MethodBadge(method: request.method),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                request.name,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Expanded(child: Text(request.name, overflow: TextOverflow.ellipsis)),
           ],
         ),
         actions: [
           _buildEnvironmentAction(context, environmentsAsync, activeEnvName),
           const SizedBox(width: 8),
-          if (widget.onDelete != null)
-            IconButton(
-              tooltip: 'Delete request',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: widget.onDelete,
-            ),
+          if (widget.onDelete != null) IconButton(tooltip: 'Delete request', icon: const Icon(Icons.delete_outline), onPressed: widget.onDelete),
           IconButton(
             tooltip: _isEditing ? 'Close editor' : 'Edit request',
             icon: Icon(_isEditing ? Icons.edit_off : Icons.edit),
@@ -251,8 +227,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
             constraints: const BoxConstraints(maxWidth: 900),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: SingleChildScrollView(
-                  controller: _scrollController,
+              child: SingleChildScrollView(
+                controller: _scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -263,16 +239,10 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                     ),
                     const SizedBox(height: 8),
                     if (request.description != null && request.description!.isNotEmpty) ...[
-                      Text(
-                        request.description!,
-                        style: theme.textTheme.bodySmall,
-                      ),
+                      Text(request.description!, style: theme.textTheme.bodySmall),
                       const SizedBox(height: 12),
                     ],
-                    if (_isEditing) ...[
-                      _buildEditForm(context),
-                      const SizedBox(height: 24),
-                    ],
+                    if (_isEditing) ...[_buildEditForm(context), const SizedBox(height: 24)],
                     // Request/response details combined into a single tab controller
                     Column(
                       key: _responseSectionKey,
@@ -306,18 +276,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                         ),
                       ],
                     ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
                     // Send button + meta
                     Row(
                       children: [
-                        AppButton(
-                          label: _isSending ? 'Sending...' : 'Send',
-                          icon: Icons.play_arrow,
-                          onPressed: _isSending ? null : _sendRequest,
-                        ),
+                        AppButton(label: _isSending ? 'Sending...' : 'Send', icon: Icons.play_arrow, onPressed: _isSending ? null : _sendRequest),
                         const SizedBox(width: 16),
-                        if (_response != null || _error != null)
-                          _buildMetaInfo(context),
+                        if (_response != null || _error != null) _buildMetaInfo(context),
                         const Spacer(),
                         if (_isSending) const SizedBox(width: 120, child: LinearProgressIndicator()),
                       ],
@@ -343,37 +308,22 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
 
     return Card(
       elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Edit Request',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
+            Text('Edit Request', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 16),
-            AppTextField(
-              controller: _nameController,
-              label: 'Request Name',
-              hint: 'My API Request',
-            ),
+            AppTextField(controller: _nameController, label: 'Request Name', hint: 'My API Request'),
             const SizedBox(height: 16),
             collectionsAsync.when(
               data: (collections) {
                 final allCollections = [...collections];
                 if (!allCollections.any((c) => c.id == 'default')) {
-                  allCollections.insert(
-                    0,
-                    CollectionModel(
-                      id: 'default',
-                      name: 'Default',
-                      createdAt: DateTime.now(),
-                      updatedAt: DateTime.now(),
-                    ),
-                  );
+                  allCollections.insert(0, CollectionModel(id: 'default', name: 'Default', createdAt: DateTime.now(), updatedAt: DateTime.now()));
                 }
 
                 return AppDropdown<String>(
@@ -381,10 +331,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                   value: _selectedCollectionId ?? 'default',
                   items: allCollections
                       .map(
-                        (collection) => DropdownMenuItem(
-                          value: collection.id,
-                          child: Text(collection.name.isNotEmpty ? collection.name : collection.id),
-                        ),
+                        (collection) =>
+                            DropdownMenuItem(value: collection.id, child: Text(collection.name.isNotEmpty ? collection.name : collection.id)),
                       )
                       .toList(),
                   onChanged: (value) {
@@ -394,11 +342,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                   },
                 );
               },
-              loading: () => const SizedBox(
-                height: 48,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (_, __) => const SizedBox.shrink(),
+              loading: () => const SizedBox(height: 48, child: Center(child: CircularProgressIndicator())),
+              error: (_, _) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
             if (isCompact)
@@ -408,14 +353,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                   AppDropdown<HttpMethod>(
                     label: 'Method',
                     value: _selectedMethod,
-                    items: HttpMethod.values
-                        .map(
-                          (method) => DropdownMenuItem(
-                            value: method,
-                            child: Text(method.name),
-                          ),
-                        )
-                        .toList(),
+                    items: HttpMethod.values.map((method) => DropdownMenuItem(value: method, child: Text(method.name))).toList(),
                     onChanged: (value) {
                       if (value == null) return;
                       setState(() {
@@ -429,12 +367,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                     label: 'URL',
                     hint: 'https://api.example.com/endpoint',
                     keyboardType: TextInputType.url,
-                    suffixIcon: _buildEnvVariableInsertButton(
-                      context,
-                      envList,
-                      _urlController,
-                      isDisabled: _isSavingEdits,
-                    ),
+                    suffixIcon: _buildEnvVariableInsertButton(context, envList, _urlController, isDisabled: _isSavingEdits),
                   ),
                 ],
               )
@@ -446,14 +379,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                     child: AppDropdown<HttpMethod>(
                       label: 'Method',
                       value: _selectedMethod,
-                      items: HttpMethod.values
-                          .map(
-                            (method) => DropdownMenuItem(
-                              value: method,
-                              child: Text(method.name),
-                            ),
-                          )
-                          .toList(),
+                      items: HttpMethod.values.map((method) => DropdownMenuItem(value: method, child: Text(method.name))).toList(),
                       onChanged: (value) {
                         if (value == null) return;
                         setState(() {
@@ -470,12 +396,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                       label: 'URL',
                       hint: 'https://api.example.com/endpoint',
                       keyboardType: TextInputType.url,
-                      suffixIcon: _buildEnvVariableInsertButton(
-                        context,
-                        envList,
-                        _urlController,
-                        isDisabled: _isSavingEdits,
-                      ),
+                      suffixIcon: _buildEnvVariableInsertButton(context, envList, _urlController, isDisabled: _isSavingEdits),
                     ),
                   ),
                 ],
@@ -486,12 +407,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
               label: 'Body (optional)',
               hint: '{ "key": "value" }',
               maxLines: 4,
-              suffixIcon: _buildEnvVariableInsertButton(
-                context,
-                envList,
-                _bodyController,
-                isDisabled: _isSavingEdits,
-              ),
+              suffixIcon: _buildEnvVariableInsertButton(context, envList, _bodyController, isDisabled: _isSavingEdits),
             ),
             const SizedBox(height: 16),
             environmentsAsync.when(
@@ -503,27 +419,14 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Environment',
-                      style: theme.textTheme.titleSmall,
-                    ),
+                    Text('Environment', style: theme.textTheme.titleSmall),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String?>(
-                      value: selectedEnvName,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
+                      initialValue: selectedEnvName,
+                      decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                       items: [
-                        const DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text('No Environment'),
-                        ),
-                        ...envs.map(
-                          (env) => DropdownMenuItem<String?>(
-                            value: env.name,
-                            child: Text(env.name),
-                          ),
-                        ),
+                        const DropdownMenuItem<String?>(value: null, child: Text('No Environment')),
+                        ...envs.map((env) => DropdownMenuItem<String?>(value: env.name, child: Text(env.name))),
                       ],
                       onChanged: (value) {
                         ref.read(activeEnvironmentNameProvider.notifier).state = value;
@@ -547,16 +450,15 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                           spacing: 8,
                           runSpacing: 8,
                           children: selectedEnvironment.variables.entries
-                              .map((entry) => Chip(
-                                    label: Text(
-                                      '{{${entry.key}}}',
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    backgroundColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-                                  ))
+                              .map(
+                                (entry) => Chip(
+                                  label: Text(
+                                    '{{${entry.key}}}',
+                                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
+                                  ),
+                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                                ),
+                              )
                               .toList(),
                         ),
                       ),
@@ -564,14 +466,11 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                 );
               },
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
             if (isCompact) ...[
-              Text(
-                'Query / Path Parameters (optional)',
-                style: theme.textTheme.titleSmall,
-              ),
+              Text('Query / Path Parameters (optional)', style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerLeft,
@@ -585,10 +484,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Query / Path Parameters (optional)',
-                    style: theme.textTheme.titleSmall,
-                  ),
+                  Text('Query / Path Parameters (optional)', style: theme.textTheme.titleSmall),
                   TextButton.icon(
                     onPressed: _isSavingEdits ? null : _handleAddParamRow,
                     icon: const Icon(Icons.add, size: 18),
@@ -604,11 +500,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          AppTextField(
-                            controller: _paramKeyControllers[index],
-                            label: 'Key',
-                            hint: 'userId',
-                          ),
+                          AppTextField(controller: _paramKeyControllers[index], label: 'Key', hint: 'userId'),
                           const SizedBox(height: 8),
                           Row(
                             children: [
@@ -638,11 +530,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: AppTextField(
-                              controller: _paramKeyControllers[index],
-                              label: 'Key',
-                              hint: 'userId',
-                            ),
+                            child: AppTextField(controller: _paramKeyControllers[index], label: 'Key', hint: 'userId'),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -650,12 +538,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
                               controller: _paramValueControllers[index],
                               label: 'Value',
                               hint: '123',
-                              suffixIcon: _buildEnvVariableInsertButton(
-                                context,
-                                envList,
-                                _paramValueControllers[index],
-                                isDisabled: _isSavingEdits,
-                              ),
+                              suffixIcon: _buildEnvVariableInsertButton(context, envList, _paramValueControllers[index], isDisabled: _isSavingEdits),
                             ),
                           ),
                           IconButton(
@@ -672,10 +555,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextButton(
-                    onPressed: _isSavingEdits ? null : _cancelEditing,
-                    child: const Text('Cancel'),
-                  ),
+                  TextButton(onPressed: _isSavingEdits ? null : _cancelEditing, child: const Text('Cancel')),
                   const SizedBox(height: 8),
                   AppButton(
                     label: _isSavingEdits ? 'Saving...' : 'Save Changes',
@@ -688,10 +568,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
             else
               Row(
                 children: [
-                  TextButton(
-                    onPressed: _isSavingEdits ? null : _cancelEditing,
-                    child: const Text('Cancel'),
-                  ),
+                  TextButton(onPressed: _isSavingEdits ? null : _cancelEditing, child: const Text('Cancel')),
                   const Spacer(),
                   AppButton(
                     label: _isSavingEdits ? 'Saving...' : 'Save Changes',
@@ -722,10 +599,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     );
   }
 
-  EnvironmentModel? _findEnvironmentByName(
-    List<EnvironmentModel>? envs,
-    String? name,
-  ) {
+  EnvironmentModel? _findEnvironmentByName(List<EnvironmentModel>? envs, String? name) {
     if (envs == null || name == null) {
       return null;
     }
@@ -737,38 +611,23 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     return null;
   }
 
-  Future<void> _insertEnvironmentVariable(
-    BuildContext context,
-    List<EnvironmentModel> environments,
-    TextEditingController controller,
-  ) async {
+  Future<void> _insertEnvironmentVariable(BuildContext context, List<EnvironmentModel> environments, TextEditingController controller) async {
     final selectedName = ref.read(activeEnvironmentNameProvider);
     final environment = _findEnvironmentByName(environments, selectedName);
     if (environment == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Select an environment with variables to insert.'),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select an environment with variables to insert.')));
       return;
     }
     if (environment.variables.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Environment "${environment.name}" has no variables yet.'),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Environment "${environment.name}" has no variables yet.')));
       return;
     }
 
-    final entries = environment.variables.entries.toList()
-      ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+    final entries = environment.variables.entries.toList()..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
 
     final variableKey = await showModalBottomSheet<String>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
@@ -777,22 +636,16 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Insert Environment Variable',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Insert Environment Variable', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
-                Text(
-                  'Tap a variable to insert its placeholder into the focused field.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text('Tap a variable to insert its placeholder into the focused field.', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 16),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 320),
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: entries.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (_, index) {
                       final entry = entries[index];
                       return ListTile(
@@ -844,19 +697,11 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-      );
+      Scrollable.ensureVisible(context, duration: const Duration(milliseconds: 400), curve: Curves.easeOutCubic);
     });
   }
 
-  Widget _buildEnvironmentAction(
-    BuildContext context,
-    AsyncValue<List<EnvironmentModel>> envsAsync,
-    String? activeEnvName,
-  ) {
+  Widget _buildEnvironmentAction(BuildContext context, AsyncValue<List<EnvironmentModel>> envsAsync, String? activeEnvName) {
     final theme = Theme.of(context);
     return envsAsync.when(
       data: (envs) => PopupMenuButton<String>(
@@ -868,39 +713,26 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
           children: [
             const Icon(Icons.cloud, size: 20),
             const SizedBox(width: 4),
-            Text(
-              activeEnvName ?? 'No Env',
-              style: theme.textTheme.labelMedium,
-            ),
+            Text(activeEnvName ?? 'No Env', style: theme.textTheme.labelMedium),
             const Icon(Icons.arrow_drop_down),
           ],
         ),
       ),
       loading: () => const Padding(
         padding: EdgeInsets.all(8.0),
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
-  List<PopupMenuEntry<String>> _buildEnvironmentMenuItems(
-    List<EnvironmentModel> envs,
-    String? activeEnvName,
-  ) {
+  List<PopupMenuEntry<String>> _buildEnvironmentMenuItems(List<EnvironmentModel> envs, String? activeEnvName) {
     final items = <PopupMenuEntry<String>>[
       PopupMenuItem<String>(
         value: _noEnvironmentMenuValue,
         child: Row(
           children: [
-            if (activeEnvName == null)
-              const Icon(Icons.check, size: 18)
-            else
-              const SizedBox(width: 18),
+            if (activeEnvName == null) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
             const SizedBox(width: 8),
             const Text('No Environment'),
           ],
@@ -916,10 +748,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
             value: env.name,
             child: Row(
               children: [
-                if (activeEnvName == env.name)
-                  const Icon(Icons.check, size: 18)
-                else
-                  const SizedBox(width: 18),
+                if (activeEnvName == env.name) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
                 const SizedBox(width: 8),
                 Text(env.name),
               ],
@@ -977,15 +806,14 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
   }
 
   Future<void> _saveEdits(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+
     final name = _nameController.text.trim();
     final url = _urlController.text.trim();
     if (name.isEmpty || url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Name and URL are required to update a request.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Name and URL are required to update a request.'), backgroundColor: Colors.orange));
       return;
     }
 
@@ -1022,23 +850,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
         _isSavingEdits = false;
       });
       _syncEditorsFromCurrentRequest();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Request "${updatedRequest.name}" updated successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('Request "${updatedRequest.name}" updated successfully'), backgroundColor: Colors.green));
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isSavingEdits = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update request: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('Failed to update request: $e'), backgroundColor: Colors.red));
     }
   }
 
@@ -1046,54 +864,31 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     final statusCode = _response?.statusCode;
     final statusText = _response?.statusMessage;
 
-    final durationText = _duration != null
-        ? '${_duration!.inMilliseconds} ms'
-        : null;
+    final durationText = _duration != null ? '${_duration!.inMilliseconds} ms' : null;
 
     return Row(
       children: [
         if (statusCode != null) ...[
           Text(
             '$statusCode ${statusText ?? ''}'.trim(),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: statusCode >= 200 && statusCode < 300
-                      ? Colors.green
-                      : Colors.orange,
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: statusCode >= 200 && statusCode < 300 ? Colors.green : Colors.orange, fontWeight: FontWeight.w600),
           ),
           const SizedBox(width: 12),
         ],
-        if (durationText != null)
-          Text(
-            durationText,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+        if (durationText != null) Text(durationText, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
 
-  Widget _buildRequestBodyTab(
-    BuildContext context,
-    List<EnvironmentModel>? envs,
-  ) {
-    final insertButton = _buildEnvVariableInsertButton(
-      context,
-      envs,
-      _requestBodyController,
-      isDisabled: _isSending,
-    );
+  Widget _buildRequestBodyTab(BuildContext context, List<EnvironmentModel>? envs) {
+    final insertButton = _buildEnvVariableInsertButton(context, envs, _requestBodyController, isDisabled: _isSending);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (insertButton != null) ...[
-          Align(
-            alignment: Alignment.centerRight,
-            child: insertButton,
-          ),
-          const SizedBox(height: 8),
-        ],
+        if (insertButton != null) ...[Align(alignment: Alignment.centerRight, child: insertButton), const SizedBox(height: 8)],
         Expanded(
           child: _buildPanelContainer(
             context,
@@ -1105,9 +900,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
               keyboardType: TextInputType.multiline,
               textAlignVertical: TextAlignVertical.top,
               style: const TextStyle(fontFamily: 'monospace'),
-              decoration: const InputDecoration.collapsed(
-                hintText: 'Enter request body (JSON, raw text, etc.)',
-              ),
+              decoration: const InputDecoration.collapsed(hintText: 'Enter request body (JSON, raw text, etc.)'),
             ),
           ),
         ),
@@ -1131,19 +924,11 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
       if (_isPermissionError) {
         return _buildPermissionErrorPanel(context, baseError);
       }
-      return _buildStatusPanel(
-        context,
-        'Error: $baseError',
-        color: Theme.of(context).colorScheme.error,
-      );
+      return _buildStatusPanel(context, 'Error: $baseError', color: Theme.of(context).colorScheme.error);
     }
 
     if (_response == null) {
-      return _buildStatusPanel(
-        context,
-        'Send the request to see the response.',
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      );
+      return _buildStatusPanel(context, 'Send the request to see the response.', color: Theme.of(context).colorScheme.onSurfaceVariant);
     }
 
     final isHtml = _isHtmlResponseBody();
@@ -1167,24 +952,14 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
       if (_isPermissionError) {
         return _buildPermissionErrorPanel(context, baseError);
       }
-      return _buildStatusPanel(
-        context,
-        'Error: $baseError',
-        color: Theme.of(context).colorScheme.error,
-      );
+      return _buildStatusPanel(context, 'Error: $baseError', color: Theme.of(context).colorScheme.error);
     }
 
     if (_response == null) {
-      return _buildStatusPanel(
-        context,
-        'Send the request to see the response headers.',
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      );
+      return _buildStatusPanel(context, 'Send the request to see the response headers.', color: Theme.of(context).colorScheme.onSurfaceVariant);
     }
 
-    final headers = _response!.headers.map.map(
-      (key, values) => MapEntry(key, values.join(', ')),
-    );
+    final headers = _response!.headers.map.map((key, values) => MapEntry(key, values.join(', ')));
     final content = headers.isEmpty ? 'No response headers' : _prettifyMap(headers);
     return _buildMonospacePanel(context, content);
   }
@@ -1199,18 +974,10 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
           children: [
             Text(
               'Network access is blocked by the operating system (permission error).',
-              style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
-            Text(
-              baseError,
-              style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-            ),
+            Text(baseError, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
             const SizedBox(height: 8),
             Text(
               'On macOS, please:\n'
@@ -1229,10 +996,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
-        child: Text(
-          message,
-          style: theme.textTheme.bodySmall?.copyWith(color: color),
-        ),
+        child: Text(message, style: theme.textTheme.bodySmall?.copyWith(color: color)),
       ),
     );
   }
@@ -1254,7 +1018,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       ),
       child: child,
     );
@@ -1268,22 +1032,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HtmlWidget(
-              html,
-              textStyle: theme.textTheme.bodyMedium,
-            ),
+            HtmlWidget(html, textStyle: theme.textTheme.bodyMedium),
             const SizedBox(height: 12),
-            Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+            Divider(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 8),
-            Text(
-              'Raw HTML',
-              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
+            Text('Raw HTML', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            SelectableText(
-              html,
-              style: const TextStyle(fontFamily: 'monospace'),
-            ),
+            SelectableText(html, style: const TextStyle(fontFamily: 'monospace')),
           ],
         ),
       ),
@@ -1310,9 +1065,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
       return false;
     }
 
-    return snippet.startsWith('<!doctype html') ||
-        snippet.startsWith('<html') ||
-        (snippet.contains('<html') && snippet.contains('</html>'));
+    return snippet.startsWith('<!doctype html') || snippet.startsWith('<html') || (snippet.contains('<html') && snippet.contains('</html>'));
   }
 
   String? _extractResponseBodyAsString() {
@@ -1379,5 +1132,3 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage>
     _rebuildParamControllersFrom(_currentRequest);
   }
 }
-
-

@@ -4,11 +4,7 @@ import '../../../../../core/presentation/widgets/app_text_field.dart';
 import '../../controllers/environment_form_controller.dart';
 
 class EnvironmentForm extends StatelessWidget {
-  const EnvironmentForm({
-    super.key,
-    required this.controller,
-    required this.isSubmitting,
-  });
+  const EnvironmentForm({super.key, required this.controller, required this.isSubmitting});
 
   final EnvironmentFormController controller;
   final bool isSubmitting;
@@ -24,21 +20,12 @@ class EnvironmentForm extends StatelessWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppTextField(
-              controller: controller.nameController,
-              label: 'Environment Name',
-              hint: 'Production',
-              autofocus: !isEdit,
-              enabled: !isEdit,
-            ),
+            AppTextField(controller: controller.nameController, label: 'Environment Name', hint: 'Production', autofocus: !isEdit, enabled: !isEdit),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Variables',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
+                Text('Variables', style: Theme.of(context).textTheme.titleSmall),
                 TextButton.icon(
                   onPressed: isSubmitting ? null : controller.addVariableRow,
                   icon: const Icon(Icons.add, size: 18),
@@ -53,12 +40,7 @@ class EnvironmentForm extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: AppTextField(
-                        controller: keyControllers[index],
-                        label: 'Key',
-                        hint: 'API_URL',
-                        enabled: !isSubmitting,
-                      ),
+                      child: AppTextField(controller: keyControllers[index], label: 'Key', hint: 'API_URL', enabled: !isSubmitting),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -84,4 +66,3 @@ class EnvironmentForm extends StatelessWidget {
     );
   }
 }
-

@@ -35,8 +35,8 @@ class HomeDrawer extends ConsumerWidget {
     final themeSubtitle = isSystemMode
         ? 'Following system theme (${isSystemDark ? 'Dark' : 'Light'})'
         : isDarkMode
-            ? 'Dark mode is on'
-            : 'Light mode is on';
+        ? 'Dark mode is on'
+        : 'Light mode is on';
 
     return Drawer(
       child: SafeArea(
@@ -46,26 +46,19 @@ class HomeDrawer extends ConsumerWidget {
             DrawerHeader(
               margin: EdgeInsets.zero,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-              ),
+              decoration: BoxDecoration(color: theme.colorScheme.primaryContainer),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
                     AppConstants.appName,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Quick actions',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
-                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8)),
                   ),
                 ],
               ),
@@ -115,11 +108,7 @@ class HomeDrawer extends ConsumerWidget {
               subtitle: const Text('Run collections sequentially'),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CollectionRunnerScreen(),
-                  ),
-                );
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CollectionRunnerScreen()));
               },
             ),
             ListTile(
@@ -128,11 +117,7 @@ class HomeDrawer extends ConsumerWidget {
               subtitle: const Text('View previous collection test runs'),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CollectionRunHistoryScreen(),
-                  ),
-                );
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CollectionRunHistoryScreen()));
               },
             ),
             Padding(
@@ -142,9 +127,7 @@ class HomeDrawer extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
-                  ),
+                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,46 +135,31 @@ class HomeDrawer extends ConsumerWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(
-                          isDarkMode ? Icons.nightlight_round : Icons.wb_sunny_outlined,
-                          color: theme.colorScheme.primary,
-                        ),
+                        Icon(isDarkMode ? Icons.nightlight_round : Icons.wb_sunny_outlined, color: theme.colorScheme.primary),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Appearance',
-                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                              ),
+                              Text('Appearance', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                               const SizedBox(height: 2),
-                              Text(
-                                themeSubtitle,
-                                style: theme.textTheme.bodySmall,
-                              ),
+                              Text(themeSubtitle, style: theme.textTheme.bodySmall),
                             ],
                           ),
                         ),
                         Switch.adaptive(
                           value: isDarkMode,
                           onChanged: (value) => updateThemeMode(value ? ThemeMode.dark : ThemeMode.light),
-                          activeColor: theme.colorScheme.primary,
+                          activeThumbColor: theme.colorScheme.primary,
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      'Toggle to quickly switch between light and dark themes.',
-                      style: theme.textTheme.bodySmall,
-                    ),
+                    Text('Toggle to quickly switch between light and dark themes.', style: theme.textTheme.bodySmall),
                     if (!isSystemMode)
                       Align(
                         alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => updateThemeMode(ThemeMode.system),
-                          child: const Text('Use system'),
-                        ),
+                        child: TextButton(onPressed: () => updateThemeMode(ThemeMode.system), child: const Text('Use system')),
                       ),
                   ],
                 ),
@@ -203,4 +171,3 @@ class HomeDrawer extends ConsumerWidget {
     );
   }
 }
-

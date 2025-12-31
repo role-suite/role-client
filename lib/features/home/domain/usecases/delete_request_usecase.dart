@@ -10,4 +10,3 @@ class DeleteRequestUseCase {
     await _repository.deleteRequest(requestId);
   }
 }
-

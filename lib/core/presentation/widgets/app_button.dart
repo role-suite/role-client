@@ -24,41 +24,26 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final button = _buildButton(context);
-    
+
     if (isFullWidth) {
       return SizedBox(width: double.infinity, child: button);
     }
-    
+
     return button;
   }
 
   Widget _buildButton(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    
     final buttonStyle = _getButtonStyle(context);
     final textStyle = _getTextStyle(context);
     final padding = _getPadding();
     final height = _getHeight();
 
     if (variant == AppButtonVariant.text) {
-      return TextButton(
-        onPressed: isLoading ? null : onPressed,
-        style: buttonStyle,
-        child: _buildContent(context, textStyle, padding, height),
-      );
+      return TextButton(onPressed: isLoading ? null : onPressed, style: buttonStyle, child: _buildContent(context, textStyle, padding, height));
     } else if (variant == AppButtonVariant.outlined) {
-      return OutlinedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: buttonStyle,
-        child: _buildContent(context, textStyle, padding, height),
-      );
+      return OutlinedButton(onPressed: isLoading ? null : onPressed, style: buttonStyle, child: _buildContent(context, textStyle, padding, height));
     } else {
-      return ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: buttonStyle,
-        child: _buildContent(context, textStyle, padding, height),
-      );
+      return ElevatedButton(onPressed: isLoading ? null : onPressed, style: buttonStyle, child: _buildContent(context, textStyle, padding, height));
     }
   }
 
@@ -68,11 +53,7 @@ class AppButton extends StatelessWidget {
         height: height,
         child: Padding(
           padding: padding,
-          child: const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
         ),
       );
     }
@@ -90,7 +71,10 @@ class AppButton extends StatelessWidget {
     return Padding(
       padding: padding,
       child: height != null
-          ? SizedBox(height: height, child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: children))
+          ? SizedBox(
+              height: height,
+              child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: children),
+            )
           : Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: children),
     );
   }
@@ -101,28 +85,15 @@ class AppButton extends StatelessWidget {
 
     switch (variant) {
       case AppButtonVariant.primary:
-        return ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-        );
+        return ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onPrimary);
       case AppButtonVariant.secondary:
-        return ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.secondary,
-          foregroundColor: colorScheme.onSecondary,
-        );
+        return ElevatedButton.styleFrom(backgroundColor: colorScheme.secondary, foregroundColor: colorScheme.onSecondary);
       case AppButtonVariant.danger:
-        return ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
-        );
+        return ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white);
       case AppButtonVariant.outlined:
-        return OutlinedButton.styleFrom(
-          foregroundColor: colorScheme.primary,
-        );
+        return OutlinedButton.styleFrom(foregroundColor: colorScheme.primary);
       case AppButtonVariant.text:
-        return TextButton.styleFrom(
-          foregroundColor: colorScheme.primary,
-        );
+        return TextButton.styleFrom(foregroundColor: colorScheme.primary);
     }
   }
 
@@ -187,17 +158,6 @@ class AppButton extends StatelessWidget {
   }
 }
 
-enum AppButtonVariant {
-  primary,
-  secondary,
-  danger,
-  outlined,
-  text,
-}
+enum AppButtonVariant { primary, secondary, danger, outlined, text }
 
-enum AppButtonSize {
-  small,
-  medium,
-  large,
-}
-
+enum AppButtonSize { small, medium, large }

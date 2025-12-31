@@ -20,11 +20,7 @@ class UpdateService {
     try {
       final response = await _dio.get(
         '$_baseUrl/repos/${AppConstants.githubRepoOwner}/${AppConstants.githubRepoName}/releases/latest',
-        options: Options(
-          headers: {
-            'Accept': 'application/vnd.github.v3+json',
-          },
-        ),
+        options: Options(headers: {'Accept': 'application/vnd.github.v3+json'}),
       );
 
       if (response.statusCode == 200 && response.data != null) {
@@ -67,17 +63,12 @@ class UpdateService {
   /// Parses a version string like "1.2.3" into a list of integers [1, 2, 3].
   List<int> _parseVersion(String version) {
     // Remove 'v' prefix if present
-    final cleanVersion = version.startsWith('v') || version.startsWith('V')
-        ? version.substring(1)
-        : version;
+    final cleanVersion = version.startsWith('v') || version.startsWith('V') ? version.substring(1) : version;
 
     // Handle versions with build metadata (e.g., "1.0.0+1")
     final versionWithoutBuild = cleanVersion.split('+').first;
 
-    return versionWithoutBuild
-        .split('.')
-        .map((part) => int.tryParse(part) ?? 0)
-        .toList();
+    return versionWithoutBuild.split('.').map((part) => int.tryParse(part) ?? 0).toList();
   }
 
   /// Gets the current platform name for asset matching.

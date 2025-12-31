@@ -14,18 +14,11 @@ class CreateEnvironmentDialog extends EnvironmentFormDialog {
 }
 
 class EditEnvironmentDialog extends EnvironmentFormDialog {
-  const EditEnvironmentDialog({
-    super.key,
-    required EnvironmentModel environment,
-  }) : super(mode: EnvironmentDialogMode.edit, environment: environment);
+  const EditEnvironmentDialog({super.key, required EnvironmentModel environment}) : super(mode: EnvironmentDialogMode.edit, environment: environment);
 }
 
 class EnvironmentFormDialog extends ConsumerStatefulWidget {
-  const EnvironmentFormDialog({
-    super.key,
-    required this.mode,
-    this.environment,
-  });
+  const EnvironmentFormDialog({super.key, required this.mode, this.environment});
 
   final EnvironmentDialogMode mode;
   final EnvironmentModel? environment;
@@ -54,11 +47,7 @@ class _EnvironmentFormDialogState extends ConsumerState<EnvironmentFormDialog> {
     if (_formController.nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            widget.mode == EnvironmentDialogMode.create
-                ? 'Please enter an environment name'
-                : 'Environment name cannot be empty',
-          ),
+          content: Text(widget.mode == EnvironmentDialogMode.create ? 'Please enter an environment name' : 'Environment name cannot be empty'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -73,10 +62,7 @@ class _EnvironmentFormDialogState extends ConsumerState<EnvironmentFormDialog> {
       late String successMessage;
 
       if (widget.mode == EnvironmentDialogMode.create) {
-        final environment = EnvironmentModel(
-          name: _formController.nameController.text.trim(),
-          variables: vars,
-        );
+        final environment = EnvironmentModel(name: _formController.nameController.text.trim(), variables: vars);
         await viewModel.createEnvironment(environment);
         successMessage = 'Environment "${environment.name}" created successfully';
       } else {
@@ -87,20 +73,10 @@ class _EnvironmentFormDialogState extends ConsumerState<EnvironmentFormDialog> {
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(successMessage),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage), backgroundColor: Colors.green));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to save environment: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save environment: $e'), backgroundColor: Colors.red));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -115,17 +91,11 @@ class _EnvironmentFormDialogState extends ConsumerState<EnvironmentFormDialog> {
       content: SizedBox(
         width: 500,
         child: SingleChildScrollView(
-          child: EnvironmentForm(
-            controller: _formController,
-            isSubmitting: _isSubmitting,
-          ),
+          child: EnvironmentForm(controller: _formController, isSubmitting: _isSubmitting),
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
+        TextButton(onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(), child: const Text('Cancel')),
         AppButton(
           label: _isSubmitting ? 'Saving...' : (widget.mode == EnvironmentDialogMode.edit ? 'Save' : 'Create'),
           onPressed: _isSubmitting ? null : _handleSubmit,
@@ -134,4 +104,3 @@ class _EnvironmentFormDialogState extends ConsumerState<EnvironmentFormDialog> {
     );
   }
 }
-

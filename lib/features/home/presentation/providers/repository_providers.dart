@@ -13,10 +13,7 @@ import 'package:relay/features/home/domain/repositories/request_repository.dart'
 
 /// Provider for RequestLocalDataSource
 final requestLocalDataSourceProvider = Provider<RequestLocalDataSource>((ref) {
-  return RequestLocalDataSource(
-    FileStorageService.instance,
-    WorkspaceService.instance,
-  );
+  return RequestLocalDataSource(FileStorageService.instance, WorkspaceService.instance);
 });
 
 /// Provider for RequestRepository
@@ -32,10 +29,7 @@ final environmentRepositoryProvider = Provider<EnvironmentRepository>((ref) {
 
 /// Provider for CollectionLocalDataSource
 final collectionLocalDataSourceProvider = Provider<CollectionLocalDataSource>((ref) {
-  return CollectionLocalDataSource(
-    FileStorageService.instance,
-    WorkspaceService.instance,
-  );
+  return CollectionLocalDataSource(FileStorageService.instance, WorkspaceService.instance);
 });
 
 /// Provider for CollectionRepository
@@ -43,4 +37,3 @@ final collectionRepositoryProvider = Provider<CollectionRepository>((ref) {
   final dataSource = ref.watch(collectionLocalDataSourceProvider);
   return CollectionRepositoryImpl(dataSource);
 });
-

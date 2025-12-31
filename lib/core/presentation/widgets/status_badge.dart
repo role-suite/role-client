@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 /// A badge widget for displaying HTTP status codes with color coding
 class StatusBadge extends StatelessWidget {
-  const StatusBadge({
-    super.key,
-    required this.statusCode,
-    this.size = StatusBadgeSize.medium,
-  });
+  const StatusBadge({super.key, required this.statusCode, this.size = StatusBadgeSize.medium});
 
   final int? statusCode;
   final StatusBadgeSize size;
@@ -25,26 +21,18 @@ class StatusBadge extends StatelessWidget {
 
   Widget _buildBadge(BuildContext context, String text, Color color) {
     final theme = Theme.of(context);
-    final textStyle = size == StatusBadgeSize.small
-        ? theme.textTheme.labelSmall
-        : theme.textTheme.labelMedium;
+    final textStyle = size == StatusBadgeSize.small ? theme.textTheme.labelSmall : theme.textTheme.labelMedium;
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: size == StatusBadgeSize.small ? 6 : 8,
-        vertical: size == StatusBadgeSize.small ? 2 : 4,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: size == StatusBadgeSize.small ? 6 : 8, vertical: size == StatusBadgeSize.small ? 2 : 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
-        style: textStyle?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+        style: textStyle?.copyWith(color: color, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -64,8 +52,4 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-enum StatusBadgeSize {
-  small,
-  medium,
-}
-
+enum StatusBadgeSize { small, medium }

@@ -18,4 +18,3 @@ abstract class RequestRepository {
   /// Get requests by collection/folder
   Future<List<ApiRequestModel>> getRequestsByCollection(String collection);
 }
-

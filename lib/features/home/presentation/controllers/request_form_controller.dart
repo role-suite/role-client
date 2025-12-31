@@ -6,11 +6,7 @@ import 'package:relay/core/utils/uuid.dart';
 import '../../../../core/utils/extension.dart';
 
 class RequestFormController extends ChangeNotifier {
-  RequestFormController({
-    String? initialCollectionId,
-    String? initialEnvironmentName,
-    ApiRequestModel? initialRequest,
-  }) {
+  RequestFormController({String? initialCollectionId, String? initialEnvironmentName, ApiRequestModel? initialRequest}) {
     _nameController = TextEditingController(text: initialRequest?.name ?? '');
     _urlController = TextEditingController(text: initialRequest?.urlTemplate ?? '');
     _bodyController = TextEditingController(text: initialRequest?.body ?? '');
@@ -131,37 +127,22 @@ class RequestFormController extends ChangeNotifier {
     return null;
   }
 
-  Future<void> insertVariableIntoController(
-    BuildContext context,
-    List<EnvironmentModel> environments,
-    TextEditingController controller,
-  ) async {
+  Future<void> insertVariableIntoController(BuildContext context, List<EnvironmentModel> environments, TextEditingController controller) async {
     final environment = findEnvironmentByName(environments, _selectedEnvironmentName);
     if (environment == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Select an environment with variables to insert.'),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select an environment with variables to insert.')));
       return;
     }
     if (environment.variables.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Environment "${environment.name}" has no variables yet.'),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Environment "${environment.name}" has no variables yet.')));
       return;
     }
 
-    final entries = environment.variables.entries.toList()
-      ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+    final entries = environment.variables.entries.toList()..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
 
     final variableKey = await showModalBottomSheet<String>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (dialogContext) {
         return SafeArea(
           child: Padding(
@@ -170,22 +151,16 @@ class RequestFormController extends ChangeNotifier {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Insert Environment Variable',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Insert Environment Variable', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
-                Text(
-                  'Tap a variable to insert its placeholder into the focused field.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text('Tap a variable to insert its placeholder into the focused field.', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 16),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 320),
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: entries.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (_, index) {
                       final entry = entries[index];
                       return ListTile(
@@ -242,4 +217,3 @@ class RequestFormController extends ChangeNotifier {
     super.dispose();
   }
 }
-
