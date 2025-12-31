@@ -4,13 +4,17 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/models/app_release_model.dart';
+import 'package:relay/core/services/version_service.dart';
 import 'package:relay/core/utils/logger.dart';
 
 /// Service for checking GitHub releases and managing app updates.
 class UpdateService {
-  UpdateService({Dio? dio}) : _dio = dio ?? Dio();
+  UpdateService({Dio? dio, VersionService? versionService})
+      : _dio = dio ?? Dio(),
+        _versionService = versionService;
 
   final Dio _dio;
+  final VersionService? _versionService;
 
   static const String _baseUrl = 'https://api.github.com';
 
@@ -95,9 +99,22 @@ class UpdateService {
     final latestRelease = await getLatestRelease();
     if (latestRelease == null) return null;
 
-    if (isNewerVersion(latestRelease.version, AppConstants.appVersion)) {
+    // Get the actual current version from the app metadata
+    final currentVersion = _versionService != null
+        ? await VersionService.getCurrentVersion()
+        : await VersionService.getCurrentVersion();
+
+    if (isNewerVersion(latestRelease.version, currentVersion)) {
       return latestRelease;
     }
     return null;
+  }
+
+  /// Gets the current app version.
+  /// Returns the version from package_info_plus, or falls back to AppConstants.appVersion.
+  Future<String> getCurrentVersion() async {
+    return _versionService != null
+        ? await VersionService.getCurrentVersion()
+        : await VersionService.getCurrentVersion();
   }
 }

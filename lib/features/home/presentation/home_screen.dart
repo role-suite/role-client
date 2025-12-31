@@ -48,17 +48,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     // Listen for update availability and show dialog
-    ref.listen<AsyncValue<dynamic>>(updateAvailableProvider, (previous, next) {
+    ref.listen<AsyncValue<dynamic>>(updateAvailableProvider, (previous, next) async {
       if (!_hasCheckedForUpdates && next.hasValue && next.value != null) {
         _hasCheckedForUpdates = true;
         final release = next.value;
         final updateService = ref.read(updateServiceProvider);
         final downloadUrl = updateService.getDownloadUrl(release);
+        final currentVersion = await updateService.getCurrentVersion();
 
         // Show update dialog after the current frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            showUpdateDialog(context: context, release: release, downloadUrl: downloadUrl);
+            showUpdateDialog(
+              context: context,
+              release: release,
+              downloadUrl: downloadUrl,
+              currentVersion: currentVersion,
+            );
           }
         });
       }
