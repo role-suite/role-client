@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/models/app_release_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Dialog that shows when an app update is available.
 /// Displays version info, release notes, and download options.
 class UpdateDialog extends StatelessWidget {
-  const UpdateDialog({super.key, required this.release, required this.downloadUrl});
+  const UpdateDialog({
+    super.key,
+    required this.release,
+    required this.downloadUrl,
+    required this.currentVersion,
+  });
 
   final AppReleaseModel release;
   final String downloadUrl;
+  final String currentVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +58,7 @@ class UpdateDialog extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _VersionChip(label: 'Current', version: AppConstants.appVersion, isOld: true),
+                  _VersionChip(label: 'Current', version: currentVersion, isOld: true),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Icon(Icons.arrow_forward, color: colorScheme.primary, size: 20),
@@ -176,9 +181,18 @@ class _VersionChip extends StatelessWidget {
 
 /// Show the update dialog.
 /// Returns a Future that completes when the dialog is dismissed.
-Future<void> showUpdateDialog({required BuildContext context, required AppReleaseModel release, required String downloadUrl}) {
+Future<void> showUpdateDialog({
+  required BuildContext context,
+  required AppReleaseModel release,
+  required String downloadUrl,
+  required String currentVersion,
+}) {
   return showDialog<void>(
     context: context,
-    builder: (context) => UpdateDialog(release: release, downloadUrl: downloadUrl),
+    builder: (context) => UpdateDialog(
+      release: release,
+      downloadUrl: downloadUrl,
+      currentVersion: currentVersion,
+    ),
   );
 }
