@@ -2,17 +2,7 @@ import 'package:flutter/material.dart';
 
 /// A consistent card widget with optional actions
 class AppCard extends StatelessWidget {
-  const AppCard({
-    super.key,
-    required this.child,
-    this.title,
-    this.subtitle,
-    this.actions,
-    this.onTap,
-    this.padding,
-    this.margin,
-    this.elevation,
-  });
+  const AppCard({super.key, required this.child, this.title, this.subtitle, this.actions, this.onTap, this.padding, this.margin, this.elevation});
 
   final Widget child;
   final String? title;
@@ -36,11 +26,7 @@ class AppCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
-            children: [
-              if (title != null || subtitle != null || actions != null)
-                _buildHeader(context),
-              child,
-            ],
+            children: [if (title != null || subtitle != null || actions != null) _buildHeader(context), child],
           ),
         ),
       ),
@@ -59,21 +45,10 @@ class AppCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (title != null)
-                  Text(
-                    title!,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
+                if (title != null) Text(title!, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    subtitle!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
+                  Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ],
               ],
             ),
@@ -84,4 +59,3 @@ class AppCard extends StatelessWidget {
     );
   }
 }
-

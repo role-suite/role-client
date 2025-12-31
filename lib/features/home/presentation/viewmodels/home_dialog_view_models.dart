@@ -19,9 +19,7 @@ class CreateCollectionViewModel {
   }
 }
 
-final createCollectionViewModelProvider = Provider<CreateCollectionViewModel>(
-  (ref) => CreateCollectionViewModel(ref),
-);
+final createCollectionViewModelProvider = Provider<CreateCollectionViewModel>((ref) => CreateCollectionViewModel(ref));
 
 class CreateRequestViewModel {
   CreateRequestViewModel(this._ref);
@@ -33,9 +31,7 @@ class CreateRequestViewModel {
   }
 }
 
-final createRequestViewModelProvider = Provider.autoDispose<CreateRequestViewModel>(
-  (ref) => CreateRequestViewModel(ref),
-);
+final createRequestViewModelProvider = Provider.autoDispose<CreateRequestViewModel>((ref) => CreateRequestViewModel(ref));
 
 class EnvironmentDialogViewModel {
   EnvironmentDialogViewModel(this._ref);
@@ -56,9 +52,7 @@ class EnvironmentDialogViewModel {
   }
 }
 
-final environmentDialogViewModelProvider = Provider.autoDispose<EnvironmentDialogViewModel>(
-  (ref) => EnvironmentDialogViewModel(ref),
-);
+final environmentDialogViewModelProvider = Provider.autoDispose<EnvironmentDialogViewModel>((ref) => EnvironmentDialogViewModel(ref));
 
 class DeleteEntitiesViewModel {
   DeleteEntitiesViewModel(this._ref);
@@ -89,7 +83,4 @@ class DeleteEntitiesViewModel {
   }
 }
 
-final deleteEntitiesViewModelProvider = Provider<DeleteEntitiesViewModel>(
-  (ref) => DeleteEntitiesViewModel(ref),
-);
-
+final deleteEntitiesViewModelProvider = Provider<DeleteEntitiesViewModel>((ref) => DeleteEntitiesViewModel(ref));

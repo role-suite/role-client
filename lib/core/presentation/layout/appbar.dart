@@ -10,15 +10,7 @@ import 'package:flutter/material.dart';
 /// );
 /// ```
 class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const AppAppBar({
-    super.key,
-    this.title,
-    this.centerTitle = true,
-    this.actions,
-    this.leading,
-    this.elevation = 0,
-    this.backgroundColor,
-  });
+  const AppAppBar({super.key, this.title, this.centerTitle = true, this.actions, this.leading, this.elevation = 0, this.backgroundColor});
 
   final String? title;
   final bool centerTitle;

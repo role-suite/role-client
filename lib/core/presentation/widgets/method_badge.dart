@@ -3,11 +3,7 @@ import 'package:relay/core/utils/extension.dart';
 
 /// A badge widget for displaying HTTP methods with color coding
 class MethodBadge extends StatelessWidget {
-  const MethodBadge({
-    super.key,
-    required this.method,
-    this.size = MethodBadgeSize.medium,
-  });
+  const MethodBadge({super.key, required this.method, this.size = MethodBadgeSize.medium});
 
   final HttpMethod method;
   final MethodBadgeSize size;
@@ -22,26 +18,18 @@ class MethodBadge extends StatelessWidget {
 
   Widget _buildBadge(BuildContext context, String text, Color color) {
     final theme = Theme.of(context);
-    final textStyle = size == MethodBadgeSize.small
-        ? theme.textTheme.labelSmall
-        : theme.textTheme.labelMedium;
+    final textStyle = size == MethodBadgeSize.small ? theme.textTheme.labelSmall : theme.textTheme.labelMedium;
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: size == MethodBadgeSize.small ? 6 : 8,
-        vertical: size == MethodBadgeSize.small ? 2 : 4,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: size == MethodBadgeSize.small ? 6 : 8, vertical: size == MethodBadgeSize.small ? 2 : 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
-        style: textStyle?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+        style: textStyle?.copyWith(color: color, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -66,8 +54,4 @@ class MethodBadge extends StatelessWidget {
   }
 }
 
-enum MethodBadgeSize {
-  small,
-  medium,
-}
-
+enum MethodBadgeSize { small, medium }

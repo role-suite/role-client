@@ -7,7 +7,7 @@ class AppPaths {
   static const String settings = 'settings';
 
   static const String appSettingsFile = 'app_settings.json';
-  
+
   static String environmentFile(String name) {
     return '$environments/$name.json';
   }

@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 /// A centered loading indicator
 class LoadingIndicator extends StatelessWidget {
-  const LoadingIndicator({
-    super.key,
-    this.message,
-    this.size = 40,
-  });
+  const LoadingIndicator({super.key, this.message, this.size = 40});
 
   final String? message;
   final double size;
@@ -17,23 +13,13 @@ class LoadingIndicator extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            width: size,
-            height: size,
-            child: const CircularProgressIndicator(),
-          ),
+          SizedBox(width: size, height: size, child: const CircularProgressIndicator()),
           if (message != null) ...[
             const SizedBox(height: 16),
-            Text(
-              message!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
+            Text(message!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ],
       ),
     );
   }
 }
-

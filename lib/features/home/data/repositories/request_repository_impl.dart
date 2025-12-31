@@ -33,4 +33,3 @@ class RequestRepositoryImpl implements RequestRepository {
     return await _dataSource.getRequestsByCollection(collection);
   }
 }
-

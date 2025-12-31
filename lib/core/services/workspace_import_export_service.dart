@@ -15,9 +15,9 @@ class WorkspaceImportExportService {
     required RequestRepository requestRepository,
     required CollectionRepository collectionRepository,
     required EnvironmentRepository environmentRepository,
-  })  : _requestRepository = requestRepository,
-        _collectionRepository = collectionRepository,
-        _environmentRepository = environmentRepository;
+  }) : _requestRepository = requestRepository,
+       _collectionRepository = collectionRepository,
+       _environmentRepository = environmentRepository;
 
   final RequestRepository _requestRepository;
   final CollectionRepository _collectionRepository;
@@ -29,12 +29,7 @@ class WorkspaceImportExportService {
 
     for (final collection in collections) {
       final requests = await _requestRepository.getRequestsByCollection(collection.id);
-      bundles.add(
-        CollectionBundle(
-          collection: collection,
-          requests: requests,
-        ),
-      );
+      bundles.add(CollectionBundle(collection: collection, requests: requests));
     }
 
     final environments = await _environmentRepository.getAllEnvironments();
@@ -92,10 +87,7 @@ class _PostmanCollectionParser {
     final collectionName = (info['name'] as String?)?.trim();
     final collectionId = UuidUtils.generate();
     final requests = _flattenItems(json['item']).map((item) {
-      return _PostmanRequest(
-        name: item.name,
-        requestJson: item.requestJson,
-      ).toApiRequest(collectionId);
+      return _PostmanRequest(name: item.name, requestJson: item.requestJson).toApiRequest(collectionId);
     }).toList();
 
     final metadata = CollectionModel(
@@ -110,9 +102,7 @@ class _PostmanCollectionParser {
       version: WorkspaceBundle.currentVersion,
       exportedAt: DateTime.now().toUtc(),
       source: 'postman-collection',
-      collections: [
-        CollectionBundle(collection: metadata, requests: requests),
-      ],
+      collections: [CollectionBundle(collection: metadata, requests: requests)],
       environments: const [],
     );
   }
@@ -125,19 +115,12 @@ class _PostmanCollectionParser {
     for (final entry in rawItems) {
       if (entry is! Map<String, dynamic>) continue;
       final name = (entry['name'] as String?)?.trim();
-      final displayName = (name == null || name.isEmpty)
-          ? (prefix ?? 'Untitled Request')
-          : (prefix != null ? '$prefix / $name' : name);
+      final displayName = (name == null || name.isEmpty) ? (prefix ?? 'Untitled Request') : (prefix != null ? '$prefix / $name' : name);
       final nestedItems = entry['item'];
       if (nestedItems is List) {
         result.addAll(_flattenItems(nestedItems, displayName));
       } else if (entry['request'] is Map<String, dynamic>) {
-        result.add(
-          _PostmanItem(
-            name: displayName,
-            requestJson: Map<String, dynamic>.from(entry['request'] as Map<String, dynamic>),
-          ),
-        );
+        result.add(_PostmanItem(name: displayName, requestJson: Map<String, dynamic>.from(entry['request'] as Map<String, dynamic>)));
       }
     }
     return result;
@@ -163,28 +146,19 @@ class _PostmanEnvironmentParser {
         vars[key] = rawValue?.toString() ?? '';
       }
     }
-    return EnvironmentModel(
-      name: (name == null || name.isEmpty) ? 'Imported Environment' : name,
-      variables: vars,
-    );
+    return EnvironmentModel(name: (name == null || name.isEmpty) ? 'Imported Environment' : name, variables: vars);
   }
 }
 
 class _PostmanItem {
-  _PostmanItem({
-    required this.name,
-    required this.requestJson,
-  });
+  _PostmanItem({required this.name, required this.requestJson});
 
   final String name;
   final Map<String, dynamic> requestJson;
 }
 
 class _PostmanRequest {
-  _PostmanRequest({
-    required this.name,
-    required this.requestJson,
-  });
+  _PostmanRequest({required this.name, required this.requestJson});
 
   final String name;
   final Map<String, dynamic> requestJson;
@@ -353,4 +327,3 @@ class _PostmanRequest {
     return '';
   }
 }
-

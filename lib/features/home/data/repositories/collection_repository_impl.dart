@@ -38,4 +38,3 @@ class CollectionRepositoryImpl implements CollectionRepository {
     return await _dataSource.collectionExists(name);
   }
 }
-

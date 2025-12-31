@@ -6,11 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// Dialog that shows when an app update is available.
 /// Displays version info, release notes, and download options.
 class UpdateDialog extends StatelessWidget {
-  const UpdateDialog({
-    super.key,
-    required this.release,
-    required this.downloadUrl,
-  });
+  const UpdateDialog({super.key, required this.release, required this.downloadUrl});
 
   final AppReleaseModel release;
   final String downloadUrl;
@@ -21,22 +17,13 @@ class UpdateDialog extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.system_update,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
+            decoration: BoxDecoration(color: colorScheme.primaryContainer, borderRadius: BorderRadius.circular(8)),
+            child: Icon(Icons.system_update, color: colorScheme.onPrimaryContainer, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -46,10 +33,7 @@ class UpdateDialog extends StatelessWidget {
                 const Text('Update Available'),
                 Text(
                   'v${release.version}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -57,10 +41,7 @@ class UpdateDialog extends StatelessWidget {
         ],
       ),
       content: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: 400,
-          maxHeight: 300,
-        ),
+        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 300),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,45 +49,24 @@ class UpdateDialog extends StatelessWidget {
             // Version comparison
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _VersionChip(
-                    label: 'Current',
-                    version: AppConstants.appVersion,
-                    isOld: true,
-                  ),
+                  _VersionChip(label: 'Current', version: AppConstants.appVersion, isOld: true),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Icon(
-                      Icons.arrow_forward,
-                      color: colorScheme.primary,
-                      size: 20,
-                    ),
+                    child: Icon(Icons.arrow_forward, color: colorScheme.primary, size: 20),
                   ),
-                  _VersionChip(
-                    label: 'Latest',
-                    version: release.version,
-                    isOld: false,
-                  ),
+                  _VersionChip(label: 'Latest', version: release.version, isOld: false),
                 ],
               ),
             ),
             const SizedBox(height: 16),
 
             // Release notes
-            if (release.releaseNotes != null &&
-                release.releaseNotes!.isNotEmpty) ...[
-              Text(
-                'What\'s New',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            if (release.releaseNotes != null && release.releaseNotes!.isNotEmpty) ...[
+              Text('What\'s New', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Flexible(
                 child: Container(
@@ -114,18 +74,9 @@ class UpdateDialog extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: colorScheme.outline.withOpacity(0.2),
-                    ),
+                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
                   ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      release.releaseNotes!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
+                  child: SingleChildScrollView(child: Text(release.releaseNotes!, style: theme.textTheme.bodySmall?.copyWith(height: 1.5))),
                 ),
               ),
             ],
@@ -135,17 +86,11 @@ class UpdateDialog extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 14,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  Icon(Icons.calendar_today_outlined, size: 14, color: colorScheme.onSurfaceVariant),
                   const SizedBox(width: 6),
                   Text(
                     'Released ${_formatDate(release.publishedAt!)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -154,10 +99,7 @@ class UpdateDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Remind Me Later'),
-        ),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Remind Me Later')),
         FilledButton.icon(
           onPressed: () => _openDownloadUrl(context),
           icon: const Icon(Icons.download, size: 18),
@@ -168,10 +110,7 @@ class UpdateDialog extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
@@ -185,33 +124,23 @@ class UpdateDialog extends StatelessWidget {
         }
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open: $downloadUrl'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Could not open: $downloadUrl'), backgroundColor: Theme.of(context).colorScheme.error));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening URL: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error opening URL: $e'), backgroundColor: Theme.of(context).colorScheme.error));
       }
     }
   }
 }
 
 class _VersionChip extends StatelessWidget {
-  const _VersionChip({
-    required this.label,
-    required this.version,
-    required this.isOld,
-  });
+  const _VersionChip({required this.label, required this.version, required this.isOld});
 
   final String label;
   final String version;
@@ -223,32 +152,19 @@ class _VersionChip extends StatelessWidget {
 
     return Column(
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
+        Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant)),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: isOld
-                ? colorScheme.surfaceContainerHighest
-                : colorScheme.primaryContainer,
+            color: isOld ? colorScheme.surfaceContainerHighest : colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isOld
-                  ? colorScheme.outline.withOpacity(0.3)
-                  : colorScheme.primary.withOpacity(0.5),
-            ),
+            border: Border.all(color: isOld ? colorScheme.outline.withValues(alpha: 0.3) : colorScheme.primary.withValues(alpha: 0.5)),
           ),
           child: Text(
             'v$version',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: isOld
-                  ? colorScheme.onSurfaceVariant
-                  : colorScheme.onPrimaryContainer,
+              color: isOld ? colorScheme.onSurfaceVariant : colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -260,16 +176,9 @@ class _VersionChip extends StatelessWidget {
 
 /// Show the update dialog.
 /// Returns a Future that completes when the dialog is dismissed.
-Future<void> showUpdateDialog({
-  required BuildContext context,
-  required AppReleaseModel release,
-  required String downloadUrl,
-}) {
+Future<void> showUpdateDialog({required BuildContext context, required AppReleaseModel release, required String downloadUrl}) {
   return showDialog<void>(
     context: context,
-    builder: (context) => UpdateDialog(
-      release: release,
-      downloadUrl: downloadUrl,
-    ),
+    builder: (context) => UpdateDialog(release: release, downloadUrl: downloadUrl),
   );
 }
