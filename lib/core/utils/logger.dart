@@ -16,7 +16,7 @@ class AppLogger {
     if (stackTrace != null && kDebugMode) {
       buffer.write('\n$stackTrace');
     }
-    AppLogger.info(buffer.toString());
+    debugPrint(buffer.toString());
   }
 
   static void debug(String message) => _log('DEBUG', message);
