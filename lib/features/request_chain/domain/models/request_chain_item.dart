@@ -1,5 +1,3 @@
-import 'package:relay/core/models/api_request_model.dart';
-
 /// Represents a single item in a request chain
 class RequestChainItem {
   final String requestId;

@@ -44,10 +44,12 @@ class RequestChainService {
       onRequestStart(i, request);
 
       // Prepare request with previous response body if needed
+      // First request (index 0) can never use previous response
+      final canUsePreviousResponse = i > 0 && chainItem.usePreviousResponse;
       final requestBody = _prepareRequestBody(
         request: request,
         previousResponseBody: previousResponseBody,
-        usePreviousResponse: chainItem.usePreviousResponse,
+        usePreviousResponse: canUsePreviousResponse,
         environment: environment,
       );
 
