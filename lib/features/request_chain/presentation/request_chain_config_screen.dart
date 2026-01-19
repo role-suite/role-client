@@ -9,6 +9,8 @@ import 'package:relay/core/presentation/layout/max_width_layout.dart';
 import 'package:relay/core/utils/extension.dart';
 import 'package:relay/features/home/presentation/providers/request_providers.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_item.dart';
+import 'package:relay/features/request_chain/domain/models/saved_request_chain.dart';
+import 'package:relay/features/request_chain/presentation/providers/request_chain_providers.dart';
 import 'package:relay/features/request_chain/presentation/request_chain_execution_screen.dart';
 
 class RequestChainConfigScreen extends ConsumerStatefulWidget {
@@ -192,14 +194,31 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Create Request Chain',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Select requests to execute sequentially. Selected requests will appear in the chain on the right.',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Create Request Chain',
+                                    style: Theme.of(context).textTheme.titleLarge,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Select requests to execute sequentially. Selected requests will appear in the chain on the right.',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.folder_open),
+                              tooltip: 'Load saved chain',
+                              onPressed: _loadSavedChain,
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -408,6 +427,160 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
         return _buildChainItemCard(context, request, item, index);
       },
     );
+  }
+
+  Future<void> _loadSavedChain() async {
+    final requestsAsync = ref.read(requestsNotifierProvider);
+    final requests = requestsAsync.value ?? [];
+    
+    try {
+      final repository = ref.read(savedChainRepositoryProvider);
+      final savedChains = await repository.getAllSavedChains();
+
+      if (savedChains.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No saved chains found')),
+          );
+        }
+        return;
+      }
+
+      final selectedChain = await showModalBottomSheet<SavedRequestChain>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (sheetContext) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Load Saved Chain',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Select a saved chain to load',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 400),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: savedChains.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, index) {
+                        final chain = savedChains[index];
+                        return ListTile(
+                          title: Text(chain.name),
+                          subtitle: chain.description != null && chain.description!.isNotEmpty
+                              ? Text(chain.description!)
+                              : Text('${chain.chainItems.length} requests'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${chain.chainItems.length}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_ios, size: 16),
+                            ],
+                          ),
+                          onTap: () => Navigator.of(sheetContext).pop(chain),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      if (selectedChain != null && mounted) {
+        await _applySavedChain(selectedChain, requests);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading saved chains: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _applySavedChain(SavedRequestChain savedChain, List<ApiRequestModel> allRequests) async {
+    // Check if all requests in the saved chain still exist
+    final missingRequests = <String>[];
+    for (final chainItem in savedChain.chainItems) {
+      if (!allRequests.any((r) => r.id == chainItem.requestId)) {
+        missingRequests.add(chainItem.requestName);
+      }
+    }
+
+    if (missingRequests.isNotEmpty) {
+      final shouldContinue = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Some requests not found'),
+          content: Text(
+            'The following requests from the saved chain are no longer available:\n\n'
+            '${missingRequests.join('\n')}\n\n'
+            'Do you want to load the chain anyway? Missing requests will be skipped.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Load Anyway'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldContinue != true) {
+        return;
+      }
+    }
+
+    setState(() {
+      // Clear existing chain
+      for (final controller in _delayControllers.values) {
+        controller.dispose();
+      }
+      _chainItems.clear();
+      _delayControllers.clear();
+
+      // Load saved chain items
+      for (final chainItem in savedChain.chainItems) {
+        // Only add if the request still exists
+        if (allRequests.any((r) => r.id == chainItem.requestId)) {
+          _chainItems.add(chainItem);
+          _delayControllers[chainItem.requestId] =
+              TextEditingController(text: chainItem.delayMs.toString());
+        }
+      }
+
+      // Ensure first item doesn't have usePreviousResponse enabled
+      _ensureFirstItemNoPreviousResponse();
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Loaded chain: ${savedChain.name}')),
+      );
+    }
   }
 
   Widget _buildChainItemCard(

@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
+import 'package:relay/core/presentation/widgets/app_text_field.dart';
 import 'package:relay/core/presentation/widgets/method_badge.dart';
 import 'package:relay/core/presentation/widgets/status_badge.dart';
 import 'package:relay/core/presentation/layout/scaffold.dart';
 import 'package:relay/core/presentation/layout/max_width_layout.dart';
+import 'package:relay/core/utils/uuid.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_item.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_result.dart';
+import 'package:relay/features/request_chain/domain/models/saved_request_chain.dart';
 import 'package:relay/features/request_chain/presentation/providers/request_chain_providers.dart';
 
 class RequestChainExecutionScreen extends ConsumerStatefulWidget {
@@ -113,6 +116,12 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                             label: 'Start Execution',
                             icon: Icons.play_arrow,
                             onPressed: _executeChain,
+                          )
+                        else if (!_isExecuting && _result != null)
+                          AppButton(
+                            label: 'Save Chain',
+                            icon: Icons.save,
+                            onPressed: _showSaveChainDialog,
                           ),
                       ],
                     ),
@@ -328,5 +337,109 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
       return const JsonEncoder.withIndent('  ').convert(data);
     }
     return data.toString();
+  }
+
+  Future<void> _showSaveChainDialog() async {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save Request Chain'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppTextField(
+                  controller: nameController,
+                  label: 'Chain Name',
+                  hint: 'e.g., User Registration Flow',
+                  autofocus: true,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                AppTextField(
+                  controller: descriptionController,
+                  label: 'Description (optional)',
+                  hint: 'Describe what this chain does',
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(context).pop(true);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true && mounted) {
+      await _saveChain(
+        name: nameController.text.trim(),
+        description: descriptionController.text.trim().isEmpty
+            ? null
+            : descriptionController.text.trim(),
+      );
+    }
+
+    nameController.dispose();
+    descriptionController.dispose();
+  }
+
+  Future<void> _saveChain({required String name, String? description}) async {
+    try {
+      final repository = ref.read(savedChainRepositoryProvider);
+      final now = DateTime.now();
+      final chain = SavedRequestChain(
+        id: UuidUtils.generate(),
+        name: name,
+        description: description,
+        chainItems: widget.chainItems,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      await repository.saveChain(chain);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Chain "$name" saved successfully'),
+            action: SnackBarAction(
+              label: 'OK',
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving chain: $e')),
+        );
+      }
+    }
   }
 }
