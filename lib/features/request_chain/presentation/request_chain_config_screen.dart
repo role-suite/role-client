@@ -142,7 +142,8 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
   Widget build(BuildContext context) {
     final requestsAsync = ref.watch(requestsNotifierProvider);
     final selectedRequestIds = _chainItems.map((item) => item.requestId).toSet();
-    final isLargeScreen = context.isTablet || context.isDesktop;
+    // Use split layout only on desktop with sufficient width
+    final isLargeScreen = context.isDesktop && MediaQuery.of(context).size.width >= 1024;
 
     return AppScaffold(
       title: 'Request Chain',
@@ -331,88 +332,134 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Instructions
-        Card(
-          child: Padding(
+        // Scrollable content area
+        Expanded(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Instructions
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Create Request Chain',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Select requests to execute sequentially. You can configure delays between requests and use previous response bodies in subsequent requests.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Chain items
+                if (_chainItems.isNotEmpty) ...[
+                  Text(
+                    'Chain Order',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  ..._chainItems.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final item = entry.value;
+                    final request = requests.firstWhere((r) => r.id == item.requestId);
+                    return _buildChainItemCard(context, request, item, index);
+                  }),
+                  const SizedBox(height: 16),
+                ],
+
+                // Available requests
                 Text(
-                  'Create Request Chain',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  'Available Requests',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Select requests to execute sequentially. You can configure delays between requests and use previous response bodies in subsequent requests.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                requests.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text(
+                            'No requests available. Create requests first.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: requests.length,
+                        itemBuilder: (context, index) {
+                          final request = requests[index];
+                          final isInChain = selectedRequestIds.contains(request.id);
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            color: isInChain
+                                ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                                : null,
+                            child: ListTile(
+                              leading: MethodBadge(method: request.method),
+                              title: Text(
+                                request.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                request.urlTemplate,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: isInChain
+                                  ? const Icon(Icons.check_circle, color: Colors.green)
+                                  : IconButton(
+                                      icon: const Icon(Icons.add_circle_outline),
+                                      onPressed: () => _addRequestToChain(request),
+                                      tooltip: 'Add to chain',
+                                    ),
+                              enabled: !isInChain,
+                              onTap: isInChain ? null : () => _addRequestToChain(request),
+                            ),
+                          );
+                        },
+                      ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 16),
 
-        // Chain items
-        if (_chainItems.isNotEmpty) ...[
-          Text(
-            'Chain Order',
-            style: Theme.of(context).textTheme.titleMedium,
+        // Execute button - Fixed at bottom
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).dividerColor,
+                width: 1,
+              ),
+            ),
           ),
-          const SizedBox(height: 8),
-          ..._chainItems.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final request = requests.firstWhere((r) => r.id == item.requestId);
-            return _buildChainItemCard(context, request, item, index);
-          }),
-          const SizedBox(height: 16),
-        ],
-
-        // Available requests
-        Text(
-          'Available Requests',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: requests.isEmpty
-              ? Center(
-                  child: Text(
-                    'No requests available. Create requests first.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: requests.length,
-                  itemBuilder: (context, index) {
-                    final request = requests[index];
-                    final isInChain = selectedRequestIds.contains(request.id);
-                    return ListTile(
-                      leading: MethodBadge(method: request.method),
-                      title: Text(request.name),
-                      subtitle: Text(request.urlTemplate),
-                      trailing: isInChain
-                          ? const Icon(Icons.check_circle, color: Colors.green)
-                          : IconButton(
-                              icon: const Icon(Icons.add_circle_outline),
-                              onPressed: () => _addRequestToChain(request),
-                            ),
-                      enabled: !isInChain,
-                    );
-                  },
-                ),
-        ),
-
-        // Execute button
-        const SizedBox(height: 16),
-        AppButton(
-          label: 'Execute Chain',
-          icon: Icons.play_arrow,
-          onPressed: _chainItems.isEmpty ? null : _startExecution,
-          isFullWidth: true,
+          child: SafeArea(
+            top: false,
+            child: AppButton(
+              label: 'Execute Chain',
+              icon: Icons.play_arrow,
+              onPressed: _chainItems.isEmpty ? null : _startExecution,
+              isFullWidth: true,
+            ),
+          ),
         ),
       ],
     );
