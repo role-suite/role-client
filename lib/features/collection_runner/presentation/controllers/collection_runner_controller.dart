@@ -136,7 +136,15 @@ class CollectionRunnerController extends StateNotifier<CollectionRunnerState> {
     }
   }
 
-  Future<CollectionRunResult> _executeRequest(ApiRequestModel request, EnvironmentModel? environment) async {
+  Future<CollectionRunResult> _executeRequest(ApiRequestModel request, EnvironmentModel? collectionEnvironment) async {
+    // Use request's saved environment if it exists, otherwise use collection's environment
+    EnvironmentModel? environment = collectionEnvironment;
+    if (request.environmentName != null) {
+      environment = await _environmentRepository.getEnvironmentByName(request.environmentName!);
+      // If the saved environment doesn't exist anymore, fall back to collection environment
+      environment ??= collectionEnvironment;
+    }
+    
     final resolvedUrl = _environmentRepository.resolveTemplate(request.urlTemplate, environment);
 
     final resolvedHeaders = <String, String>{

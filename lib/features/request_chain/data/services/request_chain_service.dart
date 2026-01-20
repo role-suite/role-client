@@ -43,6 +43,14 @@ class RequestChainService {
       // Notify that request is starting
       onRequestStart(i, request);
 
+      // Use request's saved environment if it exists, otherwise use chain's environment
+      EnvironmentModel? requestEnvironment = environment;
+      if (request.environmentName != null) {
+        requestEnvironment = await _environmentRepository.getEnvironmentByName(request.environmentName!);
+        // If the saved environment doesn't exist anymore, fall back to chain environment
+        requestEnvironment ??= environment;
+      }
+      
       // Prepare request with previous response body if needed
       // First request (index 0) can never use previous response
       final canUsePreviousResponse = i > 0 && chainItem.usePreviousResponse;
@@ -50,14 +58,14 @@ class RequestChainService {
         request: request,
         previousResponseBody: previousResponseBody,
         usePreviousResponse: canUsePreviousResponse,
-        environment: environment,
+        environment: requestEnvironment,
       );
 
       // Execute the request
       final result = await _executeRequest(
         request: request,
         body: requestBody,
-        environment: environment,
+        environment: requestEnvironment,
         index: i,
       );
 

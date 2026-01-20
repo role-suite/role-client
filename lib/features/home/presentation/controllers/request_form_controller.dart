@@ -12,7 +12,8 @@ class RequestFormController extends ChangeNotifier {
     _bodyController = TextEditingController(text: initialRequest?.body ?? '');
     _selectedMethod = initialRequest?.method ?? HttpMethod.get;
     _selectedCollectionId = initialRequest?.collectionId ?? initialCollectionId ?? 'default';
-    _selectedEnvironmentName = initialEnvironmentName;
+    // Prioritize environment from request, then initial, then null
+    _selectedEnvironmentName = initialRequest?.environmentName ?? initialEnvironmentName;
 
     final params = initialRequest?.queryParams ?? {};
     if (params.isNotEmpty) {
@@ -112,6 +113,7 @@ class RequestFormController extends ChangeNotifier {
       queryParams: buildParams(),
       body: _bodyController.text.trim().isNotEmpty ? _bodyController.text.trim() : null,
       collectionId: _selectedCollectionId ?? 'default',
+      environmentName: _selectedEnvironmentName,
       createdAt: now,
       updatedAt: now,
     );
