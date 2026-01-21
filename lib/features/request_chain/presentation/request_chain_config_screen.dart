@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
 import 'package:relay/core/presentation/widgets/app_text_field.dart';
 import 'package:relay/core/presentation/widgets/method_badge.dart';
@@ -8,6 +9,7 @@ import 'package:relay/core/presentation/layout/scaffold.dart';
 import 'package:relay/core/presentation/layout/max_width_layout.dart';
 import 'package:relay/core/utils/extension.dart';
 import 'package:relay/features/home/presentation/providers/request_providers.dart';
+import 'package:relay/features/home/presentation/providers/collection_providers.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_item.dart';
 import 'package:relay/features/request_chain/domain/models/saved_request_chain.dart';
 import 'package:relay/features/request_chain/presentation/providers/request_chain_providers.dart';
@@ -23,6 +25,7 @@ class RequestChainConfigScreen extends ConsumerStatefulWidget {
 class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScreen> {
   final List<RequestChainItem> _chainItems = [];
   final Map<String, TextEditingController> _delayControllers = {};
+  String? _selectedCollectionId; // null means "All Collections"
 
   @override
   void dispose() {
@@ -111,6 +114,13 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
     });
   }
 
+  List<ApiRequestModel> _filterRequestsByCollection(List<ApiRequestModel> requests) {
+    if (_selectedCollectionId == null) {
+      return requests; // Show all requests
+    }
+    return requests.where((request) => request.collectionId == _selectedCollectionId).toList();
+  }
+
   Future<void> _startExecution() async {
     if (_chainItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -141,6 +151,7 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
   @override
   Widget build(BuildContext context) {
     final requestsAsync = ref.watch(requestsNotifierProvider);
+    final collectionsAsync = ref.watch(collectionsNotifierProvider);
     final selectedRequestIds = _chainItems.map((item) => item.requestId).toSet();
     // Use split layout only on desktop with sufficient width
     final isLargeScreen = context.isDesktop && MediaQuery.of(context).size.width >= 1024;
@@ -150,9 +161,18 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
       body: MaxWidthLayout(
         maxWidth: 1200,
         child: requestsAsync.when(
-          data: (requests) => isLargeScreen
-              ? _buildSplitLayout(context, requests, selectedRequestIds)
-              : _buildMobileLayout(context, requests, selectedRequestIds),
+          data: (requests) {
+            final filteredRequests = _filterRequestsByCollection(requests);
+            return collectionsAsync.when(
+              data: (collections) => isLargeScreen
+                  ? _buildSplitLayout(context, filteredRequests, selectedRequestIds, collections)
+                  : _buildMobileLayout(context, filteredRequests, selectedRequestIds, collections),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => isLargeScreen
+                  ? _buildSplitLayout(context, filteredRequests, selectedRequestIds, [])
+                  : _buildMobileLayout(context, filteredRequests, selectedRequestIds, []),
+            );
+          },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) => Center(
             child: Column(
@@ -176,6 +196,7 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
     BuildContext context,
     List<ApiRequestModel> requests,
     Set<String> selectedRequestIds,
+    List<CollectionModel> collections,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,9 +247,73 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'Available Requests',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Available Requests',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    if (collections.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.filter_list,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(width: 8),
+                            DropdownButton<String?>(
+                              value: _selectedCollectionId,
+                              hint: Text(
+                                'All Collections',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              underline: const SizedBox.shrink(),
+                              dropdownColor: Theme.of(context).cardColor,
+                              focusColor: Colors.transparent,
+                              icon: Icon(
+                                Icons.arrow_drop_down,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                              items: [
+                                DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text(
+                                    'All Collections',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                                ...collections.map((collection) {
+                                  return DropdownMenuItem<String?>(
+                                    value: collection.id,
+                                    child: Text(
+                                      collection.name,
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCollectionId = value;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Expanded(
@@ -328,6 +413,7 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
     BuildContext context,
     List<ApiRequestModel> requests,
     Set<String> selectedRequestIds,
+    List<CollectionModel> collections,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -378,9 +464,73 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
                 ],
 
                 // Available requests
-                Text(
-                  'Available Requests',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Available Requests',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    if (collections.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.filter_list,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(width: 8),
+                            DropdownButton<String?>(
+                              value: _selectedCollectionId,
+                              hint: Text(
+                                'All Collections',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              underline: const SizedBox.shrink(),
+                              dropdownColor: Theme.of(context).cardColor,
+                              focusColor: Colors.transparent,
+                              icon: Icon(
+                                Icons.arrow_drop_down,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                              items: [
+                                DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text(
+                                    'All Collections',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                                ...collections.map((collection) {
+                                  return DropdownMenuItem<String?>(
+                                    value: collection.id,
+                                    child: Text(
+                                      collection.name,
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCollectionId = value;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 requests.isEmpty

@@ -10,6 +10,7 @@ import 'package:relay/core/services/api_service.dart';
 import 'package:relay/core/utils/json.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 
+import '../../../../core/models/environment_model.dart';
 import '../../../../core/presentation/widgets/app_button.dart';
 import '../../../../core/presentation/widgets/method_badge.dart';
 import '../../../../core/presentation/widgets/variable_highlight_text.dart';
