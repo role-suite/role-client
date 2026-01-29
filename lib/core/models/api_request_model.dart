@@ -11,6 +11,7 @@ class ApiRequestModel {
   final String? description;
   final String? filePath;
   final String collectionId;
+  final String? environmentName;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +26,7 @@ class ApiRequestModel {
     this.description,
     this.filePath,
     this.collectionId = 'default',
+    this.environmentName,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -40,6 +42,7 @@ class ApiRequestModel {
     String? description,
     String? filePath,
     String? collectionId,
+    String? environmentName,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -54,6 +57,7 @@ class ApiRequestModel {
       description: description ?? this.description,
       filePath: filePath ?? this.filePath,
       collectionId: collectionId ?? this.collectionId,
+      environmentName: environmentName ?? this.environmentName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -71,6 +75,7 @@ class ApiRequestModel {
       'description': description,
       'filePath': filePath,
       'collectionId': collectionId,
+      'environmentName': environmentName,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -88,6 +93,7 @@ class ApiRequestModel {
       description: json['description'] as String?,
       filePath: json['filePath'] as String?,
       collectionId: json['collectionId'] as String? ?? 'default',
+      environmentName: json['environmentName'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );

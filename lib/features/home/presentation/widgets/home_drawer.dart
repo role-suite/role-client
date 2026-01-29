@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/features/collection_runner/presentation/collection_run_history_screen.dart';
 import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
+import 'package:relay/features/request_chain/presentation/request_chain_config_screen.dart';
 import 'package:relay/features/home/presentation/providers/theme_providers.dart';
 
 class HomeDrawer extends ConsumerWidget {
@@ -109,6 +110,15 @@ class HomeDrawer extends ConsumerWidget {
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CollectionRunnerScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: const Text('Request Chain'),
+              subtitle: const Text('Chain requests with delays and response passing'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const RequestChainConfigScreen()));
               },
             ),
             ListTile(

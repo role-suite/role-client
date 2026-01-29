@@ -10,6 +10,7 @@ import 'package:relay/core/services/api_service.dart';
 import 'package:relay/core/utils/json.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 
+import '../../../../core/models/environment_model.dart';
 import '../../../../core/presentation/widgets/app_button.dart';
 import '../../../../core/presentation/widgets/method_badge.dart';
 import '../../../../core/presentation/widgets/variable_highlight_text.dart';
@@ -41,24 +42,31 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     });
 
     final envRepository = ref.read(environmentRepositoryProvider);
-    final activeEnv = await envRepository.getActiveEnvironment();
+    
+    // Use request's saved environment if it exists, otherwise use active environment
+    EnvironmentModel? environment;
+    if (widget.request.environmentName != null) {
+      environment = await envRepository.getEnvironmentByName(widget.request.environmentName!);
+    }
+    environment ??= await envRepository.getActiveEnvironment();
 
-    // Resolve templates using the active environment
-    final resolvedUrl = envRepository.resolveTemplate(widget.request.urlTemplate, activeEnv);
+    // Resolve templates using the selected environment
+    final resolvedUrl = envRepository.resolveTemplate(widget.request.urlTemplate, environment);
     final resolvedHeaders = <String, String>{
-      for (final entry in widget.request.headers.entries) entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
+      for (final entry in widget.request.headers.entries) entry.key: envRepository.resolveTemplate(entry.value, environment),
     };
     final resolvedQueryParams = <String, String>{
-      for (final entry in widget.request.queryParams.entries) entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
+      for (final entry in widget.request.queryParams.entries) entry.key: envRepository.resolveTemplate(entry.value, environment),
     };
     final rawBody = widget.request.body;
-    final resolvedBody = (rawBody != null && rawBody.trim().isNotEmpty) ? envRepository.resolveTemplate(rawBody, activeEnv) : null;
+    final resolvedBody = (rawBody != null && rawBody.trim().isNotEmpty) ? envRepository.resolveTemplate(rawBody, environment) : null;
 
     // Debug logging for easier troubleshooting
     debugPrint('==== Relay Request ====');
     debugPrint('Name: ${widget.request.name}');
     debugPrint('Method: ${widget.request.method.name}');
-    debugPrint('Active environment: ${activeEnv?.name}');
+    debugPrint('Request environment: ${widget.request.environmentName}');
+    debugPrint('Using environment: ${environment?.name}');
     debugPrint('Resolved URL: $resolvedUrl');
     debugPrint('Resolved headers: $resolvedHeaders');
     debugPrint('Resolved query params: $resolvedQueryParams');

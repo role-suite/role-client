@@ -53,6 +53,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
   final List<TextEditingController> _paramValueControllers = [];
   late HttpMethod _selectedMethod;
   String? _selectedCollectionId;
+  String? _selectedEnvironmentName;
   late final TabController _tabController;
   late final ScrollController _scrollController;
   final GlobalKey _responseSectionKey = GlobalKey();
@@ -63,6 +64,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     _currentRequest = widget.request;
     _selectedMethod = _currentRequest.method;
     _selectedCollectionId = _currentRequest.collectionId;
+    _selectedEnvironmentName = _currentRequest.environmentName;
     _nameController = TextEditingController(text: _currentRequest.name);
     _urlController = TextEditingController(text: _currentRequest.urlTemplate);
     _bodyController = TextEditingController(text: _currentRequest.body ?? '');
@@ -108,25 +110,32 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     });
 
     final envRepository = ref.read(environmentRepositoryProvider);
-    final activeEnv = await envRepository.getActiveEnvironment();
     final request = _currentRequest;
+    
+    // Use request's saved environment if it exists, otherwise use active environment
+    EnvironmentModel? environment;
+    if (request.environmentName != null) {
+      environment = await envRepository.getEnvironmentByName(request.environmentName!);
+    }
+    environment ??= await envRepository.getActiveEnvironment();
 
-    // Resolve templates using the active environment
-    final resolvedUrl = envRepository.resolveTemplate(request.urlTemplate, activeEnv);
+    // Resolve templates using the selected environment
+    final resolvedUrl = envRepository.resolveTemplate(request.urlTemplate, environment);
     final resolvedHeaders = <String, String>{
-      for (final entry in request.headers.entries) entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
+      for (final entry in request.headers.entries) entry.key: envRepository.resolveTemplate(entry.value, environment),
     };
     final resolvedQueryParams = <String, String>{
-      for (final entry in request.queryParams.entries) entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
+      for (final entry in request.queryParams.entries) entry.key: envRepository.resolveTemplate(entry.value, environment),
     };
     final runtimeBody = _requestBodyController.text;
-    final resolvedBody = runtimeBody.trim().isNotEmpty ? envRepository.resolveTemplate(runtimeBody, activeEnv) : null;
+    final resolvedBody = runtimeBody.trim().isNotEmpty ? envRepository.resolveTemplate(runtimeBody, environment) : null;
 
     // Debug logging for easier troubleshooting
     debugPrint('==== Relay Request ====');
     debugPrint('Name: ${request.name}');
     debugPrint('Method: ${request.method.name}');
-    debugPrint('Active environment: ${activeEnv?.name}');
+    debugPrint('Request environment: ${request.environmentName}');
+    debugPrint('Using environment: ${environment?.name}');
     debugPrint('Resolved URL: $resolvedUrl');
     debugPrint('Resolved headers: $resolvedHeaders');
     debugPrint('Resolved query params: $resolvedQueryParams');
@@ -197,7 +206,6 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     final request = _currentRequest;
     final theme = Theme.of(context);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
-    final activeEnvName = ref.watch(activeEnvironmentNameProvider);
     final envList = environmentsAsync.asData?.value;
 
     return Scaffold(
@@ -211,7 +219,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
           ],
         ),
         actions: [
-          _buildEnvironmentAction(context, environmentsAsync, activeEnvName),
+          _buildEnvironmentAction(context, environmentsAsync, _selectedEnvironmentName),
           const SizedBox(width: 8),
           if (widget.onDelete != null) IconButton(tooltip: 'Delete request', icon: const Icon(Icons.delete_outline), onPressed: widget.onDelete),
           IconButton(
@@ -415,31 +423,32 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
                 if (envs.isEmpty) {
                   return const SizedBox.shrink();
                 }
-                final selectedEnvironment = _findEnvironmentByName(envs, selectedEnvName);
+                final selectedEnvironment = _findEnvironmentByName(envs, _selectedEnvironmentName);
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Environment', style: theme.textTheme.titleSmall),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String?>(
-                      initialValue: selectedEnvName,
+                      value: _selectedEnvironmentName,
                       decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                       items: [
                         const DropdownMenuItem<String?>(value: null, child: Text('No Environment')),
                         ...envs.map((env) => DropdownMenuItem<String?>(value: env.name, child: Text(env.name))),
                       ],
-                      onChanged: (value) {
-                        ref.read(activeEnvironmentNameProvider.notifier).state = value;
-                        ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(value);
+                      onChanged: _isSavingEdits ? null : (value) {
+                        setState(() {
+                          _selectedEnvironmentName = value;
+                        });
                       },
                     ),
-                    if (selectedEnvName != null)
+                    if (_selectedEnvironmentName != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           selectedEnvironment != null && selectedEnvironment.variables.isNotEmpty
-                              ? 'Variables from "$selectedEnvName" can be inserted as {{variableName}}.'
-                              : 'No variables defined for "$selectedEnvName".',
+                              ? 'Variables from "$_selectedEnvironmentName" can be inserted as {{variableName}}.'
+                              : 'No variables defined for "$_selectedEnvironmentName".',
                           style: theme.textTheme.bodySmall,
                         ),
                       ),
@@ -612,7 +621,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
   }
 
   Future<void> _insertEnvironmentVariable(BuildContext context, List<EnvironmentModel> environments, TextEditingController controller) async {
-    final selectedName = ref.read(activeEnvironmentNameProvider);
+    // Use the request's selected environment instead of the global active environment
+    final selectedName = _selectedEnvironmentName;
     final environment = _findEnvironmentByName(environments, selectedName);
     if (environment == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select an environment with variables to insert.')));
@@ -701,19 +711,22 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     });
   }
 
-  Widget _buildEnvironmentAction(BuildContext context, AsyncValue<List<EnvironmentModel>> envsAsync, String? activeEnvName) {
+  Widget _buildEnvironmentAction(BuildContext context, AsyncValue<List<EnvironmentModel>> envsAsync, String? envName) {
     final theme = Theme.of(context);
+    final bool hasEnvironment = envName != null && envName.isNotEmpty;
+    final Color iconColor = hasEnvironment ? theme.colorScheme.secondary : theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    
     return envsAsync.when(
       data: (envs) => PopupMenuButton<String>(
         tooltip: 'Select environment',
         onSelected: _handleEnvironmentSelection,
-        itemBuilder: (context) => _buildEnvironmentMenuItems(envs, activeEnvName),
+        itemBuilder: (context) => _buildEnvironmentMenuItems(envs, envName),
         icon: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud, size: 20),
+            Icon(Icons.cloud, size: 20, color: iconColor),
             const SizedBox(width: 4),
-            Text(activeEnvName ?? 'No Env', style: theme.textTheme.labelMedium),
+            Text(envName ?? 'No Env', style: theme.textTheme.labelMedium),
             const Icon(Icons.arrow_drop_down),
           ],
         ),
@@ -726,13 +739,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     );
   }
 
-  List<PopupMenuEntry<String>> _buildEnvironmentMenuItems(List<EnvironmentModel> envs, String? activeEnvName) {
+  List<PopupMenuEntry<String>> _buildEnvironmentMenuItems(List<EnvironmentModel> envs, String? envName) {
     final items = <PopupMenuEntry<String>>[
       PopupMenuItem<String>(
         value: _noEnvironmentMenuValue,
         child: Row(
           children: [
-            if (activeEnvName == null) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
+            if (envName == null) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
             const SizedBox(width: 8),
             const Text('No Environment'),
           ],
@@ -748,7 +761,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
             value: env.name,
             child: Row(
               children: [
-                if (activeEnvName == env.name) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
+                if (envName == env.name) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
                 const SizedBox(width: 8),
                 Text(env.name),
               ],
@@ -763,8 +776,9 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
 
   void _handleEnvironmentSelection(String name) {
     final selectedName = name == _noEnvironmentMenuValue ? null : name;
-    ref.read(activeEnvironmentNameProvider.notifier).state = selectedName;
-    ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(selectedName);
+    setState(() {
+      _selectedEnvironmentName = selectedName;
+    });
   }
 
   void _handleAddParamRow() {
@@ -834,6 +848,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
       queryParams: params,
       body: bodyText.isNotEmpty ? bodyText : null,
       collectionId: _selectedCollectionId ?? 'default',
+      environmentName: _selectedEnvironmentName,
       updatedAt: DateTime.now(),
     );
 
@@ -1129,6 +1144,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     _requestBodyController.text = _currentRequest.body ?? '';
     _selectedMethod = _currentRequest.method;
     _selectedCollectionId = _currentRequest.collectionId;
+    _selectedEnvironmentName = _currentRequest.environmentName;
     _rebuildParamControllersFrom(_currentRequest);
   }
 }
