@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
+import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/workspace_bundle.dart';
 import 'package:relay/core/utils/extension.dart';
@@ -165,6 +166,9 @@ class _PostmanRequest {
 
   ApiRequestModel toApiRequest(String collectionId) {
     final now = DateTime.now();
+    final bodyJson = requestJson['body'];
+    final (bodyType, body, formDataFields) = _parseBodyAndType(bodyJson);
+    final (authType, authConfig) = _parseAuth(requestJson);
     return ApiRequestModel(
       id: UuidUtils.generate(),
       name: name,
@@ -172,7 +176,11 @@ class _PostmanRequest {
       urlTemplate: _parseUrl(requestJson['url']),
       headers: _parseHeaders(requestJson),
       queryParams: _parseQueryParams(requestJson['url']),
-      body: _parseBody(requestJson['body']),
+      body: body,
+      bodyType: bodyType,
+      formDataFields: formDataFields,
+      authType: authType,
+      authConfig: authConfig,
       description: _parseDescription(requestJson),
       collectionId: collectionId,
       createdAt: now,
@@ -233,26 +241,98 @@ class _PostmanRequest {
         headers[key] = header['value']?.toString() ?? '';
       }
     }
+    return headers;
+  }
 
+  (BodyType, String?, Map<String, String>) _parseBodyAndType(dynamic body) {
+    if (body is! Map<String, dynamic>) {
+      return (BodyType.raw, null, const {});
+    }
+    final mode = body['mode'];
+    if (mode == 'raw') {
+      final raw = body['raw'];
+      final s = raw is String && raw.trim().isNotEmpty ? raw : null;
+      return (BodyType.raw, s, const {});
+    }
+    if (mode == 'urlencoded' || mode == 'formdata') {
+      final key = mode == 'urlencoded' ? 'urlencoded' : 'formdata';
+      final entries = body[key];
+      if (entries is! List) return (mode == 'formdata' ? BodyType.formData : BodyType.urlEncoded, null, const {});
+      final map = <String, String>{};
+      for (final entry in entries) {
+        if (entry is! Map<String, dynamic>) continue;
+        if (entry['disabled'] == true) continue;
+        final k = (entry['key'] as String?)?.trim();
+        if (k == null || k.isEmpty) continue;
+        final type = entry['type'] as String? ?? 'text';
+        if (type == 'file') {
+          map[k] = '[file] ${entry['src'] ?? ''}';
+        } else {
+          map[k] = entry['value']?.toString() ?? '';
+        }
+      }
+      return (mode == 'formdata' ? BodyType.formData : BodyType.urlEncoded, null, map);
+    }
+    return (BodyType.raw, null, const {});
+  }
+
+  (AuthType, Map<String, String>) _parseAuth(Map<String, dynamic> json) {
     final auth = json['auth'];
-    if (auth is Map<String, dynamic>) {
-      final type = auth['type'];
-      if (type == 'bearer') {
-        final bearerList = auth['bearer'];
-        if (bearerList is List) {
-          for (final bearer in bearerList) {
-            if (bearer is! Map<String, dynamic>) continue;
-            final token = bearer['value']?.toString();
-            if (token != null && token.isNotEmpty) {
-              headers.putIfAbsent('Authorization', () => 'Bearer $token');
-              break;
-            }
+    if (auth is! Map<String, dynamic>) return (AuthType.none, const {});
+    final type = auth['type'];
+    if (type == 'bearer') {
+      final bearerList = auth['bearer'];
+      if (bearerList is List) {
+        for (final bearer in bearerList) {
+          if (bearer is! Map<String, dynamic>) continue;
+          final token = bearer['value']?.toString()?.trim();
+          if (token != null && token.isNotEmpty) {
+            return (AuthType.bearer, {AuthConfigKeys.token: token});
           }
         }
       }
     }
-
-    return headers;
+    if (type == 'basic') {
+      final basicList = auth['basic'];
+      if (basicList is List) {
+        String? username;
+        String? password;
+        for (final entry in basicList) {
+          if (entry is! Map<String, dynamic>) continue;
+          final k = (entry['key'] as String?)?.toLowerCase();
+          final v = entry['value']?.toString() ?? '';
+          if (k == 'username') username = v;
+          if (k == 'password') password = v;
+        }
+        if (username != null || password != null) {
+          return (AuthType.basic, {
+            if (username != null) AuthConfigKeys.username: username,
+            if (password != null) AuthConfigKeys.password: password,
+          });
+        }
+      }
+    }
+    if (type == 'apikey') {
+      final list = auth['apikey'];
+      if (list is List) {
+        String? keyHeader;
+        String? value;
+        for (final entry in list) {
+          if (entry is! Map<String, dynamic>) continue;
+          final k = (entry['key'] as String?)?.toLowerCase();
+          final v = entry['value']?.toString() ?? '';
+          if (k == 'key') keyHeader = v;
+          if (k == 'value') value = v;
+        }
+        if (keyHeader != null && keyHeader.isNotEmpty) {
+          return (AuthType.apiKey, {
+            AuthConfigKeys.key: keyHeader,
+            AuthConfigKeys.value: value ?? '',
+          });
+        }
+      }
+    }
+    return (AuthType.none, const {});
   }
 
   Map<String, String> _parseQueryParams(dynamic rawUrl) {
@@ -270,43 +350,6 @@ class _PostmanRequest {
       }
     }
     return params;
-  }
-
-  String? _parseBody(dynamic body) {
-    if (body is! Map<String, dynamic>) {
-      return null;
-    }
-    final mode = body['mode'];
-    if (mode == 'raw') {
-      final raw = body['raw'];
-      return raw is String && raw.trim().isNotEmpty ? raw : null;
-    }
-
-    if (mode == 'urlencoded' || mode == 'formdata') {
-      final entries = body[mode];
-      if (entries is! List) {
-        return null;
-      }
-      final map = <String, dynamic>{};
-      for (final entry in entries) {
-        if (entry is! Map<String, dynamic>) continue;
-        if (entry['disabled'] == true) continue;
-        final key = (entry['key'] as String?)?.trim();
-        if (key == null || key.isEmpty) continue;
-        final type = entry['type'] as String? ?? 'text';
-        if (type == 'file') {
-          map[key] = '[file] ${entry['src'] ?? ''}';
-        } else {
-          map[key] = entry['value']?.toString() ?? '';
-        }
-      }
-      if (map.isEmpty) {
-        return null;
-      }
-      return const JsonEncoder.withIndent('  ').convert(map);
-    }
-
-    return null;
   }
 
   String? _parseDescription(Map<String, dynamic> requestJson) {

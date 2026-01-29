@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/services/api_service.dart';
+import 'package:relay/core/utils/request_build_helper.dart';
 import 'package:relay/core/utils/template_resolver.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_item.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_result.dart';
@@ -137,19 +138,12 @@ class RequestChainService {
     required EnvironmentModel? environment,
     required int index,
   }) async {
-    final resolvedUrl = _environmentRepository.resolveTemplate(request.urlTemplate, environment);
-
-    final resolvedHeaders = <String, String>{
-      for (final entry in request.headers.entries)
-        entry.key: _environmentRepository.resolveTemplate(entry.value, environment),
-    };
-
+    String resolve(String s) => _environmentRepository.resolveTemplate(s, environment);
+    final resolvedUrl = resolve(request.urlTemplate);
     final resolvedQueryParams = <String, String>{
-      for (final entry in request.queryParams.entries)
-        entry.key: _environmentRepository.resolveTemplate(entry.value, environment),
+      for (final entry in request.queryParams.entries) entry.key: resolve(entry.value),
     };
-
-    final resolvedBody = (body != null && body.trim().isNotEmpty) ? body : null;
+    final built = RequestBuildHelper.buildForSend(request, resolve, rawBody: body);
 
     final dio = ApiService.instance.dio;
     final stopwatch = Stopwatch()..start();
@@ -159,10 +153,10 @@ class RequestChainService {
         resolvedUrl,
         options: Options(
           method: request.method.name,
-          headers: resolvedHeaders.isEmpty ? null : resolvedHeaders,
+          headers: built.headers.isEmpty ? null : built.headers,
         ),
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
-        data: resolvedBody,
+        data: built.body,
       );
       stopwatch.stop();
 

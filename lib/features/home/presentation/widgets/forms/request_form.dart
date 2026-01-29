@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
+import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 import '../../../../../core/presentation/widgets/app_dropdown.dart';
 import '../../../../../core/presentation/widgets/app_text_field.dart';
@@ -23,8 +24,14 @@ class RequestForm extends ConsumerWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
+        final headerKeyControllers = controller.headerKeyControllers;
+        final headerValueControllers = controller.headerValueControllers;
         final paramKeyControllers = controller.paramKeyControllers;
         final paramValueControllers = controller.paramValueControllers;
+        final formDataKeyControllers = controller.formDataKeyControllers;
+        final formDataValueControllers = controller.formDataValueControllers;
+        final bodyType = controller.selectedBodyType;
+        final authType = controller.selectedAuthType;
 
         Widget buildMethodAndUrlFields() {
           final methodDropdown = AppDropdown<HttpMethod>(
@@ -62,60 +69,74 @@ class RequestForm extends ConsumerWidget {
           );
         }
 
-        Widget buildParamHeader() {
-          final headerText = Text('Query / Path Parameters (optional)', style: Theme.of(context).textTheme.titleSmall, softWrap: true);
-          final addButton = TextButton.icon(
-            onPressed: isSubmitting ? null : controller.addParamRow,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Param'),
-          );
-
+        Widget buildSectionHeader(String title, VoidCallback? onAdd, {String addLabel = 'Add'}) {
+          final headerText = Text(title, style: Theme.of(context).textTheme.titleSmall, softWrap: true);
+          final addButton = onAdd == null
+              ? null
+              : TextButton.icon(
+                  onPressed: isSubmitting ? null : onAdd,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(addLabel),
+                );
           if (isCompact) {
-            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [headerText, const SizedBox(height: 8), addButton]);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [headerText, if (addButton != null) ...[const SizedBox(height: 8), addButton]],
+            );
           }
-
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: headerText),
-              const SizedBox(width: 8),
-              addButton,
+              if (addButton != null) ...[const SizedBox(width: 8), addButton],
             ],
           );
         }
 
-        Widget buildParamRow(int index) {
-          final keyField = AppTextField(controller: paramKeyControllers[index], label: 'Key', hint: 'userId', enabled: !isSubmitting);
-          final valueField = _EnvAwareTextField(
-            controller: controller,
-            targetController: paramValueControllers[index],
-            label: 'Value',
-            hint: '123',
-            isSubmitting: isSubmitting,
+        Widget buildKeyValueRow({
+          required List<TextEditingController> keyControllers,
+          required List<TextEditingController> valueControllers,
+          required int index,
+          required VoidCallback onRemove,
+          required String keyHint,
+          required String valueHint,
+          bool valueEnvAware = true,
+        }) {
+          final keyField = AppTextField(
+            controller: keyControllers[index],
+            label: 'Key',
+            hint: keyHint,
+            enabled: !isSubmitting,
           );
+          final valueField = valueEnvAware
+              ? _EnvAwareTextField(
+                  controller: controller,
+                  targetController: valueControllers[index],
+                  label: 'Value',
+                  hint: valueHint,
+                  isSubmitting: isSubmitting,
+                )
+              : AppTextField(
+                  controller: valueControllers[index],
+                  label: 'Value',
+                  hint: valueHint,
+                  enabled: !isSubmitting,
+                );
           final removeButton = IconButton(
             icon: const Icon(Icons.delete_outline),
-            tooltip: 'Remove param',
-            onPressed: isSubmitting ? null : () => controller.removeParamRow(index),
+            tooltip: 'Remove',
+            onPressed: isSubmitting ? null : onRemove,
           );
-
           if (isCompact) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 keyField,
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: valueField),
-                    const SizedBox(width: 8),
-                    removeButton,
-                  ],
-                ),
+                Row(children: [Expanded(child: valueField), const SizedBox(width: 8), removeButton]),
               ],
             );
           }
-
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -125,6 +146,183 @@ class RequestForm extends ConsumerWidget {
               const SizedBox(width: 8),
               removeButton,
             ],
+          );
+        }
+
+        Widget buildHeadersSection() {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              buildSectionHeader('Headers (optional)', controller.addHeaderRow, addLabel: 'Add Header'),
+              const SizedBox(height: 8),
+              ...List.generate(headerKeyControllers.length, (i) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: buildKeyValueRow(
+                  keyControllers: headerKeyControllers,
+                  valueControllers: headerValueControllers,
+                  index: i,
+                  onRemove: () => controller.removeHeaderRow(i),
+                  keyHint: 'Content-Type',
+                  valueHint: 'application/json',
+                  valueEnvAware: true,
+                ),
+              )),
+            ],
+          );
+        }
+
+        Widget buildBodySection() {
+          final bodyTypeDropdown = AppDropdown<BodyType>(
+            label: 'Body type',
+            value: bodyType,
+            items: BodyType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.displayName))).toList(),
+            enabled: !isSubmitting,
+            isExpanded: true,
+            onChanged: (v) {
+              if (v == null || isSubmitting) return;
+              controller.selectedBodyType = v;
+            },
+          );
+          final showRaw = bodyType == BodyType.raw;
+          final showForm = bodyType == BodyType.formData || bodyType == BodyType.urlEncoded;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              bodyTypeDropdown,
+              if (showRaw) ...[
+                const SizedBox(height: 12),
+                _EnvAwareTextField(
+                  controller: controller,
+                  targetController: controller.bodyController,
+                  label: 'Body (optional)',
+                  hint: '{ "key": "value" }',
+                  maxLines: 4,
+                  isSubmitting: isSubmitting,
+                ),
+              ],
+              if (showForm) ...[
+                const SizedBox(height: 12),
+                buildSectionHeader(
+                  bodyType == BodyType.formData ? 'Form Data' : 'URL-encoded fields',
+                  controller.addFormDataRow,
+                  addLabel: 'Add field',
+                ),
+                const SizedBox(height: 8),
+                ...List.generate(formDataKeyControllers.length, (i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: buildKeyValueRow(
+                    keyControllers: formDataKeyControllers,
+                    valueControllers: formDataValueControllers,
+                    index: i,
+                    onRemove: () => controller.removeFormDataRow(i),
+                    keyHint: 'fieldName',
+                    valueHint: 'value',
+                    valueEnvAware: true,
+                  ),
+                )),
+              ],
+              if (bodyType == BodyType.binary) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Binary body: use a file path or leave empty. File picker support can be added later.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ],
+          );
+        }
+
+        Widget buildAuthSection() {
+          final authDropdown = AppDropdown<AuthType>(
+            label: 'Auth',
+            value: authType,
+            items: AuthType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.displayName))).toList(),
+            enabled: !isSubmitting,
+            isExpanded: true,
+            onChanged: (v) {
+              if (v == null || isSubmitting) return;
+              controller.selectedAuthType = v;
+            },
+          );
+          Widget? authFields;
+          switch (authType) {
+            case AuthType.bearer:
+              authFields = _EnvAwareTextField(
+                controller: controller,
+                targetController: controller.authTokenController,
+                label: 'Bearer Token',
+                hint: 'Your token or {{variable}}',
+                isSubmitting: isSubmitting,
+              );
+              break;
+            case AuthType.basic:
+              authFields = Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _EnvAwareTextField(
+                    controller: controller,
+                    targetController: controller.authUsernameController,
+                    label: 'Username',
+                    hint: 'username',
+                    isSubmitting: isSubmitting,
+                  ),
+                  const SizedBox(height: 12),
+                  _EnvAwareTextField(
+                    controller: controller,
+                    targetController: controller.authPasswordController,
+                    label: 'Password',
+                    hint: 'password',
+                    isSubmitting: isSubmitting,
+                  ),
+                ],
+              );
+              break;
+            case AuthType.apiKey:
+              authFields = Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppTextField(
+                    controller: controller.authApiKeyHeaderController,
+                    label: 'Header name',
+                    hint: 'X-Api-Key',
+                    enabled: !isSubmitting,
+                  ),
+                  const SizedBox(height: 12),
+                  _EnvAwareTextField(
+                    controller: controller,
+                    targetController: controller.authApiKeyValueController,
+                    label: 'Value',
+                    hint: 'key or {{variable}}',
+                    isSubmitting: isSubmitting,
+                  ),
+                ],
+              );
+              break;
+            case AuthType.none:
+              break;
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              authDropdown,
+              if (authFields != null) ...[const SizedBox(height: 12), authFields],
+            ],
+          );
+        }
+
+        Widget buildParamHeader() {
+          return buildSectionHeader('Query / Path Parameters (optional)', controller.addParamRow, addLabel: 'Add Param');
+        }
+
+        Widget buildParamRow(int index) {
+          return buildKeyValueRow(
+            keyControllers: paramKeyControllers,
+            valueControllers: paramValueControllers,
+            index: index,
+            onRemove: () => controller.removeParamRow(index),
+            keyHint: 'userId',
+            valueHint: '123',
+            valueEnvAware: true,
           );
         }
 
@@ -170,20 +368,15 @@ class RequestForm extends ConsumerWidget {
             const SizedBox(height: 16),
             buildMethodAndUrlFields(),
             const SizedBox(height: 16),
-            _EnvAwareTextField(
-              controller: controller,
-              targetController: controller.bodyController,
-              label: 'Body (optional)',
-              hint: '{ "key": "value" }',
-              maxLines: 4,
-              isSubmitting: isSubmitting,
-            ),
+            buildHeadersSection(),
+            const SizedBox(height: 16),
+            buildBodySection(),
+            const SizedBox(height: 16),
+            buildAuthSection(),
             const SizedBox(height: 16),
             buildParamHeader(),
             const SizedBox(height: 8),
-            ...List.generate(paramKeyControllers.length, (index) {
-              return Padding(padding: const EdgeInsets.only(bottom: 8), child: buildParamRow(index));
-            }),
+            ...List.generate(paramKeyControllers.length, (index) => Padding(padding: const EdgeInsets.only(bottom: 8), child: buildParamRow(index))),
           ],
         );
       },

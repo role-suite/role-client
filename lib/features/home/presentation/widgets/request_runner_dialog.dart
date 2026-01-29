@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/services/api_service.dart';
 import 'package:relay/core/utils/json.dart';
+import 'package:relay/core/utils/request_build_helper.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
-
-import '../../../../core/models/environment_model.dart';
 import '../../../../core/presentation/widgets/app_button.dart';
 import '../../../../core/presentation/widgets/method_badge.dart';
 import '../../../../core/presentation/widgets/variable_highlight_text.dart';
@@ -50,27 +50,18 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     }
     environment ??= await envRepository.getActiveEnvironment();
 
-    // Resolve templates using the selected environment
-    final resolvedUrl = envRepository.resolveTemplate(widget.request.urlTemplate, environment);
-    final resolvedHeaders = <String, String>{
-      for (final entry in widget.request.headers.entries) entry.key: envRepository.resolveTemplate(entry.value, environment),
-    };
+    String resolve(String s) => envRepository.resolveTemplate(s, environment);
+    final resolvedUrl = resolve(widget.request.urlTemplate);
     final resolvedQueryParams = <String, String>{
-      for (final entry in widget.request.queryParams.entries) entry.key: envRepository.resolveTemplate(entry.value, environment),
+      for (final entry in widget.request.queryParams.entries) entry.key: resolve(entry.value),
     };
-    final rawBody = widget.request.body;
-    final resolvedBody = (rawBody != null && rawBody.trim().isNotEmpty) ? envRepository.resolveTemplate(rawBody, environment) : null;
+    final built = RequestBuildHelper.buildForSend(widget.request, resolve, rawBody: widget.request.body);
 
-    // Debug logging for easier troubleshooting
     debugPrint('==== Relay Request ====');
     debugPrint('Name: ${widget.request.name}');
     debugPrint('Method: ${widget.request.method.name}');
-    debugPrint('Request environment: ${widget.request.environmentName}');
-    debugPrint('Using environment: ${environment?.name}');
     debugPrint('Resolved URL: $resolvedUrl');
-    debugPrint('Resolved headers: $resolvedHeaders');
-    debugPrint('Resolved query params: $resolvedQueryParams');
-    debugPrint('Resolved body: $resolvedBody');
+    debugPrint('Resolved headers: ${built.headers}');
 
     final dio = ApiService.instance.dio;
 
@@ -78,9 +69,9 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     try {
       final response = await dio.request<dynamic>(
         resolvedUrl,
-        options: Options(method: widget.request.method.name, headers: resolvedHeaders.isEmpty ? null : resolvedHeaders),
+        options: Options(method: widget.request.method.name, headers: built.headers.isEmpty ? null : built.headers),
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
-        data: resolvedBody,
+        data: built.body,
       );
       stopwatch.stop();
       setState(() {
