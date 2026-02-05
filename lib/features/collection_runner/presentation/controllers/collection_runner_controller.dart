@@ -5,6 +5,7 @@ import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/services/api_service.dart';
 import 'package:relay/core/utils/logger.dart';
+import 'package:relay/core/utils/request_build_helper.dart';
 import 'package:relay/features/collection_runner/data/services/collection_run_history_service.dart';
 import 'package:relay/features/collection_runner/domain/models/collection_run_result.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
@@ -145,18 +146,12 @@ class CollectionRunnerController extends StateNotifier<CollectionRunnerState> {
       environment ??= collectionEnvironment;
     }
     
-    final resolvedUrl = _environmentRepository.resolveTemplate(request.urlTemplate, environment);
-
-    final resolvedHeaders = <String, String>{
-      for (final entry in request.headers.entries) entry.key: _environmentRepository.resolveTemplate(entry.value, environment),
-    };
-
+    String resolve(String s) => _environmentRepository.resolveTemplate(s, environment);
+    final resolvedUrl = resolve(request.urlTemplate);
     final resolvedQueryParams = <String, String>{
-      for (final entry in request.queryParams.entries) entry.key: _environmentRepository.resolveTemplate(entry.value, environment),
+      for (final entry in request.queryParams.entries) entry.key: resolve(entry.value),
     };
-
-    final rawBody = request.body;
-    final resolvedBody = (rawBody != null && rawBody.trim().isNotEmpty) ? _environmentRepository.resolveTemplate(rawBody, environment) : null;
+    final built = RequestBuildHelper.buildForSend(request, resolve, rawBody: request.body);
 
     final dio = ApiService.instance.dio;
     final stopwatch = Stopwatch()..start();
@@ -164,9 +159,9 @@ class CollectionRunnerController extends StateNotifier<CollectionRunnerState> {
     try {
       final response = await dio.request<dynamic>(
         resolvedUrl,
-        options: Options(method: request.method.name, headers: resolvedHeaders.isEmpty ? null : resolvedHeaders),
+        options: Options(method: request.method.name, headers: built.headers.isEmpty ? null : built.headers),
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
-        data: resolvedBody,
+        data: built.body,
       );
       stopwatch.stop();
 

@@ -11,6 +11,7 @@ import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/services/api_service.dart';
 import 'package:relay/core/utils/json.dart';
 import 'package:relay/core/utils/extension.dart';
+import 'package:relay/core/utils/request_build_helper.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 import 'package:relay/features/home/presentation/providers/collection_providers.dart';
 import 'package:relay/features/home/presentation/providers/request_providers.dart';
@@ -120,26 +121,22 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     environment ??= await envRepository.getActiveEnvironment();
 
     // Resolve templates using the selected environment
-    final resolvedUrl = envRepository.resolveTemplate(request.urlTemplate, environment);
-    final resolvedHeaders = <String, String>{
-      for (final entry in request.headers.entries) entry.key: envRepository.resolveTemplate(entry.value, environment),
-    };
+    String resolve(String s) => envRepository.resolveTemplate(s, environment);
+    final resolvedUrl = resolve(request.urlTemplate);
     final resolvedQueryParams = <String, String>{
-      for (final entry in request.queryParams.entries) entry.key: envRepository.resolveTemplate(entry.value, environment),
+      for (final entry in request.queryParams.entries) entry.key: resolve(entry.value),
     };
-    final runtimeBody = _requestBodyController.text;
-    final resolvedBody = runtimeBody.trim().isNotEmpty ? envRepository.resolveTemplate(runtimeBody, environment) : null;
+    final built = RequestBuildHelper.buildForSend(request, resolve, rawBody: _requestBodyController.text);
 
-    // Debug logging for easier troubleshooting
     debugPrint('==== Relay Request ====');
     debugPrint('Name: ${request.name}');
     debugPrint('Method: ${request.method.name}');
     debugPrint('Request environment: ${request.environmentName}');
     debugPrint('Using environment: ${environment?.name}');
     debugPrint('Resolved URL: $resolvedUrl');
-    debugPrint('Resolved headers: $resolvedHeaders');
+    debugPrint('Resolved headers: ${built.headers}');
     debugPrint('Resolved query params: $resolvedQueryParams');
-    debugPrint('Resolved body: $resolvedBody');
+    debugPrint('Body: ${built.body}');
 
     final dio = ApiService.instance.dio;
 
@@ -147,9 +144,9 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     try {
       final response = await dio.request<dynamic>(
         resolvedUrl,
-        options: Options(method: request.method.name, headers: resolvedHeaders.isEmpty ? null : resolvedHeaders),
+        options: Options(method: request.method.name, headers: built.headers.isEmpty ? null : built.headers),
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
-        data: resolvedBody,
+        data: built.body,
       );
       stopwatch.stop();
       setState(() {
