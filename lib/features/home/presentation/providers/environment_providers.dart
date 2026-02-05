@@ -35,12 +35,24 @@ class ActiveEnvironmentNotifier extends StateNotifier<AsyncValue<EnvironmentMode
   }
 
   Future<void> _loadActiveEnvironment() async {
-    state = const AsyncValue.loading();
+    try {
+      state = const AsyncValue.loading();
+    } on StateError {
+      return;
+    }
     try {
       final environment = await _getActiveEnvironmentUseCase();
-      state = AsyncValue.data(environment);
+      try {
+        state = AsyncValue.data(environment);
+      } on StateError {
+        return;
+      }
     } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+      try {
+        state = AsyncValue.error(e, stackTrace);
+      } on StateError {
+        return;
+      }
     }
   }
 
@@ -76,12 +88,24 @@ class EnvironmentsNotifier extends StateNotifier<AsyncValue<List<EnvironmentMode
   }
 
   Future<void> _loadEnvironments() async {
-    state = const AsyncValue.loading();
+    try {
+      state = const AsyncValue.loading();
+    } on StateError {
+      return; // Notifier disposed (e.g. data source switched).
+    }
     try {
       final environments = await _getAllEnvironmentsUseCase();
-      state = AsyncValue.data(environments);
+      try {
+        state = AsyncValue.data(environments);
+      } on StateError {
+        // Notifier disposed; ignore.
+      }
     } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+      try {
+        state = AsyncValue.error(e, stackTrace);
+      } on StateError {
+        // Notifier disposed; ignore.
+      }
     }
   }
 

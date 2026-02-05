@@ -643,6 +643,7 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
         return;
       }
 
+      if (!mounted) return;
       final selectedChain = await showModalBottomSheet<SavedRequestChain>(
         context: context,
         shape: const RoundedRectangleBorder(
@@ -671,7 +672,7 @@ class _RequestChainConfigScreenState extends ConsumerState<RequestChainConfigScr
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: savedChains.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (_, index) {
                         final chain = savedChains[index];
                         return ListTile(

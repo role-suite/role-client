@@ -361,12 +361,24 @@ class RequestFormController extends ChangeNotifier {
     _authPasswordController.dispose();
     _authApiKeyHeaderController.dispose();
     _authApiKeyValueController.dispose();
-    for (final c in _headerKeyControllers) c.dispose();
-    for (final c in _headerValueControllers) c.dispose();
-    for (final c in _paramKeyControllers) c.dispose();
-    for (final c in _paramValueControllers) c.dispose();
-    for (final c in _formDataKeyControllers) c.dispose();
-    for (final c in _formDataValueControllers) c.dispose();
+    for (final c in _headerKeyControllers) {
+      c.dispose();
+    }
+    for (final c in _headerValueControllers) {
+      c.dispose();
+    }
+    for (final c in _paramKeyControllers) {
+      c.dispose();
+    }
+    for (final c in _paramValueControllers) {
+      c.dispose();
+    }
+    for (final c in _formDataKeyControllers) {
+      c.dispose();
+    }
+    for (final c in _formDataValueControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 }

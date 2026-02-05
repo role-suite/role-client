@@ -285,7 +285,7 @@ class _PostmanRequest {
       if (bearerList is List) {
         for (final bearer in bearerList) {
           if (bearer is! Map<String, dynamic>) continue;
-          final token = bearer['value']?.toString()?.trim();
+          final token = bearer['value']?.toString().trim();
           if (token != null && token.isNotEmpty) {
             return (AuthType.bearer, {AuthConfigKeys.token: token});
           }
@@ -306,8 +306,8 @@ class _PostmanRequest {
         }
         if (username != null || password != null) {
           return (AuthType.basic, {
-            if (username != null) AuthConfigKeys.username: username,
-            if (password != null) AuthConfigKeys.password: password,
+            ...? (username != null ? {AuthConfigKeys.username: username} : null),
+            ...? (password != null ? {AuthConfigKeys.password: password} : null),
           });
         }
       }

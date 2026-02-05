@@ -6,14 +6,16 @@ import 'package:relay/core/services/file_storage_service.dart';
 import 'package:relay/core/services/workspace_service.dart';
 import 'package:relay/core/utils/logger.dart';
 
+import 'collection_data_source.dart';
+
 /// Data source for local file-based storage of collections
-class CollectionLocalDataSource {
+class CollectionLocalDataSource implements CollectionDataSource {
   final FileStorageService _fileStorageService;
   final WorkspaceService _workspaceService;
 
   CollectionLocalDataSource(this._fileStorageService, this._workspaceService);
 
-  /// Get all collections
+  @override
   Future<List<CollectionModel>> getAllCollections() async {
     final collectionsDir = await _workspaceService.resolvePath([AppPaths.collections]);
     final dir = Directory(collectionsDir);
@@ -115,7 +117,7 @@ class CollectionLocalDataSource {
     return collections;
   }
 
-  /// Get a collection by ID
+  @override
   Future<CollectionModel?> getCollectionById(String id) async {
     final allCollections = await getAllCollections();
     try {
@@ -125,7 +127,7 @@ class CollectionLocalDataSource {
     }
   }
 
-  /// Get a collection by name
+  @override
   Future<CollectionModel?> getCollectionByName(String name) async {
     final allCollections = await getAllCollections();
     try {
@@ -135,7 +137,7 @@ class CollectionLocalDataSource {
     }
   }
 
-  /// Save a collection (create or update)
+  @override
   Future<void> saveCollection(CollectionModel collection) async {
     // Validate collection before saving
     if (collection.id.isEmpty) {
@@ -168,8 +170,7 @@ class CollectionLocalDataSource {
     }
   }
 
-  /// Delete a collection by ID
-  /// This will also delete all requests in the collection since they're stored in the collection directory
+  @override
   Future<void> deleteCollection(String id) async {
     // Prevent deleting the default collection
     if (id == 'default') {
@@ -185,7 +186,7 @@ class CollectionLocalDataSource {
     }
   }
 
-  /// Check if a collection exists by name
+  @override
   Future<bool> collectionExists(String name) async {
     final collection = await getCollectionByName(name);
     return collection != null;

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/app_constants.dart';
+import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/features/collection_runner/presentation/collection_run_history_screen.dart';
 import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
 import 'package:relay/features/request_chain/presentation/request_chain_config_screen.dart';
-import 'package:relay/features/home/presentation/providers/theme_providers.dart';
+import 'package:relay/features/home/presentation/providers/providers.dart';
+import 'package:relay/features/home/presentation/widgets/dialogs/data_source_config_dialog.dart';
 
 class HomeDrawer extends ConsumerWidget {
   const HomeDrawer({
@@ -130,6 +132,8 @@ class HomeDrawer extends ConsumerWidget {
                 Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CollectionRunHistoryScreen()));
               },
             ),
+            const Divider(height: 0),
+            _DataSourceSection(ref: ref),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
               child: Container(
@@ -179,5 +183,126 @@ class HomeDrawer extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _DataSourceSection extends ConsumerWidget {
+  const _DataSourceSection({required this.ref});
+
+  final WidgetRef ref;
+
+  void _invalidateWorkspaceProviders() {
+    ref.invalidate(collectionsNotifierProvider);
+    ref.invalidate(requestsNotifierProvider);
+    ref.invalidate(environmentsNotifierProvider);
+    ref.invalidate(activeEnvironmentNotifierProvider);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final state = ref.watch(dataSourceStateNotifierProvider);
+
+    return state.when(
+      loading: () => const ListTile(
+        leading: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+        title: Text('Data source'),
+      ),
+      error: (error, stackTrace) => ListTile(
+        leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+        title: const Text('Data source'),
+        subtitle: const Text('Using local storage'),
+      ),
+      data: (s) {
+        final isApi = s.mode == DataSourceMode.api;
+        final configValid = s.config.isValid;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Data source', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Text(
+                  'Choose where to load collections and environments from.',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilterChip(
+                        label: const Text('Local'),
+                        selected: !isApi,
+                        onSelected: (_) async {
+                          if (isApi) {
+                            await ref.read(dataSourceStateNotifierProvider.notifier).setMode(DataSourceMode.local);
+                            _invalidateWorkspaceProviders();
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilterChip(
+                        label: const Text('API'),
+                        selected: isApi,
+                        onSelected: (_) async {
+                          if (!isApi) {
+                            await ref.read(dataSourceStateNotifierProvider.notifier).setMode(DataSourceMode.api);
+                            if (!configValid) {
+                              if (context.mounted) {
+                                await showDialog<void>(
+                                  context: context,
+                                  builder: (_) => DataSourceConfigDialog(initialConfig: s.config),
+                                );
+                              }
+                            }
+                            _invalidateWorkspaceProviders();
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                if (isApi) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    configValid
+                        ? 'Base URL: ${_shortUrl(s.config.baseUrl)}'
+                        : 'Set base URL to load workspace from API.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 6),
+                  TextButton.icon(
+                    onPressed: () async {
+                      await showDialog<void>(
+                        context: context,
+                        builder: (_) => DataSourceConfigDialog(initialConfig: s.config),
+                      );
+                      _invalidateWorkspaceProviders();
+                    },
+                    icon: const Icon(Icons.settings, size: 18),
+                    label: Text(configValid ? 'Change API URL' : 'Configure API'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static String _shortUrl(String url) {
+    if (url.length <= 40) return url;
+    return '${url.substring(0, 20)}…${url.substring(url.length - 15)}';
   }
 }

@@ -1,10 +1,10 @@
 import 'package:relay/core/models/api_request_model.dart';
-import 'package:relay/features/home/data/datasources/request_local_data_source.dart';
+import 'package:relay/features/home/data/datasources/request_data_source.dart';
 import 'package:relay/features/home/domain/repositories/request_repository.dart';
 
-/// Implementation of RequestRepository using local file storage
+/// Implementation of RequestRepository (local or remote data source).
 class RequestRepositoryImpl implements RequestRepository {
-  final RequestLocalDataSource _dataSource;
+  final RequestDataSource _dataSource;
 
   RequestRepositoryImpl(this._dataSource);
 

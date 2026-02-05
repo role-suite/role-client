@@ -27,12 +27,24 @@ class RequestsNotifier extends StateNotifier<AsyncValue<List<ApiRequestModel>>> 
   }
 
   Future<void> _loadRequests() async {
-    state = const AsyncValue.loading();
+    try {
+      state = const AsyncValue.loading();
+    } on StateError {
+      return; // Notifier disposed (e.g. data source switched).
+    }
     try {
       final requests = await _getAllRequestsUseCase();
-      state = AsyncValue.data(requests);
+      try {
+        state = AsyncValue.data(requests);
+      } on StateError {
+        // Notifier disposed; ignore.
+      }
     } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+      try {
+        state = AsyncValue.error(e, stackTrace);
+      } on StateError {
+        // Notifier disposed; ignore.
+      }
     }
   }
 

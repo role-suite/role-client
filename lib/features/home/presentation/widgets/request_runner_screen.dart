@@ -307,7 +307,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     final theme = Theme.of(context);
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
-    final selectedEnvName = ref.watch(activeEnvironmentNameProvider);
+    final _ = ref.watch(activeEnvironmentNameProvider);
     final envList = environmentsAsync.asData?.value;
     final isCompact = MediaQuery.of(context).size.width < 600;
 
@@ -427,7 +427,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
                     Text('Environment', style: theme.textTheme.titleSmall),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String?>(
-                      value: _selectedEnvironmentName,
+                      initialValue: _selectedEnvironmentName,
                       decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                       items: [
                         const DropdownMenuItem<String?>(value: null, child: Text('No Environment')),

@@ -6,14 +6,16 @@ import 'package:relay/core/services/file_storage_service.dart';
 import 'package:relay/core/services/workspace_service.dart';
 import 'package:relay/core/utils/logger.dart';
 
+import 'request_data_source.dart';
+
 /// Data source for local file-based storage of API requests
-class RequestLocalDataSource {
+class RequestLocalDataSource implements RequestDataSource {
   final FileStorageService _fileStorageService;
   final WorkspaceService _workspaceService;
 
   RequestLocalDataSource(this._fileStorageService, this._workspaceService);
 
-  /// Get all requests from all collections
+  @override
   Future<List<ApiRequestModel>> getAllRequests() async {
     final collectionsDir = await _workspaceService.resolvePath([AppPaths.collections]);
     final dir = Directory(collectionsDir);
@@ -54,7 +56,7 @@ class RequestLocalDataSource {
     return allRequests;
   }
 
-  /// Get requests by collection/folder
+  @override
   Future<List<ApiRequestModel>> getRequestsByCollection(String collection) async {
     final dirPath = await _workspaceService.resolvePath([AppPaths.collections, collection]);
     final dir = Directory(dirPath);
@@ -95,7 +97,7 @@ class RequestLocalDataSource {
     return requests;
   }
 
-  /// Get a request by ID (searches all collections)
+  @override
   Future<ApiRequestModel?> getRequestById(String id) async {
     // Search in all collections
     final collectionsDir = await _workspaceService.resolvePath([AppPaths.collections]);
@@ -130,8 +132,7 @@ class RequestLocalDataSource {
     return null;
   }
 
-  /// Save a request (create or update)
-  /// If the collectionId has changed, moves the file to the new collection
+  @override
   Future<void> saveRequest(ApiRequestModel request) async {
     // Validate request before saving
     if (request.id.isEmpty) {
@@ -177,7 +178,7 @@ class RequestLocalDataSource {
     }
   }
 
-  /// Delete a request by ID (searches all collections)
+  @override
   Future<void> deleteRequest(String id) async {
     // Find the request first to know which collection it's in
     final request = await getRequestById(id);
