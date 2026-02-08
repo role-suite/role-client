@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
+import 'package:relay/core/models/data_source_config.dart';
+import 'package:relay/core/services/data_source_preferences_service.dart';
+import 'package:relay/core/services/sync_to_remote_service.dart';
 import 'package:relay/features/collection_runner/presentation/collection_run_history_screen.dart';
 import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
 import 'package:relay/features/request_chain/presentation/request_chain_config_screen.dart';
@@ -301,12 +304,63 @@ class _DataSourceSection extends ConsumerWidget {
                     label: Text(configValid ? 'Change API URL' : 'Configure API'),
                   ),
                 ],
+                if (!isApi) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Push your local collections and environments to a remote server.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 6),
+                  FilledButton.tonalIcon(
+                    onPressed: () => _onSyncToRemote(context, ref),
+                    icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                    label: const Text('Sync to remote'),
+                  ),
+                ],
               ],
             ),
           ),
         );
       },
     );
+  }
+
+  Future<void> _onSyncToRemote(BuildContext context, WidgetRef ref) async {
+    var config = await DataSourcePreferencesService.loadConfig();
+    if (!config.isValid && context.mounted) {
+      final result = await showDialog<DataSourceConfig?>(
+        context: context,
+        builder: (_) => DataSourceConfigDialog(initialConfig: config),
+      );
+      if (result == null || !context.mounted) return;
+      config = result;
+    } else if (!config.isValid) {
+      return;
+    }
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await SyncToRemoteService.sync(
+        config: config,
+        collectionRepository: ref.read(collectionRepositoryProvider),
+        environmentRepository: ref.read(environmentRepositoryProvider),
+        requestRepository: ref.read(requestRepositoryProvider),
+      );
+      if (context.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Synced local data to remote.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Sync failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   static String _shortUrl(String url) {
