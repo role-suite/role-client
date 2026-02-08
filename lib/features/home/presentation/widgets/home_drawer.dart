@@ -198,6 +198,12 @@ class _DataSourceSection extends ConsumerWidget {
     ref.invalidate(activeEnvironmentNotifierProvider);
   }
 
+  Future<void> _resetSelectionAndEnvironment(WidgetRef r) async {
+    r.read(selectedCollectionIdProvider.notifier).state = 'default';
+    await r.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
+    r.read(activeEnvironmentNameProvider.notifier).state = null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -245,6 +251,7 @@ class _DataSourceSection extends ConsumerWidget {
                           if (isApi) {
                             await ref.read(dataSourceStateNotifierProvider.notifier).setMode(DataSourceMode.local);
                             _invalidateWorkspaceProviders();
+                            await _resetSelectionAndEnvironment(ref);
                           }
                         },
                       ),
@@ -266,6 +273,7 @@ class _DataSourceSection extends ConsumerWidget {
                               }
                             }
                             _invalidateWorkspaceProviders();
+                            await _resetSelectionAndEnvironment(ref);
                           }
                         },
                       ),

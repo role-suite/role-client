@@ -64,6 +64,9 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
       ref.invalidate(requestsNotifierProvider);
       ref.invalidate(environmentsNotifierProvider);
       ref.invalidate(activeEnvironmentNotifierProvider);
+      ref.read(selectedCollectionIdProvider.notifier).state = 'default';
+      await ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
+      ref.read(activeEnvironmentNameProvider.notifier).state = null;
       if (!mounted) return;
       Navigator.of(context).pop(config);
     } catch (e) {
