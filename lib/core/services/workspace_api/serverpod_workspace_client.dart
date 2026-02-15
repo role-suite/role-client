@@ -6,12 +6,14 @@ import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 /// Serverpod RPC implementation: uses generated client's workspace endpoint.
 /// role_server exposes pullWorkspace() → WorkspaceBundle? and pushWorkspace(WorkspaceBundle).
+/// When [client] is provided (e.g. from [serverpodClientProvider]), it is used with auth.
 class ServerpodWorkspaceClient implements WorkspaceApiClient {
-  ServerpodWorkspaceClient({required String serverUrl}) {
+  ServerpodWorkspaceClient({required String serverUrl, Client? client}) {
     final url = serverUrl.trim().replaceAll(RegExp(r'/+$'), '');
     _serverUrl = url.isEmpty ? '' : url;
-    _client = Client(_serverUrl)
-      ..connectivityMonitor = FlutterConnectivityMonitor();
+    _client = client ??
+        Client(_serverUrl)
+          ..connectivityMonitor = FlutterConnectivityMonitor();
   }
 
   late final String _serverUrl;

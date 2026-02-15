@@ -10,12 +10,15 @@ import 'package:serverpod_flutter/serverpod_flutter.dart';
 import '../../utils/extension.dart';
 
 /// Relay API client using Serverpod RPC (collections, environments, requests endpoints).
+/// When [client] is provided (e.g. from [serverpodClientProvider]), it is used and
+/// auth (email/session) is applied. Otherwise a non-authenticated client is created.
 class ServerpodRelayApiClient implements RelayApiClient {
-  ServerpodRelayApiClient({required String serverUrl}) {
+  ServerpodRelayApiClient({required String serverUrl, relay_client.Client? client}) {
     final url = serverUrl.trim().replaceAll(RegExp(r'/+$'), '');
     _serverUrl = url.isEmpty ? '' : url;
-    _client = relay_client.Client(_serverUrl)
-      ..connectivityMonitor = FlutterConnectivityMonitor();
+    _client = client ??
+        relay_client.Client(_serverUrl)
+          ..connectivityMonitor = FlutterConnectivityMonitor();
   }
 
   late final String _serverUrl;

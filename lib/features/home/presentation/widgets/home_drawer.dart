@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:relay/core/constants/api_style.dart';
 import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/services/data_source_preferences_service.dart';
+import 'package:relay/core/services/relay_api/serverpod_client_provider.dart';
 import 'package:relay/core/services/sync_to_remote_service.dart';
+import 'package:relay_server_client/relay_server_client.dart';
 import 'package:relay/features/collection_runner/presentation/collection_run_history_screen.dart';
 import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
 import 'package:relay/features/request_chain/presentation/request_chain_config_screen.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/data_source_config_dialog.dart';
+import 'package:relay/features/auth/presentation/sign_in_screen.dart';
 
 class HomeDrawer extends ConsumerWidget {
   const HomeDrawer({
@@ -303,6 +307,19 @@ class _DataSourceSection extends ConsumerWidget {
                     icon: const Icon(Icons.settings, size: 18),
                     label: Text(configValid ? 'Change API URL' : 'Configure API'),
                   ),
+                  if (s.config.apiStyle == ApiStyle.serverpod) ...[
+                    const SizedBox(height: 12),
+                    FilledButton.tonalIcon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.login, size: 18),
+                      label: const Text('Sign in'),
+                    ),
+                  ],
                 ],
                 if (!isApi) ...[
                   const SizedBox(height: 12),
@@ -339,12 +356,17 @@ class _DataSourceSection extends ConsumerWidget {
     }
     if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    Client? serverpodClient;
+    if (config.apiStyle == ApiStyle.serverpod && config.baseUrl.trim().isNotEmpty) {
+      serverpodClient = await ref.read(serverpodClientProvider(config.baseUrl).future);
+    }
     try {
       await SyncToRemoteService.sync(
         config: config,
         collectionRepository: ref.read(collectionRepositoryProvider),
         environmentRepository: ref.read(environmentRepositoryProvider),
         requestRepository: ref.read(requestRepositoryProvider),
+        serverpodClient: serverpodClient,
       );
       if (context.mounted) {
         messenger.showSnackBar(

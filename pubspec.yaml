@@ -13,10 +13,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   dio: ^5.9.0
   serverpod_flutter: ^3.2.2
-  # Stub: replace path with your Serverpod project's packages/<project>_client (see docs/SERVERPOD_SETUP.md)
+  serverpod_auth_idp_flutter: ^3.2.2
   relay_server_client:
     path: ../role-server/relay_server_client
-  path: ^1.9.1
   path_provider: ^2.1.5
   file_picker: ^10.3.7
   json_annotation: ^4.9.0

@@ -6,10 +6,10 @@ import 'package:relay/core/services/environment_service.dart';
 import 'package:relay/core/services/file_storage_service.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/core/services/relay_api/rest_relay_api_client.dart';
+import 'package:relay/core/services/relay_api/serverpod_client_provider.dart';
 import 'package:relay/core/services/relay_api/serverpod_relay_api_client.dart';
 import 'package:relay/core/services/workspace_service.dart';
 import 'package:relay/core/services/workspace_api/rest_workspace_client.dart';
-import 'package:relay/core/services/workspace_api/serverpod_workspace_client.dart';
 import 'package:relay/features/home/data/datasources/collection_data_source.dart';
 import 'package:relay/features/home/data/datasources/collection_local_data_source.dart';
 import 'package:relay/features/home/data/datasources/collection_remote_data_source.dart';
@@ -24,6 +24,7 @@ import 'package:relay/features/home/domain/repositories/collection_repository.da
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
 import 'package:relay/features/home/domain/repositories/request_repository.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
+import 'package:relay_server_client/relay_server_client.dart';
 
 /// Provider for RequestLocalDataSource
 final requestLocalDataSourceProvider = Provider<RequestLocalDataSource>((ref) {
@@ -35,10 +36,13 @@ final collectionLocalDataSourceProvider = Provider<CollectionLocalDataSource>((r
   return CollectionLocalDataSource(FileStorageService.instance, WorkspaceService.instance);
 });
 
-RelayApiClient _createRelayApiClient(DataSourceConfig config) {
+RelayApiClient _createRelayApiClient(DataSourceConfig config, Client? serverpodClient) {
   switch (config.apiStyle) {
     case ApiStyle.serverpod:
-      return ServerpodRelayApiClient(serverUrl: config.baseUrl);
+      return ServerpodRelayApiClient(
+        serverUrl: config.baseUrl,
+        client: serverpodClient,
+      );
     case ApiStyle.rest:
       final workspace = RestWorkspaceClient(
         baseUrl: config.baseUrl,
@@ -52,7 +56,10 @@ RelayApiClient _createRelayApiClient(DataSourceConfig config) {
 final collectionDataSourceProvider = Provider<CollectionDataSource>((ref) {
   final state = ref.watch(dataSourceStateNotifierProvider).asData?.value;
   if (state != null && state.mode == DataSourceMode.api && state.config.isValid) {
-    final api = _createRelayApiClient(state.config);
+    final serverpodClient = state.config.apiStyle == ApiStyle.serverpod
+        ? ref.watch(serverpodClientProvider(state.config.baseUrl)).whenOrNull(data: (c) => c)
+        : null;
+    final api = _createRelayApiClient(state.config, serverpodClient);
     return CollectionRemoteDataSource(api);
   }
   return ref.watch(collectionLocalDataSourceProvider);
@@ -62,7 +69,10 @@ final collectionDataSourceProvider = Provider<CollectionDataSource>((ref) {
 final requestDataSourceProvider = Provider<RequestDataSource>((ref) {
   final state = ref.watch(dataSourceStateNotifierProvider).asData?.value;
   if (state != null && state.mode == DataSourceMode.api && state.config.isValid) {
-    final api = _createRelayApiClient(state.config);
+    final serverpodClient = state.config.apiStyle == ApiStyle.serverpod
+        ? ref.watch(serverpodClientProvider(state.config.baseUrl)).whenOrNull(data: (c) => c)
+        : null;
+    final api = _createRelayApiClient(state.config, serverpodClient);
     return RequestRemoteDataSource(api);
   }
   return ref.watch(requestLocalDataSourceProvider);
@@ -84,7 +94,10 @@ final requestRepositoryProvider = Provider<RequestRepository>((ref) {
 final environmentRepositoryProvider = Provider<EnvironmentRepository>((ref) {
   final state = ref.watch(dataSourceStateNotifierProvider).asData?.value;
   if (state != null && state.mode == DataSourceMode.api && state.config.isValid) {
-    final api = _createRelayApiClient(state.config);
+    final serverpodClient = state.config.apiStyle == ApiStyle.serverpod
+        ? ref.watch(serverpodClientProvider(state.config.baseUrl)).whenOrNull(data: (c) => c)
+        : null;
+    final api = _createRelayApiClient(state.config, serverpodClient);
     return EnvironmentRepositoryRemoteImpl(api, EnvironmentService.instance);
   }
   return EnvironmentRepositoryImpl(EnvironmentService.instance);
