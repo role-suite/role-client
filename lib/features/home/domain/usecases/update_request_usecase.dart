@@ -11,3 +11,4 @@ class UpdateRequestUseCase {
     await _repository.saveRequest(request);
   }
 }
+

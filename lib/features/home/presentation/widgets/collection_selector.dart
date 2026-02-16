@@ -22,16 +22,24 @@ class CollectionSelector extends StatelessWidget {
     // Ensure default collection exists
     final allCollections = [
       if (!collections.any((c) => c.id == 'default'))
-        CollectionModel(id: 'default', name: 'Default', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+        CollectionModel(
+          id: 'default',
+          name: 'Default',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
       ...collections,
     ];
 
     final theme = Theme.of(context);
     final bool isDefaultSelected = selectedCollectionId == null || selectedCollectionId == 'default';
-    final Color iconColor = isDefaultSelected ? theme.colorScheme.onSurface.withValues(alpha: 0.6) : theme.colorScheme.primary;
+    final Color iconColor = isDefaultSelected ? theme.colorScheme.onSurface.withOpacity(0.6) : theme.colorScheme.primary;
 
     final selectedLabel = () {
-      final collection = allCollections.firstWhere((c) => c.id == selectedCollectionId, orElse: () => allCollections.first);
+      final collection = allCollections.firstWhere(
+        (c) => c.id == selectedCollectionId,
+        orElse: () => allCollections.first,
+      );
       return collection.name.isNotEmpty ? collection.name : collection.id;
     }();
 
@@ -46,7 +54,10 @@ class CollectionSelector extends StatelessWidget {
               children: [
                 Icon(Icons.folder, size: 20, color: iconColor),
                 const SizedBox(width: 4),
-                Text(selectedLabel, style: theme.textTheme.labelMedium),
+                Text(
+                  selectedLabel,
+                  style: theme.textTheme.labelMedium,
+                ),
               ],
             ),
       onSelected: onSelect,
@@ -59,7 +70,10 @@ class CollectionSelector extends StatelessWidget {
             value: collection.id,
             child: Row(
               children: [
-                if (selectedCollectionId == collection.id) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
+                if (selectedCollectionId == collection.id)
+                  const Icon(Icons.check, size: 18)
+                else
+                  const SizedBox(width: 18),
                 const SizedBox(width: 8),
                 Expanded(child: Text(displayName)),
                 if (!isDefault) ...[
@@ -71,7 +85,11 @@ class CollectionSelector extends StatelessWidget {
                     },
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      child: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error),
+                      child: Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ),
                 ],
@@ -83,3 +101,5 @@ class CollectionSelector extends StatelessWidget {
     );
   }
 }
+
+

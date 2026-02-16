@@ -5,9 +5,21 @@ class CollectionModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  CollectionModel({required this.id, required this.name, this.description = '', required this.createdAt, required this.updatedAt});
+  CollectionModel({
+    required this.id,
+    required this.name,
+    this.description = '',
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
-  CollectionModel copyWith({String? id, String? name, String? description, DateTime? createdAt, DateTime? updatedAt}) {
+  CollectionModel copyWith({
+    String? id,
+    String? name,
+    String? description,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
     return CollectionModel(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -18,7 +30,13 @@ class CollectionModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name, 'description': description, 'createdAt': createdAt.toIso8601String(), 'updatedAt': updatedAt.toIso8601String()};
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
   }
 
   factory CollectionModel.fromJson(Map<String, dynamic> json) {
@@ -41,3 +59,4 @@ class CollectionModel {
     );
   }
 }
+

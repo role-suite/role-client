@@ -6,7 +6,10 @@ import '../../../../../core/presentation/widgets/app_button.dart';
 import '../../viewmodels/home_dialog_view_models.dart';
 
 class DeleteEnvironmentDialog extends ConsumerStatefulWidget {
-  const DeleteEnvironmentDialog({super.key, required this.environment});
+  const DeleteEnvironmentDialog({
+    super.key,
+    required this.environment,
+  });
 
   final EnvironmentModel environment;
 
@@ -25,12 +28,20 @@ class _DeleteEnvironmentDialogState extends ConsumerState<DeleteEnvironmentDialo
       await viewModel.deleteEnvironment(widget.environment);
       if (!mounted) return;
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Environment "${widget.environment.name}" deleted successfully'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Environment "${widget.environment.name}" deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete environment: $e'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete environment: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isDeleting = false);
@@ -47,9 +58,17 @@ class _DeleteEnvironmentDialogState extends ConsumerState<DeleteEnvironmentDialo
         'This action cannot be undone.',
       ),
       actions: [
-        TextButton(onPressed: _isDeleting ? null : () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-        AppButton(label: _isDeleting ? 'Deleting...' : 'Delete', variant: AppButtonVariant.danger, onPressed: _isDeleting ? null : _handleDelete),
+        TextButton(
+          onPressed: _isDeleting ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        AppButton(
+          label: _isDeleting ? 'Deleting...' : 'Delete',
+          variant: AppButtonVariant.danger,
+          onPressed: _isDeleting ? null : _handleDelete,
+        ),
       ],
     );
   }
 }
+

@@ -51,11 +51,14 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
     final envs = environmentsAsync.asData?.value ?? const <EnvironmentModel>[];
 
     // Listen for state changes and scroll to running request
-    ref.listen<CollectionRunnerState>(collectionRunnerControllerProvider, (previous, next) {
-      if (next.isRunning && next.results.isNotEmpty) {
-        _scrollToRunningRequest(next.results);
-      }
-    });
+    ref.listen<CollectionRunnerState>(
+      collectionRunnerControllerProvider,
+      (previous, next) {
+        if (next.isRunning && next.results.isNotEmpty) {
+          _scrollToRunningRequest(next.results);
+        }
+      },
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -65,7 +68,11 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
             icon: const Icon(Icons.history),
             tooltip: 'View Test Run History',
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CollectionRunHistoryScreen()));
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CollectionRunHistoryScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -76,7 +83,10 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Select a collection, choose an environment, and run every request sequentially.', style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                'Select a collection, choose an environment, and run every request sequentially.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               const SizedBox(height: 16),
               collectionsAsync.when(
                 data: (collections) {
@@ -93,7 +103,10 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
                         .map(
                           (collection) => DropdownMenuItem<String>(
                             value: collection.id,
-                            child: Text(collection.name.isNotEmpty ? collection.name : collection.id, overflow: TextOverflow.ellipsis),
+                            child: Text(
+                              collection.name.isNotEmpty ? collection.name : collection.id,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         )
                         .toList(),
@@ -104,19 +117,36 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
                 error: (error, _) => Text('Failed to load collections: $error'),
               ),
               const SizedBox(height: 16),
-              _buildEnvironmentSelector(context, environmentsAsync.isLoading, envs),
+              _buildEnvironmentSelector(
+                context,
+                environmentsAsync.isLoading,
+                envs,
+              ),
               const SizedBox(height: 16),
               AppButton(
                 label: runnerState.isRunning ? 'Running...' : 'Run Collection',
                 icon: Icons.play_arrow,
-                onPressed: _selectedCollection == null || runnerState.isRunning ? null : () => _runCollection(),
+                onPressed: _selectedCollection == null || runnerState.isRunning
+                    ? null
+                    : () => _runCollection(),
                 isLoading: runnerState.isRunning && runnerState.totalRequests == 0,
               ),
               const SizedBox(height: 24),
-              if (runnerState.errorMessage != null) ...[_buildErrorBanner(context, runnerState.errorMessage!), const SizedBox(height: 16)],
-              if (runnerState.hasResults) ...[_buildProgressSection(context, runnerState), const SizedBox(height: 16)],
-              if (_isRunComplete(runnerState)) ...[_buildExportButton(context, runnerState), const SizedBox(height: 16)],
-              Expanded(child: _buildResultsList(context, runnerState)),
+              if (runnerState.errorMessage != null) ...[
+                _buildErrorBanner(context, runnerState.errorMessage!),
+                const SizedBox(height: 16),
+              ],
+              if (runnerState.hasResults) ...[
+                _buildProgressSection(context, runnerState),
+                const SizedBox(height: 16),
+              ],
+              if (_isRunComplete(runnerState)) ...[
+                _buildExportButton(context, runnerState),
+                const SizedBox(height: 16),
+              ],
+              Expanded(
+                child: _buildResultsList(context, runnerState),
+              ),
             ],
           ),
         ),
@@ -126,7 +156,9 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
 
   void _scrollToRunningRequest(List<CollectionRunResult> results) {
     // Find the index of the currently running request
-    final runningIndex = results.indexWhere((result) => result.status == CollectionRunStatus.running);
+    final runningIndex = results.indexWhere(
+      (result) => result.status == CollectionRunStatus.running,
+    );
 
     if (runningIndex == -1) {
       return;
@@ -175,7 +207,11 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
     });
   }
 
-  void _handleCollectionChange(String? collectionId, List<CollectionModel> collections, List<EnvironmentModel> environments) {
+  void _handleCollectionChange(
+    String? collectionId,
+    List<CollectionModel> collections,
+    List<EnvironmentModel> environments,
+  ) {
     if (collectionId == null) {
       return;
     }
@@ -194,12 +230,16 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
 
   Future<void> _promptEnvironmentSelection(List<EnvironmentModel> environments) async {
     if (_selectedCollection == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pick a collection before selecting an environment.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pick a collection before selecting an environment.')),
+      );
       return;
     }
 
     if (environments.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No environments defined. Requests will run without variables.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No environments defined. Requests will run without variables.')),
+      );
       setState(() {
         _selectedEnvironment = null;
       });
@@ -218,12 +258,20 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
                 children: [
                   const Icon(Icons.block),
                   const SizedBox(width: 8),
-                  Text('No environment', style: Theme.of(dialogContext).textTheme.bodyMedium),
+                  Text(
+                    'No environment',
+                    style: Theme.of(dialogContext).textTheme.bodyMedium,
+                  ),
                 ],
               ),
             ),
             const Divider(),
-            ...environments.map((env) => SimpleDialogOption(onPressed: () => Navigator.of(dialogContext).pop(env.name), child: Text(env.name))),
+            ...environments.map(
+              (env) => SimpleDialogOption(
+                onPressed: () => Navigator.of(dialogContext).pop(env.name),
+                child: Text(env.name),
+              ),
+            ),
           ],
         );
       },
@@ -242,7 +290,9 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
 
     final match = _findEnvironmentByName(environments, selectedName);
     if (match == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Environment "$selectedName" no longer exists.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Environment "$selectedName" no longer exists.')),
+      );
       return;
     }
 
@@ -257,10 +307,17 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
       return;
     }
 
-    await ref.read(collectionRunnerControllerProvider.notifier).runCollection(collection: collection, environment: _selectedEnvironment);
+    await ref.read(collectionRunnerControllerProvider.notifier).runCollection(
+          collection: collection,
+          environment: _selectedEnvironment,
+        );
   }
 
-  Widget _buildEnvironmentSelector(BuildContext context, bool isLoading, List<EnvironmentModel> environments) {
+  Widget _buildEnvironmentSelector(
+    BuildContext context,
+    bool isLoading,
+    List<EnvironmentModel> environments,
+  ) {
     final theme = Theme.of(context);
     final label = _selectedEnvironment?.name ?? 'No environment selected';
 
@@ -278,7 +335,11 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
                 Icon(Icons.cloud, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(label, style: theme.textTheme.bodyMedium, overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -289,7 +350,9 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
           label: 'Change',
           icon: Icons.swap_horiz,
           variant: AppButtonVariant.outlined,
-          onPressed: _selectedCollection == null || isLoading ? null : () => _promptEnvironmentSelection(environments),
+          onPressed: _selectedCollection == null || isLoading
+              ? null
+              : () => _promptEnvironmentSelection(environments),
         ),
       ],
     );
@@ -302,7 +365,11 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
 
     if (state.results.isEmpty) {
       return Center(
-        child: Text('Run a collection to see a detailed report.', style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+        child: Text(
+          'Run a collection to see a detailed report.',
+          style: Theme.of(context).textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+        ),
       );
     }
 
@@ -323,10 +390,13 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
         final isActive = result.status == CollectionRunStatus.running;
         return Container(
           key: _itemKeys[index],
-          child: CollectionRunResultCard(result: result, isActive: isActive),
+          child: CollectionRunResultCard(
+            result: result,
+            isActive: isActive,
+          ),
         );
       },
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
     );
   }
 
@@ -340,7 +410,10 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 8),
         LinearProgressIndicator(value: progressValue),
       ],
@@ -352,13 +425,21 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: theme.colorScheme.errorContainer, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
         children: [
           Icon(Icons.error_outline, color: theme.colorScheme.onErrorContainer),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onErrorContainer)),
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+            ),
           ),
         ],
       ),
@@ -369,7 +450,10 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
     return AppCard(
       title: 'No collections found',
       subtitle: 'Create a collection from the Home screen to start running requests.',
-      child: Text('Use the + button on the Home screen to add your first collection.', style: Theme.of(context).textTheme.bodyMedium),
+      child: Text(
+        'Use the + button on the Home screen to add your first collection.',
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
     );
   }
 
@@ -382,7 +466,10 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
     return null;
   }
 
-  EnvironmentModel? _findEnvironmentByName(List<EnvironmentModel> environments, String name) {
+  EnvironmentModel? _findEnvironmentByName(
+    List<EnvironmentModel> environments,
+    String name,
+  ) {
     for (final env in environments) {
       if (env.name == name) {
         return env;
@@ -405,23 +492,34 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
   }
 
   Future<void> _exportResults(BuildContext context, CollectionRunnerState state) async {
-    final messenger = ScaffoldMessenger.of(context);
     if (kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export is not supported on web.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export is not supported on web.')),
+      );
       return;
     }
 
     try {
       final collection = state.collection;
       if (collection == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No collection information available.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No collection information available.')),
+        );
         return;
       }
 
       // Build export data
       final exportData = {
-        'collection': {'id': collection.id, 'name': collection.name},
-        'environment': state.environment != null ? {'name': state.environment!.name, 'variables': state.environment!.variables} : null,
+        'collection': {
+          'id': collection.id,
+          'name': collection.name,
+        },
+        'environment': state.environment != null
+            ? {
+                'name': state.environment!.name,
+                'variables': state.environment!.variables,
+              }
+            : null,
         'completedAt': state.completedAt?.toIso8601String(),
         'summary': {
           'totalRequests': state.totalRequests,
@@ -436,7 +534,9 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
             'statusCode': result.statusCode,
             'statusMessage': result.statusMessage,
             'duration': result.duration?.inMilliseconds,
-            'durationFormatted': result.duration != null ? '${result.duration!.inSeconds}s ${result.duration!.inMilliseconds % 1000}ms' : null,
+            'durationFormatted': result.duration != null
+                ? '${result.duration!.inSeconds}s ${result.duration!.inMilliseconds % 1000}ms'
+                : null,
             'errorMessage': result.errorMessage,
             'isSuccess': result.isSuccess,
             'isComplete': result.isComplete,
@@ -456,9 +556,17 @@ class _CollectionRunnerScreenState extends ConsumerState<CollectionRunnerScreen>
       targetDir ??= await getApplicationDocumentsDirectory();
       final filePath = p.join(targetDir.path, defaultFileName);
       await File(filePath).writeAsString(json);
-      messenger.showSnackBar(SnackBar(content: Text('Results exported to $filePath'), duration: const Duration(seconds: 4)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Results exported to $filePath'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Failed to export results: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export results: $e')),
+      );
     }
   }
 }
+

@@ -43,3 +43,4 @@ class EnvironmentRepositoryImpl implements EnvironmentRepository {
     return _environmentService.resolveTemplate(input, environment);
   }
 }
+

@@ -48,18 +48,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     // Listen for update availability and show dialog
-    ref.listen<AsyncValue<dynamic>>(updateAvailableProvider, (previous, next) async {
+    ref.listen<AsyncValue<dynamic>>(updateAvailableProvider, (previous, next) {
       if (!_hasCheckedForUpdates && next.hasValue && next.value != null) {
         _hasCheckedForUpdates = true;
         final release = next.value;
         final updateService = ref.read(updateServiceProvider);
         final downloadUrl = updateService.getDownloadUrl(release);
-        final currentVersion = await updateService.getCurrentVersion();
-
+        
         // Show update dialog after the current frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            showUpdateDialog(context: context, release: release, downloadUrl: downloadUrl, currentVersion: currentVersion);
+            showUpdateDialog(
+              context: context,
+              release: release,
+              downloadUrl: downloadUrl,
+            );
           }
         });
       }
@@ -74,9 +77,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // Filter requests by selected collection
     final filteredRequests = requestsAsync.when(
-      data: (requests) => selectedCollectionId != null ? requests.where((r) => r.collectionId == selectedCollectionId).toList() : requests,
+      data: (requests) => selectedCollectionId != null
+          ? requests.where((r) => r.collectionId == selectedCollectionId).toList()
+          : requests,
       loading: () => <ApiRequestModel>[],
-      error: (_, _) => <ApiRequestModel>[],
+      error: (_, __) => <ApiRequestModel>[],
     );
 
     return AppScaffold(
@@ -101,9 +106,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           loading: () => const Padding(
             padding: EdgeInsets.all(8.0),
-            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ),
-          error: (_, _) => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
         ),
         const SizedBox(width: 8),
         // Environment selector
@@ -125,9 +134,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           loading: () => const Padding(
             padding: EdgeInsets.all(8.0),
-            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ),
-          error: (_, _) => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
         ),
         const SizedBox(width: 8),
       ],
@@ -140,11 +153,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         maxWidth: 1200,
         child: requestsAsync.when(
           data: (_) => filteredRequests.isEmpty
-              ? HomeEmptyState(onCreateRequest: () => _openCreateRequestDialog(context, selectedCollectionId))
+              ? HomeEmptyState(
+                  onCreateRequest: () => _openCreateRequestDialog(context, selectedCollectionId),
+                )
               : HomeRequestsList(
                   requests: filteredRequests,
                   onTapRequest: (request) => _showRequestDetails(context, ref, request),
-                  onEditRequest: (request) => _showRequestDetails(context, ref, request, startInEditMode: true),
+                  onEditRequest: (request) => _showRequestDetails(
+                    context,
+                    ref,
+                    request,
+                    startInEditMode: true,
+                  ),
                 ),
           loading: () => const LoadingIndicator(message: 'Loading requests...'),
           error: (error, stack) => Center(
@@ -153,7 +173,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Text('Error loading requests: $error'),
                 const SizedBox(height: 16),
-                AppButton(label: 'Retry', onPressed: () => ref.read(requestsNotifierProvider.notifier).refresh()),
+                AppButton(
+                  label: 'Retry',
+                  onPressed: () => ref.read(requestsNotifierProvider.notifier).refresh(),
+                ),
               ],
             ),
           ),
@@ -165,7 +188,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Collection and environment selectors are implemented as separate widgets
   // in `CollectionSelector` and `EnvironmentSelector`.
 
-  void _showRequestDetails(BuildContext context, WidgetRef ref, ApiRequestModel request, {bool startInEditMode = false}) {
+  void _showRequestDetails(
+    BuildContext context,
+    WidgetRef ref,
+    ApiRequestModel request, {
+    bool startInEditMode = false,
+  }) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (pageContext) => RequestRunnerPage(
@@ -181,7 +209,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _openCreateCollectionDialog(BuildContext context) {
-    showDialog(context: context, builder: (_) => const CreateCollectionDialog());
+    showDialog(
+      context: context,
+      builder: (_) => const CreateCollectionDialog(),
+    );
   }
 
   void _openCreateRequestDialog(BuildContext context, String? collectionId) {
@@ -192,7 +223,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _openCreateEnvironmentDialog(BuildContext context) {
-    showDialog(context: context, builder: (_) => const CreateEnvironmentDialog());
+    showDialog(
+      context: context,
+      builder: (_) => const CreateEnvironmentDialog(),
+    );
   }
 
   void _openEditEnvironmentDialog(BuildContext context, EnvironmentModel environment) {
@@ -211,9 +245,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _onDeleteCollection(BuildContext context, CollectionModel collection) {
     if (collection.id == 'default') {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Cannot delete the default collection'), backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete the default collection'),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
@@ -231,9 +268,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _handleExportWorkspace(BuildContext context, WidgetRef ref) async {
-    final messenger = ScaffoldMessenger.of(context);
     if (kIsWeb) {
-      messenger.showSnackBar(const SnackBar(content: Text('Export is not supported on web.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export is not supported on web.')),
+      );
       return;
     }
 
@@ -251,17 +289,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       targetDir ??= await getApplicationDocumentsDirectory();
       final filePath = p.join(targetDir.path, defaultFileName);
       await File(filePath).writeAsString(json);
-      messenger.showSnackBar(SnackBar(content: Text('Workspace exported to $filePath'), duration: const Duration(seconds: 4)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Workspace exported to $filePath'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     } catch (e) {
       AppLogger.debug(e.toString());
-      messenger.showSnackBar(SnackBar(content: Text('Failed to export workspace: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export workspace: $e')),
+      );
     }
   }
 
   Future<void> _handleImportWorkspace(BuildContext context, WidgetRef ref) async {
-    final messenger = ScaffoldMessenger.of(context);
     if (kIsWeb) {
-      messenger.showSnackBar(const SnackBar(content: Text('Import is not supported on web.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Import is not supported on web.')),
+      );
       return;
     }
 
@@ -277,7 +323,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final file = result.files.first;
 
       // SAFEST cross-platform read:
-      final rawJson = file.path != null ? await File(file.path!).readAsString() : utf8.decode(file.bytes ?? []);
+      final rawJson = file.path != null
+          ? await File(file.path!).readAsString()
+          : utf8.decode(file.bytes ?? []);
 
       if (rawJson.isEmpty) {
         throw const FormatException('Selected file is empty.');
@@ -286,40 +334,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final service = ref.read(workspaceImportExportServiceProvider);
       final bundle = await service.parseImportFile(rawJson);
 
-      await _importBundle(ref, bundle);
+      await _importBundle(context, ref, bundle);
       await _refreshData(ref);
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('Imported ${bundle.collections.length} collections and ${bundle.environments.length} environments.')),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Imported ${bundle.collections.length} collections and ${bundle.environments.length} environments.',
+          ),
+        ),
       );
     } catch (e) {
       AppLogger.debug(e.toString());
-      messenger.showSnackBar(SnackBar(content: Text('Failed to import workspace: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to import workspace: $e')),
+      );
     }
   }
 
-  Future<void> _importBundle(WidgetRef ref, WorkspaceBundle bundle) async {
+  Future<void> _importBundle(
+    BuildContext context,
+    WidgetRef ref,
+    WorkspaceBundle bundle,
+  ) async {
     final collectionRepository = ref.read(collectionRepositoryProvider);
     final requestRepository = ref.read(requestRepositoryProvider);
     final environmentRepository = ref.read(environmentRepositoryProvider);
 
     final existingCollections = await collectionRepository.getAllCollections();
-    final existingCollectionNames = {for (final collection in existingCollections) collection.name.toLowerCase(): collection};
+    final existingCollectionNames = {
+      for (final collection in existingCollections) collection.name.toLowerCase(): collection,
+    };
     final existingEnvironments = await environmentRepository.getAllEnvironments();
-    final existingEnvironmentNames = {for (final env in existingEnvironments) env.name.toLowerCase(): env};
+    final existingEnvironmentNames = {
+      for (final env in existingEnvironments) env.name.toLowerCase(): env,
+    };
 
     for (final env in bundle.environments) {
       var targetEnv = env;
       final conflict = existingEnvironmentNames[targetEnv.name.toLowerCase()];
       if (conflict != null) {
         final resolution = await _showConflictDialog(
+          context: context,
           title: 'Environment conflict',
-          message: 'An environment named "${targetEnv.name}" already exists. What would you like to do?',
+          message:
+              'An environment named "${targetEnv.name}" already exists. What would you like to do?',
         );
         if (resolution == ConflictResolution.skip) {
           continue;
         } else if (resolution == ConflictResolution.keepBoth) {
-          final uniqueName = _generateUniqueName(targetEnv.name, existingEnvironmentNames.keys);
+          final uniqueName =
+              _generateUniqueName(targetEnv.name, existingEnvironmentNames.keys);
           targetEnv = targetEnv.copyWith(name: uniqueName);
         }
         // overwrite simply falls through and saves with same name
@@ -334,13 +399,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       if (conflict != null) {
         final resolution = await _showConflictDialog(
+          context: context,
           title: 'Collection conflict',
-          message: 'A collection named "${targetCollection.name}" already exists. What would you like to do?',
+          message:
+              'A collection named "${targetCollection.name}" already exists. What would you like to do?',
         );
         if (resolution == ConflictResolution.skip) {
           continue;
-        } else if (resolution == ConflictResolution.keepBoth || (resolution == ConflictResolution.overwrite && conflict.id == 'default')) {
-          final uniqueName = _generateUniqueName(targetCollection.name, existingCollectionNames.keys);
+        } else if (resolution == ConflictResolution.keepBoth ||
+            (resolution == ConflictResolution.overwrite && conflict.id == 'default')) {
+          final uniqueName =
+              _generateUniqueName(targetCollection.name, existingCollectionNames.keys);
           targetCollection = targetCollection.copyWith(
             id: '${targetCollection.id}-${UuidUtils.generate()}',
             name: uniqueName,
@@ -351,7 +420,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           await collectionRepository.deleteCollection(conflict.id);
         }
       } else {
-        targetCollection = targetCollection.copyWith(createdAt: DateTime.now(), updatedAt: DateTime.now());
+        targetCollection = targetCollection.copyWith(
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
       }
 
       await collectionRepository.saveCollection(targetCollection);
@@ -387,7 +459,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return candidate;
   }
 
-  Future<ConflictResolution> _showConflictDialog({required String title, required String message}) async {
+  Future<ConflictResolution> _showConflictDialog({
+    required BuildContext context,
+    required String title,
+    required String message,
+  }) async {
     final result = await showDialog<ConflictResolution>(
       context: context,
       builder: (dialogContext) {
@@ -395,9 +471,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           title: Text(title),
           content: Text(message),
           actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(ConflictResolution.skip), child: const Text('Skip')),
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(ConflictResolution.keepBoth), child: const Text('Keep both')),
-            FilledButton(onPressed: () => Navigator.of(dialogContext).pop(ConflictResolution.overwrite), child: const Text('Overwrite')),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(ConflictResolution.skip),
+              child: const Text('Skip'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(ConflictResolution.keepBoth),
+              child: const Text('Keep both'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(ConflictResolution.overwrite),
+              child: const Text('Overwrite'),
+            ),
           ],
         );
       },
@@ -407,3 +494,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 enum ConflictResolution { overwrite, keepBoth, skip }
+
+bool get _isDesktop =>
+    !kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux);

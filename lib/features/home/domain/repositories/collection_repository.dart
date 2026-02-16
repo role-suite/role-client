@@ -21,3 +21,4 @@ abstract class CollectionRepository {
   /// Check if a collection exists
   Future<bool> collectionExists(String name);
 }
+

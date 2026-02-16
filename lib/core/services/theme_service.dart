@@ -27,3 +27,4 @@ class ThemeService {
     await prefs.setString(_themeModeKey, mode.name);
   }
 }
+

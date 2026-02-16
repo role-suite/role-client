@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/collection_model.dart';
-import 'package:relay/core/utils/logger.dart';
 import 'package:relay/core/utils/uuid.dart';
 
 import '../../../../../core/presentation/widgets/app_button.dart';
@@ -30,7 +29,12 @@ class _CreateCollectionDialogState extends ConsumerState<CreateCollectionDialog>
   Future<void> _handleCreate() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a collection name'), backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a collection name'),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
@@ -51,13 +55,21 @@ class _CreateCollectionDialogState extends ConsumerState<CreateCollectionDialog>
       viewModel.selectCollection(collection.id);
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Collection "${collection.name}" created successfully'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Collection "${collection.name}" created successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      AppLogger.error(e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to create collection: $e'), backgroundColor: Colors.red));
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create collection: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -75,17 +87,34 @@ class _CreateCollectionDialogState extends ConsumerState<CreateCollectionDialog>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AppTextField(controller: _nameController, label: 'Collection Name', hint: 'My Collection', autofocus: true),
+              AppTextField(
+                controller: _nameController,
+                label: 'Collection Name',
+                hint: 'My Collection',
+                autofocus: true,
+              ),
               const SizedBox(height: 16),
-              AppTextField(controller: _descriptionController, label: 'Description (Optional)', hint: 'Describe this collection', maxLines: 3),
+              AppTextField(
+                controller: _descriptionController,
+                label: 'Description (Optional)',
+                hint: 'Describe this collection',
+                maxLines: 3,
+              ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        AppButton(label: _isSubmitting ? 'Creating...' : 'Create', onPressed: _isSubmitting ? null : _handleCreate),
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        AppButton(
+          label: _isSubmitting ? 'Creating...' : 'Create',
+          onPressed: _isSubmitting ? null : _handleCreate,
+        ),
       ],
     );
   }
 }
+

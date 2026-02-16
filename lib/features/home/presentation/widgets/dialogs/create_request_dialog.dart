@@ -7,7 +7,10 @@ import '../../viewmodels/home_dialog_view_models.dart';
 import '../forms/request_form.dart';
 
 class CreateRequestDialog extends ConsumerStatefulWidget {
-  const CreateRequestDialog({super.key, this.initialCollectionId});
+  const CreateRequestDialog({
+    super.key,
+    this.initialCollectionId,
+  });
 
   final String? initialCollectionId;
 
@@ -23,7 +26,10 @@ class _CreateRequestDialogState extends ConsumerState<CreateRequestDialog> {
   void initState() {
     super.initState();
     final activeEnv = ref.read(activeEnvironmentNameProvider);
-    _formController = RequestFormController(initialCollectionId: widget.initialCollectionId, initialEnvironmentName: activeEnv);
+    _formController = RequestFormController(
+      initialCollectionId: widget.initialCollectionId,
+      initialEnvironmentName: activeEnv,
+    );
   }
 
   @override
@@ -35,7 +41,12 @@ class _CreateRequestDialogState extends ConsumerState<CreateRequestDialog> {
   Future<void> _handleCreateRequest() async {
     final validationError = _formController.validateRequiredFields();
     if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(validationError), backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationError),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
@@ -47,12 +58,20 @@ class _CreateRequestDialogState extends ConsumerState<CreateRequestDialog> {
       await viewModel.createRequest(request);
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Request "${request.name}" created successfully'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Request "${request.name}" created successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to create request: $e'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create request: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -73,13 +92,23 @@ class _CreateRequestDialogState extends ConsumerState<CreateRequestDialog> {
       content: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: safeMaxWidth),
         child: SingleChildScrollView(
-          child: RequestForm(controller: _formController, isSubmitting: _isSubmitting),
+          child: RequestForm(
+            controller: _formController,
+            isSubmitting: _isSubmitting,
+          ),
         ),
       ),
       actions: [
-        TextButton(onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        AppButton(label: _isSubmitting ? 'Creating...' : 'Create', onPressed: _isSubmitting ? null : _handleCreateRequest),
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        AppButton(
+          label: _isSubmitting ? 'Creating...' : 'Create',
+          onPressed: _isSubmitting ? null : _handleCreateRequest,
+        ),
       ],
     );
   }
 }
+

@@ -11,3 +11,4 @@ class CreateRequestUseCase {
     await _repository.saveRequest(request);
   }
 }
+

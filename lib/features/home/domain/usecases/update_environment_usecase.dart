@@ -16,3 +16,4 @@ class UpdateEnvironmentUseCase {
     await _repository.saveEnvironment(environment);
   }
 }
+

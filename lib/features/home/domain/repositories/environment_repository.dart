@@ -24,3 +24,4 @@ abstract class EnvironmentRepository {
   /// Resolve template variables in a string
   String resolveTemplate(String input, EnvironmentModel? environment);
 }
+

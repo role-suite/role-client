@@ -11,3 +11,4 @@ class GetRequestsByCollectionUseCase {
     return await _repository.getRequestsByCollection(collection);
   }
 }
+

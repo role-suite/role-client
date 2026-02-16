@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:relay/core/constants/app_paths.dart';
@@ -6,17 +7,22 @@ import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/services/file_storage_service.dart';
 import 'package:relay/core/services/workspace_service.dart';
-import 'package:relay/core/utils/logger.dart';
 import 'package:relay/core/utils/uuid.dart';
 import 'package:relay/features/collection_runner/domain/models/collection_run_history.dart';
 import 'package:relay/features/collection_runner/domain/models/collection_run_result.dart';
 
 class CollectionRunHistoryService {
-  CollectionRunHistoryService._internal(this._fileStorageService, this._workspaceService);
+  CollectionRunHistoryService._internal(
+    this._fileStorageService,
+    this._workspaceService,
+  );
 
   static CollectionRunHistoryService? _instance;
   factory CollectionRunHistoryService() {
-    _instance ??= CollectionRunHistoryService._internal(FileStorageService.instance, WorkspaceService.instance);
+    _instance ??= CollectionRunHistoryService._internal(
+      FileStorageService.instance,
+      WorkspaceService.instance,
+    );
     return _instance!;
   }
 
@@ -33,9 +39,15 @@ class CollectionRunHistoryService {
     required List<CollectionRunResult> results,
   }) async {
     final id = UuidUtils.generate();
-    final history = CollectionRunHistory(id: id, collection: collection, environment: environment, completedAt: completedAt, results: results);
+    final history = CollectionRunHistory(
+      id: id,
+      collection: collection,
+      environment: environment,
+      completedAt: completedAt,
+      results: results,
+    );
 
-    final fileName = '$id.json';
+    final fileName = '${id}.json';
     final historyPath = p.join(AppPaths.history, fileName);
     await _fileStorageService.writeJson(historyPath, history.toJson());
 
@@ -57,11 +69,14 @@ class CollectionRunHistoryService {
     for (final entity in entities) {
       if (entity is File && entity.path.endsWith('.json')) {
         try {
-          final json = await _fileStorageService.readJson(p.join(AppPaths.history, p.basename(entity.path)));
+          final json = await _fileStorageService.readJson(
+            p.join(AppPaths.history, p.basename(entity.path)),
+          );
           final history = _fromJson(json);
           histories.add(history);
         } catch (e) {
-          AppLogger.error('Error loading history file ${entity.path}: $e');
+          // Skip corrupted files
+          print('Error loading history file ${entity.path}: $e');
         }
       }
     }
@@ -75,7 +90,7 @@ class CollectionRunHistoryService {
   /// Get a specific history by ID
   Future<CollectionRunHistory?> getHistoryById(String id) async {
     try {
-      final fileName = '$id.json';
+      final fileName = '${id}.json';
       final historyPath = p.join(AppPaths.history, fileName);
       final json = await _fileStorageService.readJson(historyPath);
       return _fromJson(json);
@@ -86,7 +101,7 @@ class CollectionRunHistoryService {
 
   /// Delete a history by ID
   Future<void> deleteHistory(String id) async {
-    final fileName = '$id.json';
+    final fileName = '${id}.json';
     final historyPath = await _workspaceService.resolvePath([AppPaths.history, fileName]);
     final file = File(historyPath);
     if (await file.exists()) {
@@ -99,7 +114,9 @@ class CollectionRunHistoryService {
     final collection = CollectionModel.fromJson(collectionJson);
 
     final environmentJson = json['environment'] as Map<String, dynamic>?;
-    final environment = environmentJson != null ? EnvironmentModel.fromJson(environmentJson) : null;
+    final environment = environmentJson != null
+        ? EnvironmentModel.fromJson(environmentJson)
+        : null;
 
     final completedAt = DateTime.parse(json['completedAt'] as String);
 
@@ -109,7 +126,10 @@ class CollectionRunHistoryService {
       final request = ApiRequestModel.fromJson(requestJson);
 
       final statusStr = resultJson['status'] as String;
-      final status = CollectionRunStatus.values.firstWhere((s) => s.name == statusStr, orElse: () => CollectionRunStatus.failed);
+      final status = CollectionRunStatus.values.firstWhere(
+        (s) => s.name == statusStr,
+        orElse: () => CollectionRunStatus.failed,
+      );
 
       final durationMs = resultJson['duration'] as int?;
       final duration = durationMs != null ? Duration(milliseconds: durationMs) : null;

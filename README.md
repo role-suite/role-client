@@ -193,30 +193,44 @@ Environment variables let you switch between different API endpoints or authenti
 5. Handle any conflicts if prompted
 6. Your collections and environments are now imported!
 
-## Technical Documentation
-
-Detailed technical documentation for developers and maintainers is in the **[docs/](docs/)** folder:
-
-- [Documentation index](docs/README.md) — overview, architecture, connecting to backend, authentication, data model, configuration, deployment, development, and maintenance.
-
 ## Architecture
 
-Röle follows **Clean Architecture** principles with a feature-based structure. For full technical detail see **[docs/](docs/)** (especially [01-OVERVIEW](docs/01-OVERVIEW.md) and [02-ARCHITECTURE](docs/02-ARCHITECTURE.md)).
+Röle follows **Clean Architecture** principles with a feature-based structure:
 
 ```
 lib/
 ├── core/                    # Shared code across features
-│   ├── constants/           # ApiStyle, DataSourceMode, app constants
-│   ├── models/              # Data models (collections, requests, environments, workspace bundle)
-│   ├── services/            # Relay API clients, workspace API, sync, preferences, storage
-│   ├── theme/               # App theming (light/dark)
-│   ├── utils/               # Logger, UUID, request helpers
-│   └── presentation/       # Shared layout and widgets
+│   ├── constant/           # App constants
+│   ├── model/              # Core data models
+│   │   ├── api_request_model.dart
+│   │   ├── collection_model.dart
+│   │   ├── environment_model.dart
+│   │   ├── request_result_model.dart
+│   │   └── workspace_bundle.dart
+│   ├── service/            # Core services
+│   │   ├── api_service.dart
+│   │   ├── environment_service.dart
+│   │   ├── file_storage_service.dart
+│   │   ├── theme_service.dart
+│   │   └── workspace_import_export_service.dart
+│   ├── presentation/       # Reusable UI components
+│   │   ├── layout/
+│   │   └── widgets/
+│   ├── theme/              # App theming
+│   └── util/               # Utilities
 ├── features/
-│   ├── auth/                # Sign-in (email, Serverpod)
-│   ├── home/                # Collections, requests, environments, request runner, drawer
-│   ├── collection_runner/   # Run collections sequentially
-│   └── request_chain/       # Request chains and config
+│   └── home/
+│       ├── data/           # Data layer
+│       │   ├── datasources/
+│       │   └── repositories/
+│       ├── domain/         # Domain layer
+│       │   ├── repositories/
+│       │   └── usecases/
+│       └── presentation/   # Presentation layer
+│           ├── controllers/
+│           ├── providers/
+│           ├── viewmodels/
+│           └── widgets/
 └── main.dart
 ```
 
@@ -226,10 +240,9 @@ lib/
 |------------|---------|
 | [Flutter](https://flutter.dev) | Cross-platform UI framework |
 | [Riverpod](https://riverpod.dev) | State management |
-| [Dio](https://pub.dev/packages/dio) | HTTP client for requests and REST workspace |
-| [Serverpod](https://serverpod.dev) client | Optional backend sync and email auth (when using API + Serverpod RPC) |
-| [SharedPreferences](https://pub.dev/packages/shared_preferences) | Data source and theme preferences |
-| [PathProvider](https://pub.dev/packages/path_provider) | Local workspace file paths |
+| [Dio](https://pub.dev/packages/dio) | HTTP client |
+| [SharedPreferences](https://pub.dev/packages/shared_preferences) | Local key-value storage |
+| [PathProvider](https://pub.dev/packages/path_provider) | File system paths |
 | [FilePicker](https://pub.dev/packages/file_picker) | File selection dialogs |
 
 ### Data Flow
@@ -319,12 +332,11 @@ Contributions are welcome! Here's how you can help:
 
 ### How is data stored?
 
-You can choose **Local** or **API** as the data source (drawer → Data source):
+All data is stored locally on your device using the platform's standard storage mechanisms:
+- **Desktop**: Application documents directory
+- **Mobile**: Application-specific storage
 
-- **Local**: Data is stored on your device (application documents directory). No server required.
-- **API**: Data is synced with a **role-server** backend. Collections, requests, and environments are read from and written to the server (REST or Serverpod RPC). Optional email sign-in or API key applies when the server requires it.
-
-See [docs/03-CONNECTING-TO-BACKEND.md](docs/03-CONNECTING-TO-BACKEND.md) and [docs/04-AUTHENTICATION.md](docs/04-AUTHENTICATION.md) for configuration.
+No data is ever sent to external servers.
 
 ### Can I use this for GraphQL APIs?
 

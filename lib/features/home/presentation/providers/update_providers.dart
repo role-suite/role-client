@@ -7,13 +7,6 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
   return UpdateService();
 });
 
-/// Provider for the current app version.
-/// Returns the version from package_info_plus.
-final currentVersionProvider = FutureProvider<String>((ref) async {
-  final updateService = ref.watch(updateServiceProvider);
-  return updateService.getCurrentVersion();
-});
-
 /// Provider that checks for available updates.
 /// Returns the latest release if an update is available, null otherwise.
 final updateAvailableProvider = FutureProvider<AppReleaseModel?>((ref) async {

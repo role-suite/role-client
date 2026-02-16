@@ -16,12 +16,18 @@ class CollectionRunHistoryScreen extends ConsumerWidget {
     final historiesAsync = ref.watch(collectionRunHistoriesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Test Run History')),
+      appBar: AppBar(
+        title: const Text('Test Run History'),
+      ),
       body: SafeArea(
         child: historiesAsync.when(
           data: (histories) {
             if (histories.isEmpty) {
-              return EmptyState(icon: Icons.history, title: 'No test runs yet', message: 'Run a collection to see test history here.');
+              return EmptyState(
+                icon: Icons.history,
+                title: 'No test runs yet',
+                message: 'Run a collection to see test history here.',
+              );
             }
 
             return RefreshIndicator(
@@ -35,7 +41,7 @@ class CollectionRunHistoryScreen extends ConsumerWidget {
                   final history = histories[index];
                   return _HistoryCard(history: history);
                 },
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
               ),
             );
           },
@@ -46,9 +52,16 @@ class CollectionRunHistoryScreen extends ConsumerWidget {
               children: [
                 Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
                 const SizedBox(height: 16),
-                Text('Failed to load history', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Failed to load history',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
-                Text(error.toString(), style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
+                Text(
+                  error.toString(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
                 AppButton(
                   label: 'Retry',
@@ -79,11 +92,13 @@ class _HistoryCardState extends ConsumerState<_HistoryCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final history = widget.history;
     final dateTime = history.completedAt;
-    final dateStr =
-        '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
-    final successRate = history.totalRequests > 0 ? (history.successfulRequests / history.totalRequests * 100).toStringAsFixed(0) : '0';
+    final dateStr = '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
+    final successRate = history.totalRequests > 0
+        ? (history.successfulRequests / history.totalRequests * 100).toStringAsFixed(0)
+        : '0';
 
     return AppCard(
       title: history.collection.name,
@@ -94,16 +109,34 @@ class _HistoryCardState extends ConsumerState<_HistoryCard> {
           Row(
             children: [
               Expanded(
-                child: _StatItem(label: 'Total', value: '${history.totalRequests}', icon: Icons.list),
+                child: _StatItem(
+                  label: 'Total',
+                  value: '${history.totalRequests}',
+                  icon: Icons.list,
+                ),
               ),
               Expanded(
-                child: _StatItem(label: 'Success', value: '${history.successfulRequests}', icon: Icons.check_circle, color: Colors.green),
+                child: _StatItem(
+                  label: 'Success',
+                  value: '${history.successfulRequests}',
+                  icon: Icons.check_circle,
+                  color: Colors.green,
+                ),
               ),
               Expanded(
-                child: _StatItem(label: 'Failed', value: '${history.failedRequests}', icon: Icons.error, color: Colors.red),
+                child: _StatItem(
+                  label: 'Failed',
+                  value: '${history.failedRequests}',
+                  icon: Icons.error,
+                  color: Colors.red,
+                ),
               ),
               Expanded(
-                child: _StatItem(label: 'Success Rate', value: '$successRate%', icon: Icons.percent),
+                child: _StatItem(
+                  label: 'Success Rate',
+                  value: '$successRate%',
+                  icon: Icons.percent,
+                ),
               ),
             ],
           ),
@@ -134,7 +167,10 @@ class _HistoryCardState extends ConsumerState<_HistoryCard> {
             ...history.results.map((result) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: CollectionRunResultCard(result: result, isActive: false),
+                child: CollectionRunResultCard(
+                  result: result,
+                  isActive: false,
+                ),
               );
             }),
           ],
@@ -148,12 +184,19 @@ class _HistoryCardState extends ConsumerState<_HistoryCard> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Test Run'),
-        content: Text('Are you sure you want to delete this test run from ${history.collection.name}?'),
+        content: Text(
+          'Are you sure you want to delete this test run from ${history.collection.name}?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -166,11 +209,15 @@ class _HistoryCardState extends ConsumerState<_HistoryCard> {
         await service.deleteHistory(history.id);
         if (context.mounted) {
           ref.invalidate(collectionRunHistoriesProvider);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Test run deleted')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Test run deleted')),
+          );
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete: $e')),
+          );
         }
       }
     }
@@ -178,7 +225,12 @@ class _HistoryCardState extends ConsumerState<_HistoryCard> {
 }
 
 class _StatItem extends StatelessWidget {
-  const _StatItem({required this.label, required this.value, required this.icon, this.color});
+  const _StatItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.color,
+  });
 
   final String label;
   final String value;
@@ -194,9 +246,17 @@ class _StatItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: color),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
-        Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }

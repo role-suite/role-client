@@ -1,6 +1,7 @@
 class TemplateResolver {
-  static final RegExp _placeholderRegex = RegExp(r'{{\s*([a-zA-Z0-9_]+)\s*}}');
-
+  static final RegExp _placeholderRegex =
+  RegExp(r'{{\s*([a-zA-Z0-9_]+)\s*}}');
+  
   /// Public access to the placeholder regex for text highlighting
   static RegExp get placeholderRegex => _placeholderRegex;
 

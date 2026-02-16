@@ -10,3 +10,4 @@ class SetActiveEnvironmentUseCase {
     await _repository.setActiveEnvironment(environmentName);
   }
 }
+

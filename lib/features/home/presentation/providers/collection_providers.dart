@@ -21,30 +21,22 @@ class CollectionsNotifier extends StateNotifier<AsyncValue<List<CollectionModel>
   final DeleteCollectionUseCase _deleteCollectionUseCase;
   final Ref _ref;
 
-  CollectionsNotifier(this._getAllCollectionsUseCase, this._createCollectionUseCase, this._deleteCollectionUseCase, this._ref)
-    : super(const AsyncValue.loading()) {
+  CollectionsNotifier(
+    this._getAllCollectionsUseCase,
+    this._createCollectionUseCase,
+    this._deleteCollectionUseCase,
+    this._ref,
+  ) : super(const AsyncValue.loading()) {
     _loadCollections();
   }
 
   Future<void> _loadCollections() async {
-    try {
-      state = const AsyncValue.loading();
-    } on StateError {
-      return; // Notifier disposed (e.g. data source switched).
-    }
+    state = const AsyncValue.loading();
     try {
       final collections = await _getAllCollectionsUseCase();
-      try {
-        state = AsyncValue.data(collections);
-      } on StateError {
-        // Notifier disposed; ignore.
-      }
+      state = AsyncValue.data(collections);
     } catch (e, stackTrace) {
-      try {
-        state = AsyncValue.error(e, stackTrace);
-      } on StateError {
-        // Notifier disposed; ignore.
-      }
+      state = AsyncValue.error(e, stackTrace);
     }
   }
 
@@ -83,3 +75,4 @@ final collectionsNotifierProvider = StateNotifierProvider<CollectionsNotifier, A
     ref,
   );
 });
+

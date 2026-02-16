@@ -30,29 +30,20 @@ class ActiveEnvironmentNotifier extends StateNotifier<AsyncValue<EnvironmentMode
   final GetActiveEnvironmentUseCase _getActiveEnvironmentUseCase;
   final SetActiveEnvironmentUseCase _setActiveEnvironmentUseCase;
 
-  ActiveEnvironmentNotifier(this._getActiveEnvironmentUseCase, this._setActiveEnvironmentUseCase) : super(const AsyncValue.loading()) {
+  ActiveEnvironmentNotifier(
+    this._getActiveEnvironmentUseCase,
+    this._setActiveEnvironmentUseCase,
+  ) : super(const AsyncValue.loading()) {
     _loadActiveEnvironment();
   }
 
   Future<void> _loadActiveEnvironment() async {
-    try {
-      state = const AsyncValue.loading();
-    } on StateError {
-      return;
-    }
+    state = const AsyncValue.loading();
     try {
       final environment = await _getActiveEnvironmentUseCase();
-      try {
-        state = AsyncValue.data(environment);
-      } on StateError {
-        return;
-      }
+      state = AsyncValue.data(environment);
     } catch (e, stackTrace) {
-      try {
-        state = AsyncValue.error(e, stackTrace);
-      } on StateError {
-        return;
-      }
+      state = AsyncValue.error(e, stackTrace);
     }
   }
 
@@ -68,7 +59,10 @@ class ActiveEnvironmentNotifier extends StateNotifier<AsyncValue<EnvironmentMode
 
 /// Provider for ActiveEnvironmentNotifier
 final activeEnvironmentNotifierProvider = StateNotifierProvider<ActiveEnvironmentNotifier, AsyncValue<EnvironmentModel?>>((ref) {
-  return ActiveEnvironmentNotifier(ref.watch(getActiveEnvironmentUseCaseProvider), ref.watch(setActiveEnvironmentUseCaseProvider));
+  return ActiveEnvironmentNotifier(
+    ref.watch(getActiveEnvironmentUseCaseProvider),
+    ref.watch(setActiveEnvironmentUseCaseProvider),
+  );
 });
 
 /// Notifier for managing environment state
@@ -88,24 +82,12 @@ class EnvironmentsNotifier extends StateNotifier<AsyncValue<List<EnvironmentMode
   }
 
   Future<void> _loadEnvironments() async {
-    try {
-      state = const AsyncValue.loading();
-    } on StateError {
-      return; // Notifier disposed (e.g. data source switched).
-    }
+    state = const AsyncValue.loading();
     try {
       final environments = await _getAllEnvironmentsUseCase();
-      try {
-        state = AsyncValue.data(environments);
-      } on StateError {
-        // Notifier disposed; ignore.
-      }
+      state = AsyncValue.data(environments);
     } catch (e, stackTrace) {
-      try {
-        state = AsyncValue.error(e, stackTrace);
-      } on StateError {
-        // Notifier disposed; ignore.
-      }
+      state = AsyncValue.error(e, stackTrace);
     }
   }
 
@@ -153,3 +135,4 @@ final environmentsNotifierProvider = StateNotifierProvider<EnvironmentsNotifier,
     ref.watch(deleteEnvironmentUseCaseProvider),
   );
 });
+

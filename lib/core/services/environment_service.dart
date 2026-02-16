@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/constants/app_paths.dart';
-import 'package:relay/core/utils/logger.dart';
 
 import '../models/environment_model.dart';
 import 'file_storage_service.dart';
@@ -40,19 +39,19 @@ class EnvironmentService {
         // Use path package to reliably extract file name
         final fileName = p.basename(entity.path);
         final name = fileName.replaceAll('.json', '');
-
+        
         // Skip if name is empty
         if (name.isEmpty) {
           continue;
         }
-
+        
         final relativePath = AppPaths.environmentFile(name);
         try {
           final json = await _fileStorageService.readJson(relativePath);
           envs.add(EnvironmentModel.fromJson(json));
         } catch (e) {
           // Log error but continue with other environments
-          AppLogger.error('Error loading environment $name: $e');
+          print('Error loading environment $name: $e');
         }
       }
     }

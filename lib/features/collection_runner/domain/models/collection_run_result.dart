@@ -1,9 +1,21 @@
 import 'package:relay/core/models/api_request_model.dart';
 
-enum CollectionRunStatus { pending, running, success, failed }
+enum CollectionRunStatus {
+  pending,
+  running,
+  success,
+  failed,
+}
 
 class CollectionRunResult {
-  const CollectionRunResult({required this.request, required this.status, this.statusCode, this.statusMessage, this.duration, this.errorMessage});
+  const CollectionRunResult({
+    required this.request,
+    required this.status,
+    this.statusCode,
+    this.statusMessage,
+    this.duration,
+    this.errorMessage,
+  });
 
   final ApiRequestModel request;
   final CollectionRunStatus status;
@@ -12,11 +24,18 @@ class CollectionRunResult {
   final Duration? duration;
   final String? errorMessage;
 
-  bool get isComplete => status == CollectionRunStatus.success || status == CollectionRunStatus.failed;
+  bool get isComplete =>
+      status == CollectionRunStatus.success || status == CollectionRunStatus.failed;
 
   bool get isSuccess => status == CollectionRunStatus.success;
 
-  CollectionRunResult copyWith({CollectionRunStatus? status, int? statusCode, String? statusMessage, Duration? duration, String? errorMessage}) {
+  CollectionRunResult copyWith({
+    CollectionRunStatus? status,
+    int? statusCode,
+    String? statusMessage,
+    Duration? duration,
+    String? errorMessage,
+  }) {
     return CollectionRunResult(
       request: request,
       status: status ?? this.status,
@@ -28,6 +47,11 @@ class CollectionRunResult {
   }
 
   factory CollectionRunResult.pending(ApiRequestModel request) {
-    return CollectionRunResult(request: request, status: CollectionRunStatus.pending);
+    return CollectionRunResult(
+      request: request,
+      status: CollectionRunStatus.pending,
+    );
   }
 }
+
+

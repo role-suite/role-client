@@ -11,3 +11,4 @@ class GetActiveEnvironmentUseCase {
     return await _repository.getActiveEnvironment();
   }
 }
+

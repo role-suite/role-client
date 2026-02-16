@@ -20,15 +20,22 @@ class AppReleaseModel {
   factory AppReleaseModel.fromJson(Map<String, dynamic> json) {
     final tagName = json['tag_name'] as String? ?? '';
     // Remove 'v' prefix if present for version comparison
-    final version = tagName.startsWith('v') || tagName.startsWith('V') ? tagName.substring(1) : tagName;
+    final version = tagName.startsWith('v') || tagName.startsWith('V')
+        ? tagName.substring(1)
+        : tagName;
 
     return AppReleaseModel(
       version: version,
       tagName: tagName,
       releaseNotes: json['body'] as String?,
       htmlUrl: json['html_url'] as String? ?? '',
-      publishedAt: json['published_at'] != null ? DateTime.tryParse(json['published_at'] as String) : null,
-      assets: (json['assets'] as List<dynamic>?)?.map((e) => ReleaseAsset.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      publishedAt: json['published_at'] != null
+          ? DateTime.tryParse(json['published_at'] as String)
+          : null,
+      assets: (json['assets'] as List<dynamic>?)
+              ?.map((e) => ReleaseAsset.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -54,7 +61,12 @@ class ReleaseAsset {
   final int size;
   final String? contentType;
 
-  const ReleaseAsset({required this.name, required this.downloadUrl, required this.size, this.contentType});
+  const ReleaseAsset({
+    required this.name,
+    required this.downloadUrl,
+    required this.size,
+    this.contentType,
+  });
 
   factory ReleaseAsset.fromJson(Map<String, dynamic> json) {
     return ReleaseAsset(

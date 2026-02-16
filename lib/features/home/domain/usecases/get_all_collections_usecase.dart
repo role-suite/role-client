@@ -11,3 +11,4 @@ class GetAllCollectionsUseCase {
     return await _repository.getAllCollections();
   }
 }
+
