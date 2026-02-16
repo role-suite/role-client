@@ -1,10 +1,10 @@
 import 'package:relay/core/models/collection_model.dart';
-import 'package:relay/features/home/data/datasources/collection_local_data_source.dart';
+import 'package:relay/features/home/data/datasources/collection_data_source.dart';
 import 'package:relay/features/home/domain/repositories/collection_repository.dart';
 
-/// Implementation of CollectionRepository using local file storage
+/// Implementation of CollectionRepository (local or remote data source).
 class CollectionRepositoryImpl implements CollectionRepository {
-  final CollectionLocalDataSource _dataSource;
+  final CollectionDataSource _dataSource;
 
   CollectionRepositoryImpl(this._dataSource);
 
@@ -38,4 +38,3 @@ class CollectionRepositoryImpl implements CollectionRepository {
     return await _dataSource.collectionExists(name);
   }
 }
-

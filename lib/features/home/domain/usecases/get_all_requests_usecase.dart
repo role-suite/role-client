@@ -11,4 +11,3 @@ class GetAllRequestsUseCase {
     return await _repository.getAllRequests();
   }
 }
-

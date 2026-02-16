@@ -21,22 +21,30 @@ class RequestsNotifier extends StateNotifier<AsyncValue<List<ApiRequestModel>>> 
   final UpdateRequestUseCase _updateRequestUseCase;
   final DeleteRequestUseCase _deleteRequestUseCase;
 
-  RequestsNotifier(
-    this._getAllRequestsUseCase,
-    this._createRequestUseCase,
-    this._updateRequestUseCase,
-    this._deleteRequestUseCase,
-  ) : super(const AsyncValue.loading()) {
+  RequestsNotifier(this._getAllRequestsUseCase, this._createRequestUseCase, this._updateRequestUseCase, this._deleteRequestUseCase)
+    : super(const AsyncValue.loading()) {
     _loadRequests();
   }
 
   Future<void> _loadRequests() async {
-    state = const AsyncValue.loading();
+    try {
+      state = const AsyncValue.loading();
+    } on StateError {
+      return; // Notifier disposed (e.g. data source switched).
+    }
     try {
       final requests = await _getAllRequestsUseCase();
-      state = AsyncValue.data(requests);
+      try {
+        state = AsyncValue.data(requests);
+      } on StateError {
+        // Notifier disposed; ignore.
+      }
     } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+      try {
+        state = AsyncValue.error(e, stackTrace);
+      } on StateError {
+        // Notifier disposed; ignore.
+      }
     }
   }
 
@@ -84,4 +92,3 @@ final requestsNotifierProvider = StateNotifierProvider<RequestsNotifier, AsyncVa
     ref.watch(deleteRequestUseCaseProvider),
   );
 });
-

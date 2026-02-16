@@ -18,11 +18,10 @@ class MapUtils {
     return result;
   }
 
-  static Map<String, String> mergeStringMaps(
-      Map<String, String> base,
-      Map<String, String> override,
-      ) {
-    final result = <String, String>{}..addAll(base)..addAll(override);
+  static Map<String, String> mergeStringMaps(Map<String, String> base, Map<String, String> override) {
+    final result = <String, String>{}
+      ..addAll(base)
+      ..addAll(override);
     return result;
   }
 

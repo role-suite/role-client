@@ -2,12 +2,7 @@
 import 'package:flutter/material.dart';
 
 class MaxWidthLayout extends StatelessWidget {
-  const MaxWidthLayout({
-    super.key,
-    required this.child,
-    this.maxWidth = 900,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  });
+  const MaxWidthLayout({super.key, required this.child, this.maxWidth = 900, this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8)});
 
   final Widget child;
   final double maxWidth;

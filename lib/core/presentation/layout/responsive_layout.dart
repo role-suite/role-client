@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppBreakpoints {
-  static const double mobile = 0;      // implicit
+  static const double mobile = 0; // implicit
   static const double tablet = 600;
   static const double desktop = 1024;
 }
@@ -17,13 +17,9 @@ class AppBreakpoints {
 /// );
 /// ```
 class ResponsiveLayout extends StatelessWidget {
-  const ResponsiveLayout({
-    super.key,
-    required this.mobile,
-    WidgetBuilder? tablet,
-    WidgetBuilder? desktop,
-  })  : tablet = tablet ?? mobile,
-        desktop = desktop ?? tablet ?? mobile;
+  const ResponsiveLayout({super.key, required this.mobile, WidgetBuilder? tablet, WidgetBuilder? desktop})
+    : tablet = tablet ?? mobile,
+      desktop = desktop ?? tablet ?? mobile;
 
   final WidgetBuilder mobile;
   final WidgetBuilder tablet;

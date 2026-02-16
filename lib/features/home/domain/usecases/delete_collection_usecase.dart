@@ -10,4 +10,3 @@ class DeleteCollectionUseCase {
     await _repository.deleteCollection(collectionId);
   }
 }
-

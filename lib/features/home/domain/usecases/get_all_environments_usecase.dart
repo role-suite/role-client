@@ -11,4 +11,3 @@ class GetAllEnvironmentsUseCase {
     return await _repository.getAllEnvironments();
   }
 }
-

@@ -10,4 +10,3 @@ class DeleteEnvironmentUseCase {
     await _repository.deleteEnvironment(name);
   }
 }
-

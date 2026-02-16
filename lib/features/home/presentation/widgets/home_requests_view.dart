@@ -7,12 +7,7 @@ import '../../../../core/presentation/widgets/app_card.dart';
 import '../../../../core/presentation/widgets/method_badge.dart';
 
 class HomeRequestsView extends ConsumerWidget {
-  const HomeRequestsView({
-    super.key,
-    required this.requests,
-    required this.onTapRequest,
-    this.onEditRequest,
-  });
+  const HomeRequestsView({super.key, required this.requests, required this.onTapRequest, this.onEditRequest});
 
   final List<ApiRequestModel> requests;
   final void Function(ApiRequestModel request) onTapRequest;
@@ -25,8 +20,7 @@ class HomeRequestsView extends ConsumerWidget {
       itemCount: requests.length,
       itemBuilder: (context, index) {
         final request = requests[index];
-        final label =
-            '${request.method.name} request ${request.name} ${request.urlTemplate}';
+        final label = '${request.method.name} request ${request.name} ${request.urlTemplate}';
         return Semantics(
           button: true,
           label: label,
@@ -52,20 +46,12 @@ class HomeRequestsView extends ConsumerWidget {
                   actions: [
                     Tooltip(
                       message: 'Run request "${request.name}"',
-                      child: IconButton(
-                        icon: const Icon(Icons.play_arrow),
-                        onPressed: () => onTapRequest(request),
-                        tooltip: 'Run',
-                      ),
+                      child: IconButton(icon: const Icon(Icons.play_arrow), onPressed: () => onTapRequest(request), tooltip: 'Run'),
                     ),
                     if (onEditRequest != null)
                       Tooltip(
                         message: 'Edit request "${request.name}"',
-                        child: IconButton(
-                          icon: const Icon(Icons.edit_outlined),
-                          onPressed: () => onEditRequest!(request),
-                          tooltip: 'Edit',
-                        ),
+                        child: IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => onEditRequest!(request), tooltip: 'Edit'),
                       ),
                   ],
                   child: _RequestCardContent(request: request),
@@ -94,12 +80,7 @@ class _RequestCardContent extends StatelessWidget {
             MethodBadge(method: request.method),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                request.name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
+              child: Text(request.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -107,10 +88,7 @@ class _RequestCardContent extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             request.urlTemplate,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontFamily: 'monospace',
-                ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontFamily: 'monospace'),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -119,9 +97,7 @@ class _RequestCardContent extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             request.description!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -129,17 +105,11 @@ class _RequestCardContent extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            Icon(
-              Icons.access_time,
-              size: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 4),
             Text(
               _formatDate(request.updatedAt),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -168,5 +138,3 @@ class _RequestCardContent extends StatelessWidget {
     }
   }
 }
-
-

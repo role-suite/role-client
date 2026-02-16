@@ -2,16 +2,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../presentation/layout/responsive_layout.dart';
 
-
-enum HttpMethod {
-  get,
-  post,
-  put,
-  delete,
-  patch,
-  head,
-  options,
-}
+enum HttpMethod { get, post, put, delete, patch, head, options }
 
 extension HttpMethodX on HttpMethod {
   String get name {
@@ -59,8 +50,6 @@ extension AppContext on BuildContext {
   double get screenWidth => MediaQuery.of(this).size.width;
 
   bool get isMobile => screenWidth < AppBreakpoints.tablet;
-  bool get isTablet =>
-      screenWidth >= AppBreakpoints.tablet &&
-          screenWidth < AppBreakpoints.desktop;
+  bool get isTablet => screenWidth >= AppBreakpoints.tablet && screenWidth < AppBreakpoints.desktop;
   bool get isDesktop => screenWidth >= AppBreakpoints.desktop;
 }

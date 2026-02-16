@@ -3,13 +3,7 @@ import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 
 class WorkspaceBundle {
-  WorkspaceBundle({
-    required this.version,
-    required this.exportedAt,
-    required this.collections,
-    required this.environments,
-    this.source,
-  });
+  WorkspaceBundle({required this.version, required this.exportedAt, required this.collections, required this.environments, this.source});
 
   static const int currentVersion = 1;
 
@@ -50,36 +44,20 @@ class WorkspaceBundle {
       version: version,
       exportedAt: exportedAt,
       source: json['source'] as String?,
-      collections: collectionsJson is List
-          ? collectionsJson
-              .whereType<Map<String, dynamic>>()
-              .map(CollectionBundle.fromJson)
-              .toList()
-          : const [],
-      environments: environmentsJson is List
-          ? environmentsJson
-              .whereType<Map<String, dynamic>>()
-              .map(EnvironmentModel.fromJson)
-              .toList()
-          : const [],
+      collections: collectionsJson is List ? collectionsJson.whereType<Map<String, dynamic>>().map(CollectionBundle.fromJson).toList() : const [],
+      environments: environmentsJson is List ? environmentsJson.whereType<Map<String, dynamic>>().map(EnvironmentModel.fromJson).toList() : const [],
     );
   }
 }
 
 class CollectionBundle {
-  CollectionBundle({
-    required this.collection,
-    required this.requests,
-  });
+  CollectionBundle({required this.collection, required this.requests});
 
   final CollectionModel collection;
   final List<ApiRequestModel> requests;
 
   Map<String, dynamic> toJson() {
-    return {
-      'collection': collection.toJson(),
-      'requests': requests.map((r) => r.toJson()).toList(),
-    };
+    return {'collection': collection.toJson(), 'requests': requests.map((r) => r.toJson()).toList()};
   }
 
   factory CollectionBundle.fromJson(Map<String, dynamic> json) {
@@ -95,13 +73,7 @@ class CollectionBundle {
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             ),
-      requests: requestsJson is List
-          ? requestsJson
-              .whereType<Map<String, dynamic>>()
-              .map(ApiRequestModel.fromJson)
-              .toList()
-          : const [],
+      requests: requestsJson is List ? requestsJson.whereType<Map<String, dynamic>>().map(ApiRequestModel.fromJson).toList() : const [],
     );
   }
 }
-
