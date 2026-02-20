@@ -4,15 +4,18 @@ import 'package:relay/core/constants/app_paths.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/services/file_storage_service.dart';
 import 'package:relay/core/services/workspace_service.dart';
+import 'package:relay/core/utils/logger.dart';
+
+import 'request_data_source.dart';
 
 /// Data source for local file-based storage of API requests
-class RequestLocalDataSource {
+class RequestLocalDataSource implements RequestDataSource {
   final FileStorageService _fileStorageService;
   final WorkspaceService _workspaceService;
 
   RequestLocalDataSource(this._fileStorageService, this._workspaceService);
 
-  /// Get all requests from all collections
+  @override
   Future<List<ApiRequestModel>> getAllRequests() async {
     final collectionsDir = await _workspaceService.resolvePath([AppPaths.collections]);
     final dir = Directory(collectionsDir);
@@ -29,12 +32,12 @@ class RequestLocalDataSource {
       if (entity is Directory) {
         // Use path package to reliably extract directory name
         final collectionName = p.basename(entity.path);
-        
+
         // Skip if collectionName is empty or invalid
         if (collectionName.isEmpty) {
           continue;
         }
-        
+
         // Skip hidden directories and metadata files
         if (collectionName.startsWith('.') || collectionName == '_metadata.json') {
           continue;
@@ -45,7 +48,7 @@ class RequestLocalDataSource {
           allRequests.addAll(collectionRequests);
         } catch (e) {
           // Skip collections that can't be read, but log the error
-          print('Error loading requests from collection $collectionName: $e');
+          AppLogger.error('Error loading requests from collection $collectionName: $e');
         }
       }
     }
@@ -53,7 +56,7 @@ class RequestLocalDataSource {
     return allRequests;
   }
 
-  /// Get requests by collection/folder
+  @override
   Future<List<ApiRequestModel>> getRequestsByCollection(String collection) async {
     final dirPath = await _workspaceService.resolvePath([AppPaths.collections, collection]);
     final dir = Directory(dirPath);
@@ -71,12 +74,12 @@ class RequestLocalDataSource {
         try {
           // Use path package to reliably extract file name
           final fileName = p.basename(entity.path);
-          
+
           // Skip metadata files
           if (fileName == '_metadata.json') {
             continue;
           }
-          
+
           // Remove .json extension to get the ID
           final id = fileName.replaceAll('.json', '');
           final relativePath = AppPaths.collectionFile(collection, id);
@@ -86,7 +89,7 @@ class RequestLocalDataSource {
           requests.add(request.copyWith(collectionId: collection));
         } catch (e) {
           // Skip invalid files, but log the error
-          print('Error loading request file ${entity.path}: $e');
+          AppLogger.error('Error loading request file ${entity.path}: $e');
         }
       }
     }
@@ -94,7 +97,7 @@ class RequestLocalDataSource {
     return requests;
   }
 
-  /// Get a request by ID (searches all collections)
+  @override
   Future<ApiRequestModel?> getRequestById(String id) async {
     // Search in all collections
     final collectionsDir = await _workspaceService.resolvePath([AppPaths.collections]);
@@ -110,12 +113,12 @@ class RequestLocalDataSource {
       if (entity is Directory) {
         // Use path package to reliably extract directory name
         final collectionName = p.basename(entity.path);
-        
+
         // Skip if collectionName is empty or invalid
         if (collectionName.isEmpty || collectionName.startsWith('.')) {
           continue;
         }
-        
+
         final relativePath = AppPaths.collectionFile(collectionName, id);
         try {
           final json = await _fileStorageService.readJson(relativePath);
@@ -129,8 +132,7 @@ class RequestLocalDataSource {
     return null;
   }
 
-  /// Save a request (create or update)
-  /// If the collectionId has changed, moves the file to the new collection
+  @override
   Future<void> saveRequest(ApiRequestModel request) async {
     // Validate request before saving
     if (request.id.isEmpty) {
@@ -139,10 +141,10 @@ class RequestLocalDataSource {
     if (request.collectionId.isEmpty) {
       throw ArgumentError('Request collectionId cannot be empty');
     }
-    
+
     // Check if request already exists and if collection has changed
     final existingRequest = await getRequestById(request.id);
-    
+
     // If request exists in a different collection, delete the old file
     if (existingRequest != null && existingRequest.collectionId != request.collectionId) {
       final oldCollection = existingRequest.collectionId;
@@ -150,7 +152,7 @@ class RequestLocalDataSource {
       final oldPathSegments = oldRelativePath.split('/');
       final oldFullPath = await _workspaceService.resolvePath(oldPathSegments);
       final oldFile = File(oldFullPath);
-      
+
       if (await oldFile.exists()) {
         await oldFile.delete();
       }
@@ -160,15 +162,15 @@ class RequestLocalDataSource {
     final collection = request.collectionId;
     // Pass just the ID - collectionFile will add .json extension
     final relativePath = AppPaths.collectionFile(collection, request.id);
-    
+
     // Ensure the JSON includes collectionId
     final jsonData = request.toJson();
     if (jsonData['collectionId'] == null || (jsonData['collectionId'] as String).isEmpty) {
       throw StateError('Request collectionId is missing in JSON data for request ${request.id}');
     }
-    
+
     await _fileStorageService.writeJson(relativePath, jsonData);
-    
+
     // Verify the file was written correctly
     final writtenJson = await _fileStorageService.readJson(relativePath);
     if (writtenJson['collectionId'] == null || (writtenJson['collectionId'] as String).isEmpty) {
@@ -176,7 +178,7 @@ class RequestLocalDataSource {
     }
   }
 
-  /// Delete a request by ID (searches all collections)
+  @override
   Future<void> deleteRequest(String id) async {
     // Find the request first to know which collection it's in
     final request = await getRequestById(id);
@@ -189,10 +191,9 @@ class RequestLocalDataSource {
     final pathSegments = relativePath.split('/');
     final fullPath = await _workspaceService.resolvePath(pathSegments);
     final file = File(fullPath);
-    
+
     if (await file.exists()) {
       await file.delete();
     }
   }
 }
-

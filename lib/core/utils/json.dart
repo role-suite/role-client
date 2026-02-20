@@ -1,18 +1,18 @@
 import 'dart:convert';
 
+import 'package:relay/core/utils/logger.dart';
+
 class JsonUtils {
   static String pretty(dynamic data) {
     try {
-      if(data is String) {
+      if (data is String) {
         final decoded = jsonDecode(data);
         return const JsonEncoder.withIndent('  ').convert(decoded);
-      }
-      else if (data is Map || data is List) {
+      } else if (data is Map || data is List) {
         return const JsonEncoder.withIndent('  ').convert(data);
       }
-    }
-    catch(e) {
-      print(e);
+    } catch (e) {
+      AppLogger.error(e.toString());
     }
     return data?.toString() ?? '';
   }
@@ -21,9 +21,8 @@ class JsonUtils {
     try {
       jsonDecode(input);
       return true;
-    }
-    catch (e) {
-      print(e);
+    } catch (e) {
+      AppLogger.error(e.toString());
       return false;
     }
   }

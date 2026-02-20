@@ -6,20 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/services/api_service.dart';
 import 'package:relay/core/utils/json.dart';
+import 'package:relay/core/utils/request_build_helper.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
-
 import '../../../../core/presentation/widgets/app_button.dart';
 import '../../../../core/presentation/widgets/method_badge.dart';
 import '../../../../core/presentation/widgets/variable_highlight_text.dart';
 
 class RequestRunnerPage extends ConsumerStatefulWidget {
-  const RequestRunnerPage({
-    super.key,
-    required this.request,
-    this.onDelete,
-  });
+  const RequestRunnerPage({super.key, required this.request, this.onDelete});
 
   final ApiRequestModel request;
   final VoidCallback? onDelete;
@@ -45,32 +42,26 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     });
 
     final envRepository = ref.read(environmentRepositoryProvider);
-    final activeEnv = await envRepository.getActiveEnvironment();
+    
+    // Use request's saved environment if it exists, otherwise use active environment
+    EnvironmentModel? environment;
+    if (widget.request.environmentName != null) {
+      environment = await envRepository.getEnvironmentByName(widget.request.environmentName!);
+    }
+    environment ??= await envRepository.getActiveEnvironment();
 
-    // Resolve templates using the active environment
-    final resolvedUrl = envRepository.resolveTemplate(widget.request.urlTemplate, activeEnv);
-    final resolvedHeaders = <String, String>{
-      for (final entry in widget.request.headers.entries)
-        entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
-    };
+    String resolve(String s) => envRepository.resolveTemplate(s, environment);
+    final resolvedUrl = resolve(widget.request.urlTemplate);
     final resolvedQueryParams = <String, String>{
-      for (final entry in widget.request.queryParams.entries)
-        entry.key: envRepository.resolveTemplate(entry.value, activeEnv),
+      for (final entry in widget.request.queryParams.entries) entry.key: resolve(entry.value),
     };
-    final rawBody = widget.request.body;
-    final resolvedBody = (rawBody != null && rawBody.trim().isNotEmpty)
-        ? envRepository.resolveTemplate(rawBody, activeEnv)
-        : null;
+    final built = RequestBuildHelper.buildForSend(widget.request, resolve, rawBody: widget.request.body);
 
-    // Debug logging for easier troubleshooting
     debugPrint('==== Relay Request ====');
     debugPrint('Name: ${widget.request.name}');
     debugPrint('Method: ${widget.request.method.name}');
-    debugPrint('Active environment: ${activeEnv?.name}');
     debugPrint('Resolved URL: $resolvedUrl');
-    debugPrint('Resolved headers: $resolvedHeaders');
-    debugPrint('Resolved query params: $resolvedQueryParams');
-    debugPrint('Resolved body: $resolvedBody');
+    debugPrint('Resolved headers: ${built.headers}');
 
     final dio = ApiService.instance.dio;
 
@@ -78,12 +69,9 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     try {
       final response = await dio.request<dynamic>(
         resolvedUrl,
-        options: Options(
-          method: widget.request.method.name,
-          headers: resolvedHeaders.isEmpty ? null : resolvedHeaders,
-        ),
+        options: Options(method: widget.request.method.name, headers: built.headers.isEmpty ? null : built.headers),
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
-        data: resolvedBody,
+        data: built.body,
       );
       stopwatch.stop();
       setState(() {
@@ -147,21 +135,11 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
           children: [
             MethodBadge(method: request.method),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                request.name,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Expanded(child: Text(request.name, overflow: TextOverflow.ellipsis)),
           ],
         ),
         actions: [
-          if (widget.onDelete != null)
-            IconButton(
-              tooltip: 'Delete request',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: widget.onDelete,
-            ),
+          if (widget.onDelete != null) IconButton(tooltip: 'Delete request', icon: const Icon(Icons.delete_outline), onPressed: widget.onDelete),
         ],
       ),
       body: SafeArea(
@@ -181,10 +159,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                     ),
                     const SizedBox(height: 8),
                     if (request.description != null && request.description!.isNotEmpty) ...[
-                      Text(
-                        request.description!,
-                        style: theme.textTheme.bodySmall,
-                      ),
+                      Text(request.description!, style: theme.textTheme.bodySmall),
                       const SizedBox(height: 12),
                     ],
                     // Request/response details combined into a single tab controller
@@ -224,14 +199,9 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
                     // Send button + meta
                     Row(
                       children: [
-                        AppButton(
-                          label: _isSending ? 'Sending...' : 'Send',
-                          icon: Icons.play_arrow,
-                          onPressed: _isSending ? null : _sendRequest,
-                        ),
+                        AppButton(label: _isSending ? 'Sending...' : 'Send', icon: Icons.play_arrow, onPressed: _isSending ? null : _sendRequest),
                         const SizedBox(width: 16),
-                        if (_response != null || _error != null)
-                          _buildMetaInfo(context),
+                        if (_response != null || _error != null) _buildMetaInfo(context),
                         const Spacer(),
                         if (_isSending) const SizedBox(width: 120, child: LinearProgressIndicator()),
                       ],
@@ -251,29 +221,20 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     final statusCode = _response?.statusCode;
     final statusText = _response?.statusMessage;
 
-    final durationText = _duration != null
-        ? '${_duration!.inMilliseconds} ms'
-        : null;
+    final durationText = _duration != null ? '${_duration!.inMilliseconds} ms' : null;
 
     return Row(
       children: [
         if (statusCode != null) ...[
           Text(
             '$statusCode ${statusText ?? ''}'.trim(),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: statusCode >= 200 && statusCode < 300
-                      ? Colors.green
-                      : Colors.orange,
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: statusCode >= 200 && statusCode < 300 ? Colors.green : Colors.orange, fontWeight: FontWeight.w600),
           ),
           const SizedBox(width: 12),
         ],
-        if (durationText != null)
-          Text(
-            durationText,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+        if (durationText != null) Text(durationText, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -300,19 +261,11 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       if (_isPermissionError) {
         return _buildPermissionErrorPanel(context, baseError);
       }
-      return _buildStatusPanel(
-        context,
-        'Error: $baseError',
-        color: Theme.of(context).colorScheme.error,
-      );
+      return _buildStatusPanel(context, 'Error: $baseError', color: Theme.of(context).colorScheme.error);
     }
 
     if (_response == null) {
-      return _buildStatusPanel(
-        context,
-        'Send the request to see the response.',
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      );
+      return _buildStatusPanel(context, 'Send the request to see the response.', color: Theme.of(context).colorScheme.onSurfaceVariant);
     }
 
     final isHtml = _isHtmlResponseBody();
@@ -336,24 +289,14 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       if (_isPermissionError) {
         return _buildPermissionErrorPanel(context, baseError);
       }
-      return _buildStatusPanel(
-        context,
-        'Error: $baseError',
-        color: Theme.of(context).colorScheme.error,
-      );
+      return _buildStatusPanel(context, 'Error: $baseError', color: Theme.of(context).colorScheme.error);
     }
 
     if (_response == null) {
-      return _buildStatusPanel(
-        context,
-        'Send the request to see the response headers.',
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      );
+      return _buildStatusPanel(context, 'Send the request to see the response headers.', color: Theme.of(context).colorScheme.onSurfaceVariant);
     }
 
-    final headers = _response!.headers.map.map(
-      (key, values) => MapEntry(key, values.join(', ')),
-    );
+    final headers = _response!.headers.map.map((key, values) => MapEntry(key, values.join(', ')));
     final content = headers.isEmpty ? 'No response headers' : _prettifyMap(headers);
     return _buildMonospacePanel(context, content);
   }
@@ -368,18 +311,10 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
           children: [
             Text(
               'Network access is blocked by the operating system (permission error).',
-              style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
-            Text(
-              baseError,
-              style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-            ),
+            Text(baseError, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
             const SizedBox(height: 8),
             Text(
               'On macOS, please:\n'
@@ -398,10 +333,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
-        child: Text(
-          message,
-          style: theme.textTheme.bodySmall?.copyWith(color: color),
-        ),
+        child: Text(message, style: theme.textTheme.bodySmall?.copyWith(color: color)),
       ),
     );
   }
@@ -423,7 +355,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       ),
       child: child,
     );
@@ -437,22 +369,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HtmlWidget(
-              html,
-              textStyle: theme.textTheme.bodyMedium,
-            ),
+            HtmlWidget(html, textStyle: theme.textTheme.bodyMedium),
             const SizedBox(height: 12),
-            Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+            Divider(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 8),
-            Text(
-              'Raw HTML',
-              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
+            Text('Raw HTML', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            SelectableText(
-              html,
-              style: const TextStyle(fontFamily: 'monospace'),
-            ),
+            SelectableText(html, style: const TextStyle(fontFamily: 'monospace')),
           ],
         ),
       ),
@@ -479,9 +402,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       return false;
     }
 
-    return snippet.startsWith('<!doctype html') ||
-        snippet.startsWith('<html') ||
-        (snippet.contains('<html') && snippet.contains('</html>'));
+    return snippet.startsWith('<!doctype html') || snippet.startsWith('<html') || (snippet.contains('<html') && snippet.contains('</html>'));
   }
 
   String? _extractResponseBodyAsString() {
@@ -513,5 +434,3 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     return JsonUtils.pretty(data);
   }
 }
-
-

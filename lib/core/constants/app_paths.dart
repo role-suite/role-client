@@ -5,9 +5,10 @@ class AppPaths {
   static const String collections = 'collections';
   static const String history = 'history';
   static const String settings = 'settings';
+  static const String savedChains = 'saved_chains';
 
   static const String appSettingsFile = 'app_settings.json';
-  
+
   static String environmentFile(String name) {
     return '$environments/$name.json';
   }
@@ -18,5 +19,9 @@ class AppPaths {
 
   static String historyFolder(String requestId) {
     return '$history/$requestId';
+  }
+
+  static String savedChainFile(String chainId) {
+    return '$savedChains/$chainId.json';
   }
 }

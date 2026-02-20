@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:relay/core/models/environment_model.dart';
 
 class EnvironmentFormController extends ChangeNotifier {
-  EnvironmentFormController({EnvironmentModel? initialEnvironment})
-      : _isEdit = initialEnvironment != null {
+  EnvironmentFormController({EnvironmentModel? initialEnvironment}) : _isEdit = initialEnvironment != null {
     _nameController = TextEditingController(text: initialEnvironment?.name ?? '');
 
     if (initialEnvironment != null && initialEnvironment.variables.isNotEmpty) {
@@ -70,4 +69,3 @@ class EnvironmentFormController extends ChangeNotifier {
     super.dispose();
   }
 }
-

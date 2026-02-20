@@ -25,8 +25,7 @@ class EnvironmentSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool hasEnvironment = activeEnvName != null && activeEnvName!.isNotEmpty;
-    final Color iconColor =
-        hasEnvironment ? theme.colorScheme.secondary : theme.colorScheme.onSurface.withOpacity(0.6);
+    final Color iconColor = hasEnvironment ? theme.colorScheme.secondary : theme.colorScheme.onSurface.withValues(alpha: 0.6);
 
     return PopupMenuButton<String>(
       tooltip: 'Select Environment',
@@ -39,28 +38,19 @@ class EnvironmentSelector extends StatelessWidget {
               children: [
                 Icon(Icons.cloud, size: 20, color: iconColor),
                 const SizedBox(width: 4),
-                Text(
-                  activeEnvName ?? 'No Env',
-                  style: theme.textTheme.labelMedium,
-                ),
+                Text(activeEnvName ?? 'No Env', style: theme.textTheme.labelMedium),
               ],
             ),
       onSelected: (name) => onSelect(name == _noEnvironmentMenuValue ? null : name),
       itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: _noEnvironmentMenuValue,
-          child: Text('No Environment'),
-        ),
+        const PopupMenuItem<String>(value: _noEnvironmentMenuValue, child: Text('No Environment')),
         if (envs.isNotEmpty) const PopupMenuDivider(),
         ...envs.map(
           (env) => PopupMenuItem<String>(
             value: env.name,
             child: Row(
               children: [
-                if (activeEnvName == env.name)
-                  const Icon(Icons.check, size: 18)
-                else
-                  const SizedBox(width: 18),
+                if (activeEnvName == env.name) const Icon(Icons.check, size: 18) else const SizedBox(width: 18),
                 const SizedBox(width: 8),
                 Expanded(child: Text(env.name)),
                 const SizedBox(width: 8),
@@ -71,11 +61,7 @@ class EnvironmentSelector extends StatelessWidget {
                   },
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.edit_outlined,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    child: Icon(Icons.edit_outlined, size: 16, color: Theme.of(context).colorScheme.primary),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -86,11 +72,7 @@ class EnvironmentSelector extends StatelessWidget {
                   },
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.delete_outline,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    child: Icon(Icons.delete_outline, size: 16, color: Theme.of(context).colorScheme.error),
                   ),
                 ),
               ],
@@ -101,5 +83,3 @@ class EnvironmentSelector extends StatelessWidget {
     );
   }
 }
-
-

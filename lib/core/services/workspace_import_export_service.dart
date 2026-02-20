@@ -6,7 +6,6 @@ import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/workspace_bundle.dart';
 import 'package:relay/core/utils/extension.dart';
-import 'package:relay/core/utils/logger.dart';
 import 'package:relay/core/utils/uuid.dart';
 import 'package:relay/features/home/domain/repositories/collection_repository.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
@@ -193,9 +192,7 @@ class _PostmanRequest {
     if (raw is String && raw.isNotEmpty) {
       try {
         return HttpMethodX.fromString(raw);
-      } catch (e, st) {
-        AppLogger.warn('Unknown HTTP method "$raw", defaulting to GET');
-        AppLogger.error('Failed to parse Postman method', e, st);
+      } catch (_) {
         return HttpMethod.get;
       }
     }
@@ -308,13 +305,10 @@ class _PostmanRequest {
           if (k == 'password') password = v;
         }
         if (username != null || password != null) {
-          return (
-            AuthType.basic,
-            {
-              ...?(username != null ? {AuthConfigKeys.username: username} : null),
-              ...?(password != null ? {AuthConfigKeys.password: password} : null),
-            },
-          );
+          return (AuthType.basic, {
+            ...? (username != null ? {AuthConfigKeys.username: username} : null),
+            ...? (password != null ? {AuthConfigKeys.password: password} : null),
+          });
         }
       }
     }
@@ -331,7 +325,10 @@ class _PostmanRequest {
           if (k == 'value') value = v;
         }
         if (keyHeader != null && keyHeader.isNotEmpty) {
-          return (AuthType.apiKey, {AuthConfigKeys.key: keyHeader, AuthConfigKeys.value: value ?? ''});
+          return (AuthType.apiKey, {
+            AuthConfigKeys.key: keyHeader,
+            AuthConfigKeys.value: value ?? '',
+          });
         }
       }
     }

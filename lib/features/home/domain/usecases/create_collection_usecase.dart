@@ -16,4 +16,3 @@ class CreateCollectionUseCase {
     await _repository.saveCollection(collection);
   }
 }
-

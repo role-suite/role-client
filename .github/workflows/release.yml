@@ -1,0 +1,272 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ production ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_CHANNEL: stable
+
+jobs:
+  # Pre-build checks: tests and code analysis
+  pre-build-checks:
+    name: Pre-build Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify Flutter installation
+        run: flutter doctor -v
+
+      - name: Run Flutter analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test --coverage
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+  versioning:
+    name: Version and Tag
+    runs-on: ubuntu-latest
+    needs: pre-build-checks
+    outputs:
+      new_tag: ${{ steps.tag_version.outputs.new_tag }}
+      changelog: ${{ steps.tag_version.outputs.changelog }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+
+  build-android-linux:
+    name: Build Android & Linux
+    needs: versioning
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - name: Verify Flutter installation
+        run: flutter doctor -v
+
+      - name: Build Android APK
+        run: |
+          flutter build apk --release --verbose
+          mv build/app/outputs/flutter-apk/app-release.apk relay-android.apk
+
+      - name: Verify Android APK
+        run: |
+          if [ ! -f relay-android.apk ]; then
+            echo "Error: Android APK not found!"
+            exit 1
+          fi
+          echo "APK size: $(du -h relay-android.apk | cut -f1)"
+
+      - name: Build Linux
+        run: |
+          flutter build linux --release --verbose
+          tar -czf linux-release.tar.gz -C build/linux/x64/release/bundle .
+
+      - name: Verify Linux build
+        run: |
+          if [ ! -f linux-release.tar.gz ]; then
+            echo "Error: Linux build not found!"
+            exit 1
+          fi
+          echo "Linux build size: $(du -h linux-release.tar.gz | cut -f1)"
+
+      - name: Upload Android & Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-linux-builds
+          path: |
+            relay-android.apk
+            linux-release.tar.gz
+          retention-days: 7
+
+      - name: Release Android & Linux
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.versioning.outputs.new_tag }}
+          body: |
+            ## Release ${{ needs.versioning.outputs.new_tag }}
+
+            ${{ needs.versioning.outputs.changelog }}
+
+            ### Downloads
+            - **Android APK**: `relay-android.apk`
+            - **Linux**: `linux-release.tar.gz`
+          files: |
+            relay-android.apk
+            linux-release.tar.gz
+          draft: false
+          prerelease: false
+
+  build-macos-ios:
+    name: Build macOS & iOS
+    needs: versioning
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify Flutter installation
+        run: flutter doctor -v
+
+      - name: Build macOS
+        run: |
+          flutter build macos --release --verbose
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../../macos-release.zip Relay.app
+          cd ../../../../..
+
+      - name: Verify macOS build
+        run: |
+          if [ ! -f macos-release.zip ]; then
+            echo "Error: macOS build not found!"
+            exit 1
+          fi
+          echo "macOS build size: $(du -h macos-release.zip | cut -f1)"
+
+      - name: Build iOS (No Codesign)
+        run: flutter build ios --release --no-codesign --verbose
+
+      - name: Upload macOS & iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-ios-builds
+          path: |
+            macos-release.zip
+          retention-days: 7
+
+      - name: Release macOS
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.versioning.outputs.new_tag }}
+          body: |
+            ## Release ${{ needs.versioning.outputs.new_tag }}
+
+            ${{ needs.versioning.outputs.changelog }}
+
+            ### Downloads
+            - **macOS**: `macos-release.zip`
+          files: macos-release.zip
+          draft: false
+          prerelease: false
+
+  build-windows:
+    name: Build Windows
+    needs: versioning
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify Flutter installation
+        run: flutter doctor -v
+
+      - name: Build Windows
+        run: flutter build windows --release --verbose
+
+      - name: Compress Windows build
+        run: |
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath windows-release.zip -Force
+
+      - name: Verify Windows build
+        run: |
+          if (-not (Test-Path windows-release.zip)) {
+            Write-Host "Error: Windows build not found!"
+            exit 1
+          }
+          $size = (Get-Item windows-release.zip).Length / 1MB
+          Write-Host "Windows build size: $([math]::Round($size, 2)) MB"
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: windows-release.zip
+          retention-days: 7
+
+      - name: Release Windows
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.versioning.outputs.new_tag }}
+          body: |
+            ## Release ${{ needs.versioning.outputs.new_tag }}
+
+            ${{ needs.versioning.outputs.changelog }}
+
+            ### Downloads
+            - **Windows**: `windows-release.zip`
+          files: windows-release.zip
+          draft: false
+          prerelease: false
