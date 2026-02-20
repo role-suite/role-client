@@ -66,7 +66,9 @@ class EnvironmentService {
     try {
       final json = await _fileStorageService.readJson(relativePath);
       return EnvironmentModel.fromJson(json);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warn('Environment not loaded for "$name"');
+      AppLogger.error('loadEnvironmentByName failed', e, st);
       return null;
     }
   }
