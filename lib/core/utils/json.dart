@@ -31,7 +31,9 @@ class JsonUtils {
   static dynamic tryDecode(String input) {
     try {
       return jsonDecode(input);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.debug('JSON decode failed: $e');
+      AppLogger.error('JsonUtils.tryDecode failed', e, st);
       return null;
     }
   }

@@ -1,17 +1,21 @@
 name: relay
 description: "A modern, cross-platform API testing client built with Flutter."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.16+1
 
 environment:
   sdk: ^3.9.2
 
-dependencies: 
+dependencies:
   flutter:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
   dio: ^5.9.0
+  serverpod_flutter: ^3.2.2
+  serverpod_auth_idp_flutter: ^3.2.2
+  relay_server_client:
+    path: ../role-server/relay_server_client
   path: ^1.9.1
   path_provider: ^2.1.5
   file_picker: ^10.3.7
@@ -20,6 +24,7 @@ dependencies:
   flutter_widget_from_html_core: ^0.17.0
   shared_preferences: ^2.3.3
   url_launcher: ^6.2.5
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   flutter_test:
