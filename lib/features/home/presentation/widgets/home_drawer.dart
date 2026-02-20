@@ -243,10 +243,7 @@ class _DataSourceSection extends ConsumerWidget {
               children: [
                 Text('Data source', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
-                Text(
-                  'Choose where to load collections and environments from.',
-                  style: theme.textTheme.bodySmall,
-                ),
+                Text('Choose where to load collections and environments from.', style: theme.textTheme.bodySmall),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -270,7 +267,6 @@ class _DataSourceSection extends ConsumerWidget {
                         selected: isApi,
                         onSelected: (_) async {
                           if (!isApi) {
-                            await ref.read(dataSourceStateNotifierProvider.notifier).setMode(DataSourceMode.api);
                             if (!configValid) {
                               if (context.mounted) {
                                 await showDialog<void>(
@@ -279,6 +275,20 @@ class _DataSourceSection extends ConsumerWidget {
                                 );
                               }
                             }
+
+                            final latestState = ref.read(dataSourceStateNotifierProvider).asData?.value;
+                            final canUseApi = latestState?.config.isValid ?? false;
+                            if (!canUseApi) {
+                              await ref.read(dataSourceStateNotifierProvider.notifier).setMode(DataSourceMode.local);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(const SnackBar(content: Text('API source is not configured. Switched back to Local.')));
+                              }
+                              return;
+                            }
+
+                            await ref.read(dataSourceStateNotifierProvider.notifier).setMode(DataSourceMode.api);
                             _invalidateWorkspaceProviders();
                             await _resetSelectionAndEnvironment(ref);
                           }
@@ -290,9 +300,7 @@ class _DataSourceSection extends ConsumerWidget {
                 if (isApi) ...[
                   const SizedBox(height: 12),
                   Text(
-                    configValid
-                        ? 'Base URL: ${_shortUrl(s.config.baseUrl)}'
-                        : 'Set base URL to load workspace from API.',
+                    configValid ? 'Base URL: ${_shortUrl(s.config.baseUrl)}' : 'Set base URL to load workspace from API.',
                     style: theme.textTheme.bodySmall,
                   ),
                   const SizedBox(height: 6),
@@ -312,9 +320,7 @@ class _DataSourceSection extends ConsumerWidget {
                     FilledButton.tonalIcon(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
-                        );
+                        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SignInScreen()));
                       },
                       icon: const Icon(Icons.login, size: 18),
                       label: const Text('Sign in'),
@@ -323,10 +329,7 @@ class _DataSourceSection extends ConsumerWidget {
                 ],
                 if (!isApi) ...[
                   const SizedBox(height: 12),
-                  Text(
-                    'Push your local collections and environments to a remote server.',
-                    style: theme.textTheme.bodySmall,
-                  ),
+                  Text('Push your local collections and environments to a remote server.', style: theme.textTheme.bodySmall),
                   const SizedBox(height: 6),
                   FilledButton.tonalIcon(
                     onPressed: () => _onSyncToRemote(context, ref),
@@ -369,18 +372,11 @@ class _DataSourceSection extends ConsumerWidget {
         serverpodClient: serverpodClient,
       );
       if (context.mounted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Synced local data to remote.')),
-        );
+        messenger.showSnackBar(const SnackBar(content: Text('Synced local data to remote.')));
       }
     } catch (e) {
       if (context.mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Sync failed: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        messenger.showSnackBar(SnackBar(content: Text('Sync failed: $e'), backgroundColor: Theme.of(context).colorScheme.error));
       }
     }
   }

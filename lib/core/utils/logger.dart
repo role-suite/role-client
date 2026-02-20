@@ -3,7 +3,12 @@ import 'package:flutter/foundation.dart';
 class AppLogger {
   static bool enabled = true;
 
-  static void _log(String level, String message, [Object? error, StackTrace? stackTrace]) {
+  static void _log(
+    String level,
+    String message, [
+    Object? error,
+    StackTrace? stackTrace,
+  ]) {
     if (!enabled) return;
 
     final buffer = StringBuffer()

@@ -14,19 +14,25 @@ class DataSourceStateNotifier extends StateNotifier<AsyncValue<({DataSourceMode 
     try {
       final mode = await DataSourcePreferencesService.loadMode();
       final config = await DataSourcePreferencesService.loadConfig();
-      state = AsyncValue.data((mode: mode, config: config));
+      final resolvedMode = mode == DataSourceMode.api && !config.isValid ? DataSourceMode.local : mode;
+      if (resolvedMode != mode) {
+        await DataSourcePreferencesService.saveMode(resolvedMode);
+      }
+      state = AsyncValue.data((mode: resolvedMode, config: config));
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
-  Future<void> setMode(DataSourceMode mode) async {
-    await DataSourcePreferencesService.saveMode(mode);
+  Future<bool> setMode(DataSourceMode mode) async {
     final current = state.asData?.value;
-    state = AsyncValue.data((
-      mode: mode,
-      config: current?.config ?? const DataSourceConfig(baseUrl: '', apiKey: null),
-    ));
+    final config = current?.config ?? await DataSourcePreferencesService.loadConfig();
+    final resolvedMode = mode == DataSourceMode.api && !config.isValid ? DataSourceMode.local : mode;
+
+    await DataSourcePreferencesService.saveMode(resolvedMode);
+    state = AsyncValue.data((mode: resolvedMode, config: config));
+
+    return resolvedMode == mode;
   }
 
   Future<void> setConfig(DataSourceConfig config) async {
@@ -36,7 +42,8 @@ class DataSourceStateNotifier extends StateNotifier<AsyncValue<({DataSourceMode 
   }
 }
 
-final dataSourceStateNotifierProvider =
-    StateNotifierProvider<DataSourceStateNotifier, AsyncValue<({DataSourceMode mode, DataSourceConfig config})>>((ref) {
+final dataSourceStateNotifierProvider = StateNotifierProvider<DataSourceStateNotifier, AsyncValue<({DataSourceMode mode, DataSourceConfig config})>>((
+  ref,
+) {
   return DataSourceStateNotifier();
 });
