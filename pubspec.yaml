@@ -15,7 +15,10 @@ dependencies:
   serverpod_flutter: ^3.2.2
   serverpod_auth_idp_flutter: ^3.2.2
   relay_server_client:
-    path: ../role-server/relay_server_client
+    git:
+      url: https://github.com/role-suite/role-server.git
+      ref: 38436be14ef02cc3e15d9775756e68bc1c4d62f8
+      path: relay_server_client
   path: ^1.9.1
   path_provider: ^2.1.5
   file_picker: ^10.3.7

@@ -1,0 +1,3 @@
+dependency_overrides:
+  relay_server_client:
+    path: ../role-server/relay_server_client
