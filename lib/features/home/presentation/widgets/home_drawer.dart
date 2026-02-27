@@ -8,6 +8,7 @@ import 'package:relay/core/services/data_source_preferences_service.dart';
 import 'package:relay/core/services/relay_api/serverpod_client_provider.dart';
 import 'package:relay/core/services/sync_to_remote_service.dart';
 import 'package:relay_server_client/relay_server_client.dart';
+import 'package:relay/features/auth/presentation/providers/auth_providers.dart';
 import 'package:relay/features/collection_runner/presentation/collection_run_history_screen.dart';
 import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
 import 'package:relay/features/request_chain/presentation/request_chain_config_screen.dart';
@@ -206,15 +207,17 @@ class _DataSourceSection extends ConsumerWidget {
   }
 
   Future<void> _resetSelectionAndEnvironment(WidgetRef r) async {
-    r.read(selectedCollectionIdProvider.notifier).state = 'default';
+    r.read(selectedCollectionIdProvider.notifier).select('default');
     await r.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
-    r.read(activeEnvironmentNameProvider.notifier).state = null;
+    r.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final state = ref.watch(dataSourceStateNotifierProvider);
+    final signInUiState = ref.watch(serverpodSignInUiStateProvider);
+    final authSessionState = ref.watch(serverpodAuthSessionStateProvider);
 
     return state.when(
       loading: () => const ListTile(
@@ -318,13 +321,37 @@ class _DataSourceSection extends ConsumerWidget {
                   if (s.config.apiStyle == ApiStyle.serverpod) ...[
                     const SizedBox(height: 12),
                     FilledButton.tonalIcon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SignInScreen()));
-                      },
+                      onPressed: signInUiState == ServerpodSignInUiState.loading
+                          ? null
+                          : () {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SignInScreen()));
+                            },
                       icon: const Icon(Icons.login, size: 18),
-                      label: const Text('Sign in'),
+                      label: Text(
+                        signInUiState == ServerpodSignInUiState.loading
+                            ? 'Preparing...'
+                            : authSessionState == ServerpodAuthSessionState.signedIn
+                            ? 'Account'
+                            : 'Sign in',
+                      ),
                     ),
+                    if (authSessionState == ServerpodAuthSessionState.signedIn) ...[
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () async {
+                          final didSignOut = await ref.read(signOutServerpodCurrentDeviceProvider)();
+                          if (!context.mounted) {
+                            return;
+                          }
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(didSignOut ? 'Signed out from this device.' : 'Sign out failed.')));
+                        },
+                        icon: const Icon(Icons.logout_rounded, size: 18),
+                        label: const Text('Sign out'),
+                      ),
+                    ],
                   ],
                 ],
                 if (!isApi) ...[

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
@@ -10,6 +10,9 @@ import 'package:relay/features/collection_runner/data/services/collection_run_hi
 import 'package:relay/features/collection_runner/domain/models/collection_run_result.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
 import 'package:relay/features/home/domain/usecases/get_requests_by_collection_usecase.dart';
+import 'package:relay/features/collection_runner/presentation/providers/collection_runner_providers.dart';
+import 'package:relay/features/home/presentation/providers/repository_providers.dart';
+import 'package:relay/features/home/presentation/providers/usecase_providers.dart';
 
 class CollectionRunnerState {
   static const _sentinel = Object();
@@ -69,13 +72,18 @@ class CollectionRunnerState {
   }
 }
 
-class CollectionRunnerController extends StateNotifier<CollectionRunnerState> {
-  CollectionRunnerController(this._getRequestsByCollectionUseCase, this._environmentRepository, this._historyService)
-    : super(CollectionRunnerState.initial());
+class CollectionRunnerController extends Notifier<CollectionRunnerState> {
+  late final GetRequestsByCollectionUseCase _getRequestsByCollectionUseCase;
+  late final EnvironmentRepository _environmentRepository;
+  late final CollectionRunHistoryService _historyService;
 
-  final GetRequestsByCollectionUseCase _getRequestsByCollectionUseCase;
-  final EnvironmentRepository _environmentRepository;
-  final CollectionRunHistoryService _historyService;
+  @override
+  CollectionRunnerState build() {
+    _getRequestsByCollectionUseCase = ref.watch(getRequestsByCollectionUseCaseProvider);
+    _environmentRepository = ref.watch(environmentRepositoryProvider);
+    _historyService = ref.watch(collectionRunHistoryServiceProvider);
+    return CollectionRunnerState.initial();
+  }
 
   Future<void> runCollection({required CollectionModel collection, required EnvironmentModel? environment}) async {
     state = state.copyWith(
@@ -145,12 +153,10 @@ class CollectionRunnerController extends StateNotifier<CollectionRunnerState> {
       // If the saved environment doesn't exist anymore, fall back to collection environment
       environment ??= collectionEnvironment;
     }
-    
+
     String resolve(String s) => _environmentRepository.resolveTemplate(s, environment);
     final resolvedUrl = resolve(request.urlTemplate);
-    final resolvedQueryParams = <String, String>{
-      for (final entry in request.queryParams.entries) entry.key: resolve(entry.value),
-    };
+    final resolvedQueryParams = <String, String>{for (final entry in request.queryParams.entries) entry.key: resolve(entry.value)};
     final built = RequestBuildHelper.buildForSend(request, resolve, rawBody: request.body);
 
     final dio = ApiService.instance.dio;

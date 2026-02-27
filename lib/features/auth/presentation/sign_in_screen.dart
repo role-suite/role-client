@@ -2,10 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/constants/api_style.dart';
-import 'package:relay/core/constants/data_source_mode.dart';
-import 'package:relay/core/services/relay_api/serverpod_client_provider.dart';
-import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
+import 'package:relay/features/auth/presentation/providers/auth_providers.dart';
 import 'package:relay_server_client/relay_server_client.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
@@ -15,11 +12,9 @@ class SignInScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dataSourceStateNotifierProvider).asData?.value;
-    final isServerpod = state != null &&
-        state.mode == DataSourceMode.api &&
-        state.config.apiStyle == ApiStyle.serverpod &&
-        state.config.baseUrl.trim().isNotEmpty;
+    final signInUiState = ref.watch(serverpodSignInUiStateProvider);
+    final isServerpod = signInUiState != ServerpodSignInUiState.unavailable;
+    final refreshClient = ref.read(refreshServerpodSignInClientProvider);
 
     if (!isServerpod) {
       return Scaffold(
@@ -29,25 +24,17 @@ class SignInScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.settings_suggest_rounded,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-                  ),
+                  Icon(Icons.settings_suggest_rounded, size: 48, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8)),
                   const SizedBox(height: 16),
                   Text(
                     'Sign in not available',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Switch to API mode and set Serverpod RPC with a valid base URL in data source settings.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -64,17 +51,14 @@ class SignInScreen extends ConsumerWidget {
       );
     }
 
-    final baseUrl = state.config.baseUrl.trim();
-    final clientAsync = ref.watch(serverpodClientProvider(baseUrl));
+    final clientAsync = ref.watch(serverpodSignInClientProvider);
 
     return Scaffold(
       body: _GradientBackground(
         child: SafeArea(
           child: Column(
             children: [
-              _AppBarRow(
-                onBack: () => Navigator.of(context).pop(),
-              ),
+              _AppBarRow(onBack: () => Navigator.of(context).pop()),
               Expanded(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 280),
@@ -85,26 +69,15 @@ class SignInScreen extends ConsumerWidget {
                       if (client == null) {
                         return _CenteredCard(
                           key: const ValueKey('failed'),
-                          child: _ConnectionFailedContent(
-                            onBack: () => Navigator.of(context).pop(),
-                          ),
+                          child: _ConnectionFailedContent(onBack: () => Navigator.of(context).pop(), onRetry: refreshClient),
                         );
                       }
-                      return _SignInFormView(
-                        key: const ValueKey('form'),
-                        client: client,
-                      );
+                      return _SignInFormView(key: const ValueKey('form'), client: client);
                     },
-                    loading: () => _CenteredCard(
-                      key: const ValueKey('loading'),
-                      child: _LoadingContent(),
-                    ),
+                    loading: () => _CenteredCard(key: const ValueKey('loading'), child: _LoadingContent()),
                     error: (err, _) => _CenteredCard(
                       key: ValueKey('error-$err'),
-                      child: _ErrorContent(
-                        error: err,
-                        onBack: () => Navigator.of(context).pop(),
-                      ),
+                      child: _ErrorContent(error: err, onBack: () => Navigator.of(context).pop(), onRetry: refreshClient),
                     ),
                   ),
                 ),
@@ -140,11 +113,7 @@ class _GradientBackground extends StatelessWidget {
                   theme.colorScheme.surface.withValues(alpha: 0.98),
                   theme.colorScheme.primaryContainer.withValues(alpha: 0.08),
                 ]
-              : [
-                  theme.colorScheme.surface,
-                  theme.colorScheme.primaryContainer.withValues(alpha: 0.06),
-                  theme.colorScheme.surface,
-                ],
+              : [theme.colorScheme.surface, theme.colorScheme.primaryContainer.withValues(alpha: 0.06), theme.colorScheme.surface],
         ),
       ),
       child: child,
@@ -167,17 +136,10 @@ class _AppBarRow extends StatelessWidget {
           IconButton(
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-            ),
+            style: IconButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)),
           ),
           const SizedBox(width: 12),
-          Text(
-            'Sign in',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
+          Text('Sign in', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -216,21 +178,9 @@ class _LoadingContent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: theme.colorScheme.primary,
-            ),
-          ),
+          SizedBox(width: 40, height: 40, child: CircularProgressIndicator(strokeWidth: 2.5, color: theme.colorScheme.primary)),
           const SizedBox(height: 20),
-          Text(
-            'Connecting…',
-            style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-          ),
+          Text('Connecting…', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ],
       ),
     );
@@ -239,10 +189,11 @@ class _LoadingContent extends StatelessWidget {
 
 /// Error message and back button.
 class _ErrorContent extends StatelessWidget {
-  const _ErrorContent({required this.error, required this.onBack});
+  const _ErrorContent({required this.error, required this.onBack, required this.onRetry});
 
   final Object error;
   final VoidCallback onBack;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -252,34 +203,29 @@ class _ErrorContent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.cloud_off_rounded,
-            size: 48,
-            color: theme.colorScheme.error,
-          ),
+          Icon(Icons.cloud_off_rounded, size: 48, color: theme.colorScheme.error),
           const SizedBox(height: 16),
           Text(
             'Connection error',
-            style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             error.toString(),
-            style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_rounded, size: 20),
-            label: const Text('Back'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton.icon(onPressed: onBack, icon: const Icon(Icons.arrow_back_rounded, size: 20), label: const Text('Back')),
+              const SizedBox(width: 12),
+              FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded, size: 20), label: const Text('Retry')),
+            ],
           ),
         ],
       ),
@@ -289,9 +235,10 @@ class _ErrorContent extends StatelessWidget {
 
 /// Connection failed (null client).
 class _ConnectionFailedContent extends StatelessWidget {
-  const _ConnectionFailedContent({required this.onBack});
+  const _ConnectionFailedContent({required this.onBack, required this.onRetry});
 
   final VoidCallback onBack;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -301,24 +248,21 @@ class _ConnectionFailedContent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.link_off_rounded,
-            size: 48,
-            color: theme.colorScheme.error,
-          ),
+          Icon(Icons.link_off_rounded, size: 48, color: theme.colorScheme.error),
           const SizedBox(height: 16),
           Text(
             'Could not connect to server',
-            style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_rounded, size: 20),
-            label: const Text('Back'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton.icon(onPressed: onBack, icon: const Icon(Icons.arrow_back_rounded, size: 20), label: const Text('Back')),
+              const SizedBox(width: 12),
+              FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded, size: 20), label: const Text('Retry')),
+            ],
           ),
         ],
       ),
@@ -344,19 +288,11 @@ class _SignInFormView extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              Text(
-                'Welcome back',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.5,
-                    ),
-              ),
+              Text('Welcome back', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.5)),
               const SizedBox(height: 4),
               Text(
                 'Sign in or create an account to continue',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 28),
               _FormCard(
@@ -367,12 +303,7 @@ class _SignInFormView extends StatelessWidget {
                   },
                   onError: (error) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: $error'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $error'), behavior: SnackBarBehavior.floating));
                     }
                   },
                 ),
@@ -402,14 +333,9 @@ class _FormCard extends StatelessWidget {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark
-                ? theme.colorScheme.surface.withValues(alpha: 0.7)
-                : theme.colorScheme.surface.withValues(alpha: 0.85),
+            color: isDark ? theme.colorScheme.surface.withValues(alpha: 0.7) : theme.colorScheme.surface.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-              width: 1,
-            ),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2), width: 1),
             boxShadow: [
               BoxShadow(
                 color: theme.colorScheme.shadow.withValues(alpha: isDark ? 0.3 : 0.08),
@@ -418,10 +344,7 @@ class _FormCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: child,
-          ),
+          child: Padding(padding: const EdgeInsets.all(24), child: child),
         ),
       ),
     );

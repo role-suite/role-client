@@ -29,6 +29,8 @@ linter:
 
 # Exclude example/copy-paste code that references other packages
 analyzer:
+  plugins:
+    - custom_lint
   exclude:
     - docs/**
 

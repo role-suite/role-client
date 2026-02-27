@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/features/home/presentation/providers/usecase_providers.dart';
 import 'package:relay/features/home/presentation/providers/request_providers.dart';
@@ -11,41 +10,26 @@ import '../../domain/usecases/get_all_collections_usecase.dart';
 /// Provider for all collections
 final collectionsProvider = FutureProvider<List<CollectionModel>>((ref) async {
   final useCase = ref.watch(getAllCollectionsUseCaseProvider);
-  return await useCase();
+  return useCase();
 });
 
 /// Notifier for managing collection state
-class CollectionsNotifier extends StateNotifier<AsyncValue<List<CollectionModel>>> {
-  final GetAllCollectionsUseCase _getAllCollectionsUseCase;
-  final CreateCollectionUseCase _createCollectionUseCase;
-  final DeleteCollectionUseCase _deleteCollectionUseCase;
-  final Ref _ref;
+class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
+  late final GetAllCollectionsUseCase _getAllCollectionsUseCase;
+  late final CreateCollectionUseCase _createCollectionUseCase;
+  late final DeleteCollectionUseCase _deleteCollectionUseCase;
 
-  CollectionsNotifier(this._getAllCollectionsUseCase, this._createCollectionUseCase, this._deleteCollectionUseCase, this._ref)
-    : super(const AsyncValue.loading()) {
-    _loadCollections();
+  @override
+  Future<List<CollectionModel>> build() {
+    _getAllCollectionsUseCase = ref.watch(getAllCollectionsUseCaseProvider);
+    _createCollectionUseCase = ref.watch(createCollectionUseCaseProvider);
+    _deleteCollectionUseCase = ref.watch(deleteCollectionUseCaseProvider);
+    return _getAllCollectionsUseCase();
   }
 
   Future<void> _loadCollections() async {
-    try {
-      state = const AsyncValue.loading();
-    } on StateError {
-      return; // Notifier disposed (e.g. data source switched).
-    }
-    try {
-      final collections = await _getAllCollectionsUseCase();
-      try {
-        state = AsyncValue.data(collections);
-      } on StateError {
-        // Notifier disposed; ignore.
-      }
-    } catch (e, stackTrace) {
-      try {
-        state = AsyncValue.error(e, stackTrace);
-      } on StateError {
-        // Notifier disposed; ignore.
-      }
-    }
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _getAllCollectionsUseCase());
   }
 
   Future<void> addCollection(CollectionModel collection) async {
@@ -62,7 +46,7 @@ class CollectionsNotifier extends StateNotifier<AsyncValue<List<CollectionModel>
     try {
       await _deleteCollectionUseCase(id);
       await _loadCollections();
-      _ref.read(requestsNotifierProvider.notifier).refresh();
+      ref.read(requestsNotifierProvider.notifier).refresh();
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
       rethrow; // Re-throw so UI can show error message
@@ -75,11 +59,4 @@ class CollectionsNotifier extends StateNotifier<AsyncValue<List<CollectionModel>
 }
 
 /// Provider for CollectionsNotifier
-final collectionsNotifierProvider = StateNotifierProvider<CollectionsNotifier, AsyncValue<List<CollectionModel>>>((ref) {
-  return CollectionsNotifier(
-    ref.watch(getAllCollectionsUseCaseProvider),
-    ref.watch(createCollectionUseCaseProvider),
-    ref.watch(deleteCollectionUseCaseProvider),
-    ref,
-  );
-});
+final collectionsNotifierProvider = AsyncNotifierProvider<CollectionsNotifier, List<CollectionModel>>(CollectionsNotifier.new);

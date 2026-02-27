@@ -112,7 +112,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
 
     final envRepository = ref.read(environmentRepositoryProvider);
     final request = _currentRequest;
-    
+
     // Use request's saved environment if it exists, otherwise use active environment
     EnvironmentModel? environment;
     if (request.environmentName != null) {
@@ -123,9 +123,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     // Resolve templates using the selected environment
     String resolve(String s) => envRepository.resolveTemplate(s, environment);
     final resolvedUrl = resolve(request.urlTemplate);
-    final resolvedQueryParams = <String, String>{
-      for (final entry in request.queryParams.entries) entry.key: resolve(entry.value),
-    };
+    final resolvedQueryParams = <String, String>{for (final entry in request.queryParams.entries) entry.key: resolve(entry.value)};
     final built = RequestBuildHelper.buildForSend(request, resolve, rawBody: _requestBodyController.text);
 
     debugPrint('==== Relay Request ====');
@@ -247,7 +245,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
                       Text(request.description!, style: theme.textTheme.bodySmall),
                       const SizedBox(height: 12),
                     ],
-                    if (_isEditing) ...[_buildEditForm(context), const SizedBox(height: 24)],
+                    if (_isEditing) ...[_buildEditForm(context, environmentsAsync), const SizedBox(height: 24)],
                     // Request/response details combined into a single tab controller
                     Column(
                       key: _responseSectionKey,
@@ -303,11 +301,9 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     );
   }
 
-  Widget _buildEditForm(BuildContext context) {
+  Widget _buildEditForm(BuildContext context, AsyncValue<List<EnvironmentModel>> environmentsAsync) {
     final theme = Theme.of(context);
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
-    final environmentsAsync = ref.watch(environmentsNotifierProvider);
-    final _ = ref.watch(activeEnvironmentNameProvider);
     final envList = environmentsAsync.asData?.value;
     final isCompact = MediaQuery.of(context).size.width < 600;
 
@@ -433,11 +429,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
                         const DropdownMenuItem<String?>(value: null, child: Text('No Environment')),
                         ...envs.map((env) => DropdownMenuItem<String?>(value: env.name, child: Text(env.name))),
                       ],
-                      onChanged: _isSavingEdits ? null : (value) {
-                        setState(() {
-                          _selectedEnvironmentName = value;
-                        });
-                      },
+                      onChanged: _isSavingEdits
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _selectedEnvironmentName = value;
+                              });
+                            },
                     ),
                     if (_selectedEnvironmentName != null)
                       Padding(
@@ -712,7 +710,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     final theme = Theme.of(context);
     final bool hasEnvironment = envName != null && envName.isNotEmpty;
     final Color iconColor = hasEnvironment ? theme.colorScheme.secondary : theme.colorScheme.onSurface.withValues(alpha: 0.6);
-    
+
     return envsAsync.when(
       data: (envs) => PopupMenuButton<String>(
         tooltip: 'Select environment',

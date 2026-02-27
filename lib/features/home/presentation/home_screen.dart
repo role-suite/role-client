@@ -67,17 +67,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final selectedCollectionId = ref.watch(selectedCollectionIdProvider);
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
-    final requestsAsync = ref.watch(requestsNotifierProvider);
+    final filteredRequestsAsync = ref.watch(filteredRequestsProvider);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
     final activeEnvName = ref.watch(activeEnvironmentNameProvider);
     final isMobileLayout = MediaQuery.of(context).size.width < 600;
-
-    // Filter requests by selected collection
-    final filteredRequests = requestsAsync.when(
-      data: (requests) => selectedCollectionId != null ? requests.where((r) => r.collectionId == selectedCollectionId).toList() : requests,
-      loading: () => <ApiRequestModel>[],
-      error: (_, _) => <ApiRequestModel>[],
-    );
 
     return AppScaffold(
       title: AppConstants.appName,
@@ -94,7 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             collections: collections,
             selectedCollectionId: selectedCollectionId,
             onSelect: (id) {
-              ref.read(selectedCollectionIdProvider.notifier).state = id;
+              ref.read(selectedCollectionIdProvider.notifier).select(id);
             },
             onDelete: (collection) => _onDeleteCollection(context, collection),
             iconOnly: isMobileLayout,
@@ -116,7 +109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // Handle special actions
                 return;
               }
-              ref.read(activeEnvironmentNameProvider.notifier).state = name;
+              ref.read(activeEnvironmentNameProvider.notifier).setActiveName(name);
               ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
             },
             onEdit: (env) => _openEditEnvironmentDialog(context, env),
@@ -138,8 +131,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: MaxWidthLayout(
         maxWidth: 1200,
-        child: requestsAsync.when(
-          data: (_) => filteredRequests.isEmpty
+        child: filteredRequestsAsync.when(
+          data: (filteredRequests) => filteredRequests.isEmpty
               ? HomeEmptyState(onCreateRequest: () => _openCreateRequestDialog(context, selectedCollectionId))
               : HomeRequestsList(
                   requests: filteredRequests,

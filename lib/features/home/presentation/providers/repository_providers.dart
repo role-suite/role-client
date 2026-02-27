@@ -39,27 +39,35 @@ final collectionLocalDataSourceProvider = Provider<CollectionLocalDataSource>((r
 RelayApiClient _createRelayApiClient(DataSourceConfig config, Client? serverpodClient) {
   switch (config.apiStyle) {
     case ApiStyle.serverpod:
-      return ServerpodRelayApiClient(
-        serverUrl: config.baseUrl,
-        client: serverpodClient,
-      );
+      return ServerpodRelayApiClient(serverUrl: config.baseUrl, client: serverpodClient);
     case ApiStyle.rest:
-      final workspace = RestWorkspaceClient(
-        baseUrl: config.baseUrl,
-        apiKey: config.apiKey,
-      );
+      final workspace = RestWorkspaceClient(baseUrl: config.baseUrl, apiKey: config.apiKey);
       return RestRelayApiClient(workspace);
   }
 }
 
+final activeServerpodClientProvider = Provider<Client?>((ref) {
+  final state = ref.watch(currentDataSourceStateProvider);
+  if (state == null || state.mode != DataSourceMode.api || !state.config.isValid || state.config.apiStyle != ApiStyle.serverpod) {
+    return null;
+  }
+
+  return ref.watch(serverpodClientProvider(state.config.baseUrl)).whenOrNull(data: (client) => client);
+});
+
+final activeRelayApiClientProvider = Provider<RelayApiClient?>((ref) {
+  final state = ref.watch(currentDataSourceStateProvider);
+  if (state == null || state.mode != DataSourceMode.api || !state.config.isValid) {
+    return null;
+  }
+
+  return _createRelayApiClient(state.config, ref.watch(activeServerpodClientProvider));
+});
+
 /// Active collection data source (local or remote depending on data source mode).
 final collectionDataSourceProvider = Provider<CollectionDataSource>((ref) {
-  final state = ref.watch(dataSourceStateNotifierProvider).asData?.value;
-  if (state != null && state.mode == DataSourceMode.api && state.config.isValid) {
-    final serverpodClient = state.config.apiStyle == ApiStyle.serverpod
-        ? ref.watch(serverpodClientProvider(state.config.baseUrl)).whenOrNull(data: (c) => c)
-        : null;
-    final api = _createRelayApiClient(state.config, serverpodClient);
+  final api = ref.watch(activeRelayApiClientProvider);
+  if (api != null) {
     return CollectionRemoteDataSource(api);
   }
   return ref.watch(collectionLocalDataSourceProvider);
@@ -67,12 +75,8 @@ final collectionDataSourceProvider = Provider<CollectionDataSource>((ref) {
 
 /// Active request data source (local or remote depending on data source mode).
 final requestDataSourceProvider = Provider<RequestDataSource>((ref) {
-  final state = ref.watch(dataSourceStateNotifierProvider).asData?.value;
-  if (state != null && state.mode == DataSourceMode.api && state.config.isValid) {
-    final serverpodClient = state.config.apiStyle == ApiStyle.serverpod
-        ? ref.watch(serverpodClientProvider(state.config.baseUrl)).whenOrNull(data: (c) => c)
-        : null;
-    final api = _createRelayApiClient(state.config, serverpodClient);
+  final api = ref.watch(activeRelayApiClientProvider);
+  if (api != null) {
     return RequestRemoteDataSource(api);
   }
   return ref.watch(requestLocalDataSourceProvider);
@@ -92,12 +96,8 @@ final requestRepositoryProvider = Provider<RequestRepository>((ref) {
 
 /// Provider for EnvironmentRepository (local or remote by mode)
 final environmentRepositoryProvider = Provider<EnvironmentRepository>((ref) {
-  final state = ref.watch(dataSourceStateNotifierProvider).asData?.value;
-  if (state != null && state.mode == DataSourceMode.api && state.config.isValid) {
-    final serverpodClient = state.config.apiStyle == ApiStyle.serverpod
-        ? ref.watch(serverpodClientProvider(state.config.baseUrl)).whenOrNull(data: (c) => c)
-        : null;
-    final api = _createRelayApiClient(state.config, serverpodClient);
+  final api = ref.watch(activeRelayApiClientProvider);
+  if (api != null) {
     return EnvironmentRepositoryRemoteImpl(api, EnvironmentService.instance);
   }
   return EnvironmentRepositoryImpl(EnvironmentService.instance);
