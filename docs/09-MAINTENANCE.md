@@ -9,6 +9,14 @@
 5. Register navigation (e.g. new route or push from drawer) in the appropriate place (e.g. `home_screen.dart` or drawer).
 6. Add tests and update docs (e.g. [01-OVERVIEW.md](01-OVERVIEW.md), [02-ARCHITECTURE.md](02-ARCHITECTURE.md)) if the feature is user-facing or architectural.
 
+### Riverpod checklist for new features
+
+- Add dependency providers with `Provider` (services/repositories/use-cases).
+- Add state owners with `NotifierProvider` / `AsyncNotifierProvider` (avoid `StateNotifierProvider`).
+- Keep async UI state as `AsyncValue` instead of manual loading/error flags.
+- Add derived providers for view shaping instead of doing filter/map logic directly in widgets.
+- Ensure provider overrides are straightforward in tests.
+
 ## Adding a New Data Source or API Client
 
 - **New backend type**: If you add another API style (e.g. GraphQL), extend `ApiStyle` in `lib/core/constants/api_style.dart`, add a new branch in `_createRelayApiClient` in `repository_providers.dart`, and implement a new `RelayApiClient` (and optionally `WorkspaceApiClient`) in `lib/core/services/`. Wire the new style in `DataSourceConfig` and the data source config dialog.
@@ -21,15 +29,33 @@
 
 ## Authentication Changes
 
-- **Add sign-out**: Expose a “Sign out” action (e.g. in the drawer when authenticated). Call `client.auth.signOutDevice()` (or the appropriate method on the session manager). Use the same `Client` instance from `serverpodClientProvider`; you may need to expose the auth state (e.g. `auth.authInfoListenable` or a provider that mirrors it) so the UI can show “Sign in” vs “Sign out” and user email.
+- **Current auth provider flow**:
+  - availability/client: `serverpodSignInAvailabilityProvider`, `serverpodSignInClientProvider`
+  - sign-in view state: `serverpodSignInUiStateProvider`
+  - session state: `serverpodAuthSessionStateProvider`
+  - sign-out action: `signOutServerpodCurrentDeviceProvider`
+- **Add sign-out**: Prefer wiring through `signOutServerpodCurrentDeviceProvider` so sign-out behavior stays centralized and testable.
 - **Another IdP**: If the server adds another identity provider (e.g. Google), add the corresponding Flutter package and UI (e.g. a button that triggers that flow). The shared client’s `authSessionManager` may already support multiple providers depending on Serverpod auth setup; follow the package docs.
+
+## Provider Regression Checks
+
+When changing provider graphs or notifier logic:
+
+1. Run `flutter analyze` and resolve all provider/lint findings.
+2. Run `flutter test` (provider unit tests + widget tests).
+3. Verify no `flutter_riverpod/legacy.dart` imports were introduced.
+4. Verify key flows manually:
+   - local/API data source switching
+   - sign-in availability and sign-out action
+   - collection/request/environment CRUD refresh behavior
 
 ## Troubleshooting
 
 ### App won’t build: relay_server_client not found
 
-- Ensure the path in `pubspec.yaml` under `relay_server_client` points to the correct directory (e.g. `../role-server/relay_server_client`).
-- From the server package, run `dart pub get` and `dart run serverpod generate` so the client package is generated and has no errors.
+- If using default standalone setup, ensure `pubspec.yaml` points to a resolvable remote source (package version or public git ref).
+- If using local contributor override, verify your `pubspec_overrides.yaml` path is correct (e.g. `../role-server/relay_server_client`).
+- From the server package (only when regenerating client), run `dart pub get` and `dart run serverpod generate`.
 
 ### “Could not connect to server” or RPC errors when using API mode
 
@@ -49,5 +75,8 @@
 ## Updating Dependencies
 
 - **Flutter**: Upgrade following [flutter.dev](https://flutter.dev) guidance. Run `flutter pub get` and `flutter analyze` after upgrading.
-- **relay_server_client**: Upgrade when the server’s protocol or endpoints change. Bump the server, regenerate the client, then in the client repo ensure the path (or version if you switch to a published package) points to the new client.
+- **relay_server_client**:
+  - normal path: bump package version or git ref when server protocol/endpoints change.
+  - contributor path: use local `pubspec_overrides.yaml` to test unreleased protocol changes.
+  - after updates, run `flutter pub get`, `flutter analyze`, and `flutter test`.
 - **serverpod_* / dio / riverpod**: Check changelogs for breaking changes. Update usages (e.g. provider APIs, auth APIs) and run tests.
