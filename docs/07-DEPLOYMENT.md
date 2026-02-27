@@ -29,7 +29,8 @@ Replace `<platform>` with one of:
 
 ## Dependencies for Distribution
 
-- **relay_server_client**: The app depends on `relay_server_client` via a **path** dependency (e.g. `path: ../role-server/relay_server_client`). For CI or reproducible builds, ensure the role-server repo is available at that path and that `relay_server_client` has been generated (`dart run serverpod generate` in the server package). For end-user builds, the Flutter build embeds the client; users do not need the server repo.
+- **relay_server_client**: The app depends on `relay_server_client` via a pinned public source (git ref or package version), so builds work from a clean clone without a local `role-server` checkout.
+- **Contributor override (optional)**: When developing client+server together, use a local `pubspec_overrides.yaml` to point `relay_server_client` to `../role-server/relay_server_client`.
 
 ## Code Signing and Store Submission
 

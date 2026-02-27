@@ -21,7 +21,7 @@ The app does **not** host or run a server; it is a client that either reads/writ
 | HTTP (requests) | [Dio](https://pub.dev/packages/dio) |
 | Backend API | [Serverpod](https://serverpod.dev) client 3.2.x, [serverpod_auth_idp_flutter](https://pub.dev/packages/serverpod_auth_idp_flutter) for email sign-in |
 | Local storage | [path_provider](https://pub.dev/packages/path_provider), [shared_preferences](https://pub.dev/packages/shared_preferences), file system (collections/requests/environments) |
-| Backend protocol | [relay_server_client](https://github.com/...) (path dependency to role-server) |
+| Backend protocol | [relay_server_client](https://github.com/role-suite/role-server/tree/main/relay_server_client) (git dependency; local override optional) |
 
 ## Repository Layout
 
