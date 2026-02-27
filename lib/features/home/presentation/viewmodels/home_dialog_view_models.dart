@@ -15,7 +15,7 @@ class CreateCollectionViewModel {
   }
 
   void selectCollection(String id) {
-    _ref.read(selectedCollectionIdProvider.notifier).state = id;
+    _ref.read(selectedCollectionIdProvider.notifier).select(id);
   }
 }
 
@@ -47,7 +47,7 @@ class EnvironmentDialogViewModel {
   }
 
   void setActiveEnvironment(String? name) {
-    _ref.read(activeEnvironmentNameProvider.notifier).state = name;
+    _ref.read(activeEnvironmentNameProvider.notifier).setActiveName(name);
     _ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
   }
 }
@@ -68,7 +68,7 @@ class DeleteEntitiesViewModel {
 
     final selectedId = _ref.read(selectedCollectionIdProvider);
     if (selectedId == collection.id) {
-      _ref.read(selectedCollectionIdProvider.notifier).state = 'default';
+      _ref.read(selectedCollectionIdProvider.notifier).select('default');
     }
   }
 
@@ -77,7 +77,7 @@ class DeleteEntitiesViewModel {
 
     final activeEnvName = _ref.read(activeEnvironmentNameProvider);
     if (activeEnvName == environment.name) {
-      _ref.read(activeEnvironmentNameProvider.notifier).state = null;
+      _ref.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
       _ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
     }
   }

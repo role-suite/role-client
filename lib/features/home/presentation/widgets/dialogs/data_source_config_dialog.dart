@@ -8,10 +8,7 @@ import 'package:relay/core/presentation/widgets/app_text_field.dart';
 
 /// Dialog to set API base URL and optional API key for the remote workspace.
 class DataSourceConfigDialog extends ConsumerStatefulWidget {
-  const DataSourceConfigDialog({
-    super.key,
-    this.initialConfig,
-  });
+  const DataSourceConfigDialog({super.key, this.initialConfig});
 
   final DataSourceConfig? initialConfig;
 
@@ -64,9 +61,9 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
       ref.invalidate(requestsNotifierProvider);
       ref.invalidate(environmentsNotifierProvider);
       ref.invalidate(activeEnvironmentNotifierProvider);
-      ref.read(selectedCollectionIdProvider.notifier).state = 'default';
+      ref.read(selectedCollectionIdProvider.notifier).select('default');
       await ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
-      ref.read(activeEnvironmentNameProvider.notifier).state = null;
+      ref.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
       if (!mounted) return;
       Navigator.of(context).pop(config);
     } catch (e) {
@@ -89,10 +86,7 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Choose REST (GET/PUT /workspace) or Serverpod RPC, then enter the server URL.',
-              style: theme.textTheme.bodySmall,
-            ),
+            Text('Choose REST (GET/PUT /workspace) or Serverpod RPC, then enter the server URL.', style: theme.textTheme.bodySmall),
             const SizedBox(height: 12),
             Text('API style', style: theme.textTheme.labelLarge),
             const SizedBox(height: 6),
@@ -135,14 +129,8 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        AppButton(
-          label: _isSaving ? 'Saving…' : 'Save',
-          onPressed: _isSaving ? null : _save,
-        ),
+        TextButton(onPressed: _isSaving ? null : () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        AppButton(label: _isSaving ? 'Saving…' : 'Save', onPressed: _isSaving ? null : _save),
       ],
     );
   }

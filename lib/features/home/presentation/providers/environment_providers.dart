@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/features/home/presentation/providers/usecase_providers.dart';
 
@@ -13,47 +12,42 @@ import '../../domain/usecases/update_environment_usecase.dart';
 /// Provider for all environments
 final environmentsProvider = FutureProvider<List<EnvironmentModel>>((ref) async {
   final useCase = ref.watch(getAllEnvironmentsUseCaseProvider);
-  return await useCase();
+  return useCase();
 });
 
 /// Provider for active environment name (local state)
-final activeEnvironmentNameProvider = StateProvider<String?>((ref) => null);
+class ActiveEnvironmentNameNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setActiveName(String? name) {
+    state = name;
+  }
+}
+
+final activeEnvironmentNameProvider = NotifierProvider<ActiveEnvironmentNameNotifier, String?>(ActiveEnvironmentNameNotifier.new);
 
 /// Provider for active environment model
 final activeEnvironmentProvider = FutureProvider<EnvironmentModel?>((ref) async {
   final useCase = ref.watch(getActiveEnvironmentUseCaseProvider);
-  return await useCase();
+  return useCase();
 });
 
 /// Notifier for managing active environment
-class ActiveEnvironmentNotifier extends StateNotifier<AsyncValue<EnvironmentModel?>> {
-  final GetActiveEnvironmentUseCase _getActiveEnvironmentUseCase;
-  final SetActiveEnvironmentUseCase _setActiveEnvironmentUseCase;
+class ActiveEnvironmentNotifier extends AsyncNotifier<EnvironmentModel?> {
+  late final GetActiveEnvironmentUseCase _getActiveEnvironmentUseCase;
+  late final SetActiveEnvironmentUseCase _setActiveEnvironmentUseCase;
 
-  ActiveEnvironmentNotifier(this._getActiveEnvironmentUseCase, this._setActiveEnvironmentUseCase) : super(const AsyncValue.loading()) {
-    _loadActiveEnvironment();
+  @override
+  Future<EnvironmentModel?> build() {
+    _getActiveEnvironmentUseCase = ref.watch(getActiveEnvironmentUseCaseProvider);
+    _setActiveEnvironmentUseCase = ref.watch(setActiveEnvironmentUseCaseProvider);
+    return _getActiveEnvironmentUseCase();
   }
 
   Future<void> _loadActiveEnvironment() async {
-    try {
-      state = const AsyncValue.loading();
-    } on StateError {
-      return;
-    }
-    try {
-      final environment = await _getActiveEnvironmentUseCase();
-      try {
-        state = AsyncValue.data(environment);
-      } on StateError {
-        return;
-      }
-    } catch (e, stackTrace) {
-      try {
-        state = AsyncValue.error(e, stackTrace);
-      } on StateError {
-        return;
-      }
-    }
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _getActiveEnvironmentUseCase());
   }
 
   Future<void> setActiveEnvironment(String? name) async {
@@ -67,46 +61,27 @@ class ActiveEnvironmentNotifier extends StateNotifier<AsyncValue<EnvironmentMode
 }
 
 /// Provider for ActiveEnvironmentNotifier
-final activeEnvironmentNotifierProvider = StateNotifierProvider<ActiveEnvironmentNotifier, AsyncValue<EnvironmentModel?>>((ref) {
-  return ActiveEnvironmentNotifier(ref.watch(getActiveEnvironmentUseCaseProvider), ref.watch(setActiveEnvironmentUseCaseProvider));
-});
+final activeEnvironmentNotifierProvider = AsyncNotifierProvider<ActiveEnvironmentNotifier, EnvironmentModel?>(ActiveEnvironmentNotifier.new);
 
 /// Notifier for managing environment state
-class EnvironmentsNotifier extends StateNotifier<AsyncValue<List<EnvironmentModel>>> {
-  final GetAllEnvironmentsUseCase _getAllEnvironmentsUseCase;
-  final CreateEnvironmentUseCase _createEnvironmentUseCase;
-  final UpdateEnvironmentUseCase _updateEnvironmentUseCase;
-  final DeleteEnvironmentUseCase _deleteEnvironmentUseCase;
+class EnvironmentsNotifier extends AsyncNotifier<List<EnvironmentModel>> {
+  late final GetAllEnvironmentsUseCase _getAllEnvironmentsUseCase;
+  late final CreateEnvironmentUseCase _createEnvironmentUseCase;
+  late final UpdateEnvironmentUseCase _updateEnvironmentUseCase;
+  late final DeleteEnvironmentUseCase _deleteEnvironmentUseCase;
 
-  EnvironmentsNotifier(
-    this._getAllEnvironmentsUseCase,
-    this._createEnvironmentUseCase,
-    this._updateEnvironmentUseCase,
-    this._deleteEnvironmentUseCase,
-  ) : super(const AsyncValue.loading()) {
-    _loadEnvironments();
+  @override
+  Future<List<EnvironmentModel>> build() {
+    _getAllEnvironmentsUseCase = ref.watch(getAllEnvironmentsUseCaseProvider);
+    _createEnvironmentUseCase = ref.watch(createEnvironmentUseCaseProvider);
+    _updateEnvironmentUseCase = ref.watch(updateEnvironmentUseCaseProvider);
+    _deleteEnvironmentUseCase = ref.watch(deleteEnvironmentUseCaseProvider);
+    return _getAllEnvironmentsUseCase();
   }
 
   Future<void> _loadEnvironments() async {
-    try {
-      state = const AsyncValue.loading();
-    } on StateError {
-      return; // Notifier disposed (e.g. data source switched).
-    }
-    try {
-      final environments = await _getAllEnvironmentsUseCase();
-      try {
-        state = AsyncValue.data(environments);
-      } on StateError {
-        // Notifier disposed; ignore.
-      }
-    } catch (e, stackTrace) {
-      try {
-        state = AsyncValue.error(e, stackTrace);
-      } on StateError {
-        // Notifier disposed; ignore.
-      }
-    }
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _getAllEnvironmentsUseCase());
   }
 
   Future<void> addEnvironment(EnvironmentModel environment) async {
@@ -145,11 +120,4 @@ class EnvironmentsNotifier extends StateNotifier<AsyncValue<List<EnvironmentMode
 }
 
 /// Provider for EnvironmentsNotifier
-final environmentsNotifierProvider = StateNotifierProvider<EnvironmentsNotifier, AsyncValue<List<EnvironmentModel>>>((ref) {
-  return EnvironmentsNotifier(
-    ref.watch(getAllEnvironmentsUseCaseProvider),
-    ref.watch(createEnvironmentUseCaseProvider),
-    ref.watch(updateEnvironmentUseCaseProvider),
-    ref.watch(deleteEnvironmentUseCaseProvider),
-  );
-});
+final environmentsNotifierProvider = AsyncNotifierProvider<EnvironmentsNotifier, List<EnvironmentModel>>(EnvironmentsNotifier.new);
