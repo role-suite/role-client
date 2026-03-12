@@ -8,6 +8,7 @@ import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/features/auth/presentation/providers/auth_providers.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
 import 'package:relay_server_client/relay_server_client.dart';
+import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 void main() {
   test('sign-in availability is false when data source state is unavailable', () {
@@ -101,11 +102,17 @@ void main() {
 
   test('auth session state resolves to signedIn when auth info exists', () async {
     final state = (mode: DataSourceMode.api, config: const DataSourceConfig(baseUrl: 'http://localhost:8080', apiStyle: ApiStyle.serverpod));
+    final authSuccess = AuthSuccess.fromJson({
+      'authStrategy': 'session',
+      'token': 'token',
+      'authUserId': '550e8400-e29b-41d4-a716-446655440000',
+      'scopeNames': <String>[],
+    });
 
     final container = ProviderContainer(
       overrides: [
         currentDataSourceStateProvider.overrideWith((ref) => state),
-        serverpodAuthInfoStreamProvider.overrideWithValue(const AsyncData('signed-in-user')),
+        serverpodAuthInfoStreamProvider.overrideWithValue(AsyncData(authSuccess)),
       ],
     );
     addTearDown(container.dispose);

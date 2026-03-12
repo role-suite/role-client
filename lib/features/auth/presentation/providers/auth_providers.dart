@@ -6,6 +6,7 @@ import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/services/relay_api/serverpod_client_provider.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
 import 'package:relay_server_client/relay_server_client.dart';
+import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 typedef SignInAvailability = ({bool isAvailable, String? baseUrl});
 
@@ -53,7 +54,7 @@ final refreshServerpodSignInClientProvider = Provider<void Function()>((ref) {
   return () => ref.invalidate(serverpodSignInClientProvider);
 });
 
-final serverpodAuthInfoStreamProvider = StreamProvider<Object?>((ref) async* {
+final serverpodAuthInfoStreamProvider = StreamProvider<AuthSuccess?>((ref) async* {
   final client = await ref.watch(serverpodSignInClientProvider.future);
   if (client == null) {
     yield null;
@@ -61,34 +62,24 @@ final serverpodAuthInfoStreamProvider = StreamProvider<Object?>((ref) async* {
   }
 
   final authSessionManager = client.authKeyProvider;
-  if (authSessionManager == null) {
+  if (authSessionManager is! FlutterAuthSessionManager) {
     yield null;
     return;
   }
 
-  final controller = StreamController<Object?>();
-
-  dynamic authInfoListenable;
-  dynamic authInfo;
-  try {
-    authInfoListenable = (authSessionManager as dynamic).authInfoListenable;
-    authInfo = (authSessionManager as dynamic).authInfo;
-  } catch (_) {
-    yield null;
-    return;
-  }
+  final controller = StreamController<AuthSuccess?>();
 
   void onAuthInfoChanged() {
-    controller.add((authSessionManager as dynamic).authInfo);
+    controller.add(authSessionManager.authInfo);
   }
 
-  authInfoListenable.addListener(onAuthInfoChanged);
+  authSessionManager.authInfoListenable.addListener(onAuthInfoChanged);
   ref.onDispose(() {
-    authInfoListenable.removeListener(onAuthInfoChanged);
+    authSessionManager.authInfoListenable.removeListener(onAuthInfoChanged);
     controller.close();
   });
 
-  yield authInfo;
+  yield authSessionManager.authInfo;
   yield* controller.stream;
 });
 
@@ -114,11 +105,11 @@ final signOutServerpodCurrentDeviceProvider = Provider<Future<bool> Function()>(
     }
 
     final authSessionManager = client.authKeyProvider;
-    if (authSessionManager == null) {
+    if (authSessionManager is! FlutterAuthSessionManager) {
       return false;
     }
 
-    final result = await (authSessionManager as dynamic).signOutDevice() as bool;
+    final result = await authSessionManager.signOutDevice();
     ref.invalidate(serverpodAuthInfoStreamProvider);
     return result;
   };
