@@ -17,7 +17,7 @@ dependencies:
   relay_server_client:
     git:
       url: https://github.com/role-suite/role-server.git
-      ref: 38436be14ef02cc3e15d9775756e68bc1c4d62f8
+      ref: 150c9a1958e6902b42f320065ca8adb94cb09ecf
       path: relay_server_client
   path: ^1.9.1
   path_provider: ^2.1.5
