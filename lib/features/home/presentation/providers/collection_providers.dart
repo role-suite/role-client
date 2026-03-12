@@ -15,16 +15,14 @@ final collectionsProvider = FutureProvider<List<CollectionModel>>((ref) async {
 
 /// Notifier for managing collection state
 class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
-  late final GetAllCollectionsUseCase _getAllCollectionsUseCase;
-  late final CreateCollectionUseCase _createCollectionUseCase;
-  late final DeleteCollectionUseCase _deleteCollectionUseCase;
+  GetAllCollectionsUseCase get _getAllCollectionsUseCase => ref.read(getAllCollectionsUseCaseProvider);
+  CreateCollectionUseCase get _createCollectionUseCase => ref.read(createCollectionUseCaseProvider);
+  DeleteCollectionUseCase get _deleteCollectionUseCase => ref.read(deleteCollectionUseCaseProvider);
 
   @override
   Future<List<CollectionModel>> build() {
-    _getAllCollectionsUseCase = ref.watch(getAllCollectionsUseCaseProvider);
-    _createCollectionUseCase = ref.watch(createCollectionUseCaseProvider);
-    _deleteCollectionUseCase = ref.watch(deleteCollectionUseCaseProvider);
-    return _getAllCollectionsUseCase();
+    final useCase = ref.watch(getAllCollectionsUseCaseProvider);
+    return useCase();
   }
 
   Future<void> _loadCollections() async {

@@ -66,9 +66,20 @@ class EnvironmentService {
     try {
       final json = await _fileStorageService.readJson(relativePath);
       return EnvironmentModel.fromJson(json);
+    } on FileSystemException {
+      final missingDefault = name == AppConstants.defaultEnvironment;
+
+      if (!missingDefault) {
+        AppLogger.warn('Environment file is missing for "$name"');
+        return null;
+      }
+
+      final bootstrap = EnvironmentModel(name: name, variables: const {});
+      await saveEnvironment(bootstrap);
+      AppLogger.info('Created missing default environment "$name"');
+      return bootstrap;
     } catch (e, st) {
-      AppLogger.warn('Environment not loaded for "$name"');
-      AppLogger.error('loadEnvironmentByName failed', e, st);
+      AppLogger.error('loadEnvironmentByName failed for "$name"', e, st);
       return null;
     }
   }

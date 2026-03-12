@@ -35,14 +35,13 @@ final activeEnvironmentProvider = FutureProvider<EnvironmentModel?>((ref) async 
 
 /// Notifier for managing active environment
 class ActiveEnvironmentNotifier extends AsyncNotifier<EnvironmentModel?> {
-  late final GetActiveEnvironmentUseCase _getActiveEnvironmentUseCase;
-  late final SetActiveEnvironmentUseCase _setActiveEnvironmentUseCase;
+  GetActiveEnvironmentUseCase get _getActiveEnvironmentUseCase => ref.read(getActiveEnvironmentUseCaseProvider);
+  SetActiveEnvironmentUseCase get _setActiveEnvironmentUseCase => ref.read(setActiveEnvironmentUseCaseProvider);
 
   @override
   Future<EnvironmentModel?> build() {
-    _getActiveEnvironmentUseCase = ref.watch(getActiveEnvironmentUseCaseProvider);
-    _setActiveEnvironmentUseCase = ref.watch(setActiveEnvironmentUseCaseProvider);
-    return _getActiveEnvironmentUseCase();
+    final useCase = ref.watch(getActiveEnvironmentUseCaseProvider);
+    return useCase();
   }
 
   Future<void> _loadActiveEnvironment() async {
@@ -65,18 +64,15 @@ final activeEnvironmentNotifierProvider = AsyncNotifierProvider<ActiveEnvironmen
 
 /// Notifier for managing environment state
 class EnvironmentsNotifier extends AsyncNotifier<List<EnvironmentModel>> {
-  late final GetAllEnvironmentsUseCase _getAllEnvironmentsUseCase;
-  late final CreateEnvironmentUseCase _createEnvironmentUseCase;
-  late final UpdateEnvironmentUseCase _updateEnvironmentUseCase;
-  late final DeleteEnvironmentUseCase _deleteEnvironmentUseCase;
+  GetAllEnvironmentsUseCase get _getAllEnvironmentsUseCase => ref.read(getAllEnvironmentsUseCaseProvider);
+  CreateEnvironmentUseCase get _createEnvironmentUseCase => ref.read(createEnvironmentUseCaseProvider);
+  UpdateEnvironmentUseCase get _updateEnvironmentUseCase => ref.read(updateEnvironmentUseCaseProvider);
+  DeleteEnvironmentUseCase get _deleteEnvironmentUseCase => ref.read(deleteEnvironmentUseCaseProvider);
 
   @override
   Future<List<EnvironmentModel>> build() {
-    _getAllEnvironmentsUseCase = ref.watch(getAllEnvironmentsUseCaseProvider);
-    _createEnvironmentUseCase = ref.watch(createEnvironmentUseCaseProvider);
-    _updateEnvironmentUseCase = ref.watch(updateEnvironmentUseCaseProvider);
-    _deleteEnvironmentUseCase = ref.watch(deleteEnvironmentUseCaseProvider);
-    return _getAllEnvironmentsUseCase();
+    final useCase = ref.watch(getAllEnvironmentsUseCaseProvider);
+    return useCase();
   }
 
   Future<void> _loadEnvironments() async {

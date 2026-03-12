@@ -15,18 +15,15 @@ final requestsProvider = FutureProvider<List<ApiRequestModel>>((ref) async {
 
 /// Notifier for managing request state with local updates
 class RequestsNotifier extends AsyncNotifier<List<ApiRequestModel>> {
-  late final GetAllRequestsUseCase _getAllRequestsUseCase;
-  late final CreateRequestUseCase _createRequestUseCase;
-  late final UpdateRequestUseCase _updateRequestUseCase;
-  late final DeleteRequestUseCase _deleteRequestUseCase;
+  GetAllRequestsUseCase get _getAllRequestsUseCase => ref.read(getAllRequestsUseCaseProvider);
+  CreateRequestUseCase get _createRequestUseCase => ref.read(createRequestUseCaseProvider);
+  UpdateRequestUseCase get _updateRequestUseCase => ref.read(updateRequestUseCaseProvider);
+  DeleteRequestUseCase get _deleteRequestUseCase => ref.read(deleteRequestUseCaseProvider);
 
   @override
   Future<List<ApiRequestModel>> build() {
-    _getAllRequestsUseCase = ref.watch(getAllRequestsUseCaseProvider);
-    _createRequestUseCase = ref.watch(createRequestUseCaseProvider);
-    _updateRequestUseCase = ref.watch(updateRequestUseCaseProvider);
-    _deleteRequestUseCase = ref.watch(deleteRequestUseCaseProvider);
-    return _getAllRequestsUseCase();
+    final useCase = ref.watch(getAllRequestsUseCaseProvider);
+    return useCase();
   }
 
   Future<void> _loadRequests() async {
