@@ -31,9 +31,7 @@ class DataSourcePreferencesService {
     final prefs = await SharedPreferences.getInstance();
     final baseUrl = prefs.getString(_baseUrlKey) ?? '';
     final apiKey = prefs.getString(_apiKeyKey);
-    final styleStr = prefs.getString(_apiStyleKey);
-    final apiStyle = styleStr == 'serverpod' ? ApiStyle.serverpod : ApiStyle.rest;
-    return DataSourceConfig(baseUrl: baseUrl, apiKey: apiKey, apiStyle: apiStyle);
+    return DataSourceConfig(baseUrl: baseUrl, apiKey: apiKey, apiStyle: ApiStyle.rest);
   }
 
   static Future<void> saveConfig(DataSourceConfig config) async {

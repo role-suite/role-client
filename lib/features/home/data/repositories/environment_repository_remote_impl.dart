@@ -3,7 +3,7 @@ import 'package:relay/core/services/environment_service.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
 
-/// Environment repository that reads/writes environments via the Relay API (REST or Serverpod).
+/// Environment repository that reads/writes environments via the Relay API.
 /// Active environment state is kept in EnvironmentService (local preference).
 class EnvironmentRepositoryRemoteImpl implements EnvironmentRepository {
   EnvironmentRepositoryRemoteImpl(this._api, this._environmentService);

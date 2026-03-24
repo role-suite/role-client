@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/constants/api_style.dart';
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
@@ -19,7 +18,6 @@ class DataSourceConfigDialog extends ConsumerStatefulWidget {
 class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog> {
   late final TextEditingController _baseUrlController;
   late final TextEditingController _apiKeyController;
-  ApiStyle _apiStyle = ApiStyle.rest;
   bool _isSaving = false;
   String? _error;
 
@@ -29,7 +27,6 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
     final c = widget.initialConfig;
     _baseUrlController = TextEditingController(text: c?.baseUrl ?? '');
     _apiKeyController = TextEditingController(text: c?.apiKey ?? '');
-    _apiStyle = c?.apiStyle ?? ApiStyle.rest;
   }
 
   @override
@@ -50,11 +47,7 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
       _isSaving = true;
     });
     try {
-      final config = DataSourceConfig(
-        baseUrl: baseUrl,
-        apiKey: _apiKeyController.text.trim().isEmpty ? null : _apiKeyController.text.trim(),
-        apiStyle: _apiStyle,
-      );
+      final config = DataSourceConfig(baseUrl: baseUrl, apiKey: _apiKeyController.text.trim().isEmpty ? null : _apiKeyController.text.trim());
       await ref.read(dataSourceStateNotifierProvider.notifier).setConfig(config);
       if (!mounted) return;
       ref.invalidate(collectionsNotifierProvider);
@@ -86,29 +79,11 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Choose REST (GET/PUT /workspace) or Serverpod RPC, then enter the server URL.', style: theme.textTheme.bodySmall),
+            Text('Enter your REST API base URL to load and save workspace data.', style: theme.textTheme.bodySmall),
             const SizedBox(height: 12),
-            Text('API style', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                ChoiceChip(
-                  label: const Text('REST'),
-                  selected: _apiStyle == ApiStyle.rest,
-                  onSelected: (_) => setState(() => _apiStyle = ApiStyle.rest),
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('Serverpod RPC'),
-                  selected: _apiStyle == ApiStyle.serverpod,
-                  onSelected: (_) => setState(() => _apiStyle = ApiStyle.serverpod),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             AppTextField(
               controller: _baseUrlController,
-              label: _apiStyle == ApiStyle.serverpod ? 'Server URL' : 'Base URL',
+              label: 'Base URL',
               hint: 'https://api.example.com',
               keyboardType: TextInputType.url,
               onChanged: (_) => setState(() => _error = null),

@@ -1,47 +1,33 @@
-import 'package:relay/core/constants/api_style.dart';
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/core/services/relay_api/rest_relay_api_client.dart';
-import 'package:relay/core/services/relay_api/serverpod_relay_api_client.dart';
 import 'package:relay/core/services/workspace_api/rest_workspace_client.dart';
 import 'package:relay/features/home/domain/repositories/collection_repository.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
 import 'package:relay/features/home/domain/repositories/request_repository.dart';
-import 'package:relay_server_client/relay_server_client.dart';
 
 /// Pushes local collections, requests, and environments to a remote API.
 /// Use when the app is in local mode to sync data to the configured remote.
 class SyncToRemoteService {
   SyncToRemoteService._();
 
-  static RelayApiClient _createClient(DataSourceConfig config, Client? serverpodClient) {
-    switch (config.apiStyle) {
-      case ApiStyle.serverpod:
-        return ServerpodRelayApiClient(
-          serverUrl: config.baseUrl,
-          client: serverpodClient,
-        );
-      case ApiStyle.rest:
-        return RestRelayApiClient(
-          RestWorkspaceClient(baseUrl: config.baseUrl, apiKey: config.apiKey),
-        );
-    }
+  static RelayApiClient _createClient(DataSourceConfig config) {
+    return RestRelayApiClient(RestWorkspaceClient(baseUrl: config.baseUrl, apiKey: config.apiKey));
   }
 
   /// Syncs all local collections, their requests, and environments to the remote.
-  /// [config] must be valid (baseUrl non-empty). Use [DataSourcePreferencesService.loadConfig]
-  /// or from user input. Pass [serverpodClient] when using Serverpod RPC so auth is applied.
+  /// [config] must be valid (baseUrl non-empty). Use
+  /// [DataSourcePreferencesService.loadConfig] or from user input.
   static Future<void> sync({
     required DataSourceConfig config,
     required CollectionRepository collectionRepository,
     required EnvironmentRepository environmentRepository,
     required RequestRepository requestRepository,
-    Client? serverpodClient,
   }) async {
     if (!config.isValid) {
       throw ArgumentError('Sync requires a valid remote config (baseUrl)');
     }
-    final api = _createClient(config, serverpodClient);
+    final api = _createClient(config);
 
     // 1. Sync collections (create or update)
     final collections = await collectionRepository.getAllCollections();

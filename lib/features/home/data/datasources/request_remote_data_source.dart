@@ -2,7 +2,7 @@ import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/features/home/data/datasources/request_data_source.dart';
 
-/// Data source that reads/writes requests via the Relay API (REST or Serverpod).
+/// Data source that reads/writes requests via the Relay API.
 class RequestRemoteDataSource implements RequestDataSource {
   RequestRemoteDataSource(this._api);
 

@@ -3,7 +3,7 @@ import 'package:relay/core/services/relay_api/relay_api_client.dart';
 
 import 'collection_data_source.dart';
 
-/// Data source that reads/writes collections via the Relay API (REST or Serverpod).
+/// Data source that reads/writes collections via the Relay API.
 class CollectionRemoteDataSource implements CollectionDataSource {
   CollectionRemoteDataSource(this._api);
 

@@ -12,13 +12,6 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   dio: ^5.9.0
-  serverpod_flutter: ^3.4.3
-  serverpod_auth_idp_flutter: ^3.4.3
-  relay_server_client:
-    git:
-      url: https://github.com/role-suite/role-server.git
-      ref: 150c9a1958e6902b42f320065ca8adb94cb09ecf
-      path: relay_server_client
   path: ^1.9.1
   path_provider: ^2.1.5
   file_picker: ^10.3.7
