@@ -3,84 +3,60 @@
 ## High-Level Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              role-client (Röle)                               │
-│                                                                               │
-│  ┌─────────────────┐     ┌──────────────────┐     ┌───────────────────────┐  │
-│  │ UI (Screens,    │────►│ Providers        │────►│ Repositories          │  │
-│  │ Drawer, Dialogs)│     │ (Riverpod)       │     │ (Collection, Request,  │  │
-│  └─────────────────┘     └────────┬─────────┘     │  Environment)          │  │
-│                                   │               └───────────┬─────────────┘  │
-│                                   │                           │               │
-│                                   ▼                           ▼               │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │ Data source mode (Local vs API) → Data sources                            │ │
-│  │   • Local: CollectionLocalDataSource, RequestLocalDataSource (files)     │ │
-│  │   • API:   CollectionRemoteDataSource, RequestRemoteDataSource           │ │
-│  │            → RelayApiClient (REST or Serverpod RPC)                       │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                   │                                           │
-└───────────────────────────────────┼───────────────────────────────────────────┘
-                                    │
-                    ┌───────────────┴───────────────┐
-                    ▼                               ▼
-            ┌───────────────┐               ┌───────────────────┐
-            │ Local storage │               │ role-server       │
-            │ (files,       │               │ REST /workspace   │
-            │  SharedPrefs) │               │ or Serverpod RPC  │
-            └───────────────┘               └───────────────────┘
+UI (screens, drawer, dialogs)
+  -> Riverpod providers/notifiers
+  -> repositories
+  -> data sources (local or remote)
+  -> local files/shared preferences OR role-server REST API
 ```
 
-## Components
+## Core Components
 
-### 1. Entrypoint and App
+### 1. App entry and shell
 
-- **`lib/main.dart`**: `runApp(ProviderScope(child: MyApp()))`. `MyApp` is a `ConsumerWidget` that watches `themeModeNotifierProvider` and builds `MaterialApp` with `HomeScreen` as home.
-- **`lib/features/home/presentation/home_screen.dart`**: Main screen: collection selector, request list, request runner, drawer. Uses Riverpod for collections, requests, environments, data source state.
+- `lib/main.dart`: Starts `ProviderScope`, creates `MaterialApp`, and wires theme mode.
+- `lib/features/home/presentation/home_screen.dart`: Main workspace UI and interactions.
 
-### 2. Data Source and API Clients
+### 2. Data source state and config
 
-- **`lib/features/home/presentation/providers/data_source_providers.dart`**: `DataSourceStateNotifier` holds current mode (local vs API) and `DataSourceConfig` (baseUrl, apiKey, apiStyle). Loaded/saved via `DataSourcePreferencesService` (SharedPreferences).
-- **`lib/core/services/relay_api/`**: `RelayApiClient` interface; implementations:
-  - **RestRelayApiClient**: Uses `RestWorkspaceClient` (Dio) for GET/PUT workspace; implements list/get/create/update/delete for collections, environments, requests by calling workspace and merging.
-  - **ServerpodRelayApiClient**: Uses generated `relay_server_client`; can use an optional shared `Client` (with auth) from `serverpodClientProvider`.
-- **`lib/core/services/relay_api/serverpod_client_provider.dart`**: `serverpodClientProvider` (FutureProvider.family by baseUrl) builds a Serverpod `Client` with `FlutterAuthSessionManager`, calls `client.auth.initialize()`, and returns it. Used so that all Serverpod RPC calls share the same authenticated client.
-- **`lib/core/services/workspace_api/`**: `WorkspaceApiClient` (getWorkspace, putWorkspace). REST: `RestWorkspaceClient`. Serverpod: `ServerpodWorkspaceClient` (pullWorkspace/pushWorkspace RPC).
+- `lib/features/home/presentation/providers/data_source_providers.dart`:
+  - Holds current data source mode (`local` or `api`).
+  - Holds API config (`baseUrl`, optional `apiKey`).
+- `lib/core/services/data_source_preferences_service.dart` persists this config in `SharedPreferences`.
 
-### 3. Repositories and Data Sources
+### 3. API client layer
 
-- **Providers** (`lib/features/home/presentation/providers/repository_providers.dart`): `collectionDataSourceProvider`, `requestDataSourceProvider`, and `environmentRepositoryProvider` switch on data source mode and config: local → local data sources; API → remote data sources built from `_createRelayApiClient(config, serverpodClient)`. When API style is Serverpod, the shared client from `serverpodClientProvider(baseUrl)` is passed in so auth is applied.
-- **Local data sources**: `CollectionLocalDataSource`, `RequestLocalDataSource` use `FileStorageService` and `WorkspaceService` (files under app documents directory).
-- **Remote data sources**: `CollectionRemoteDataSource`, `RequestRemoteDataSource` wrap `RelayApiClient`. Environment repository has a remote impl that uses the same client.
+- `lib/core/services/relay_api/relay_api_client.dart`: interface used by remote data sources.
+- `lib/core/services/relay_api/rest_relay_api_client.dart`: REST implementation backed by workspace GET/PUT.
+- `lib/core/services/workspace_api/rest_workspace_client.dart`: low-level HTTP client for `/workspace`.
 
-### 4. Authentication (Client)
+### 4. Repositories and data sources
 
-- **Sign-in screen**: `lib/features/auth/presentation/sign_in_screen.dart`. Shown when data source is API + Serverpod RPC. Watches `serverpodClientProvider(baseUrl)` and displays `EmailSignInWidget` (serverpod_auth_idp_flutter) with the shared client. On success, pops the screen; session is stored by `FlutterAuthSessionManager`.
-- **Drawer**: When in API + Serverpod mode, a “Sign in” button opens the sign-in screen. Sync to remote (when in local mode) and all Serverpod RPC calls use the same client, so once signed in, requests are authenticated. See [04-AUTHENTICATION.md](04-AUTHENTICATION.md).
+- `lib/features/home/presentation/providers/repository_providers.dart` switches between local and remote implementations based on data source mode.
+- Local data sources use `FileStorageService` and `WorkspaceService`.
+- Remote data sources use `RelayApiClient`.
 
-### 5. Sync to Remote
+### 5. Sync to remote
 
-- **`lib/core/services/sync_to_remote_service.dart`**: Pushes local collections, requests, and environments to the configured remote. Used from the drawer when in local mode. Accepts an optional `serverpodClient` so that when the user has signed in and the config is Serverpod, sync uses the authenticated client.
-
-### 6. Request Execution
-
-- **Request runner**: Dio sends the HTTP request; URL, headers, and body support `{{variableName}}` substitution from the selected environment. Response and timing are shown in the UI. History is stored per request (local or via backend when in API mode, depending on where the request entity lives).
+- `lib/core/services/sync_to_remote_service.dart` pushes local collections, requests, and environments to the configured REST backend.
+- Triggered from the drawer while in local mode.
 
 ## Data Flow Examples
 
-### Local mode: Load collections
+### Local mode
 
-1. User has mode = Local. `collectionDataSourceProvider` returns `CollectionLocalDataSource`.
-2. `CollectionsNotifier` (or equivalent) calls repository → `CollectionLocalDataSource.getAllCollections()`.
-3. Data is read from files via `FileStorageService` / `WorkspaceService`.
+1. UI asks providers for collections/requests/environments.
+2. Providers resolve local repositories/data sources.
+3. Data is read from files and returned to UI.
 
-### API mode (Serverpod): Load collections after sign-in
+### API mode (REST)
 
-1. User sets mode = API, style = Serverpod RPC, base URL. `serverpodClientProvider(baseUrl)` builds a `Client` with `FlutterAuthSessionManager` and `auth.initialize()`.
-2. `collectionDataSourceProvider` watches that provider and passes the client into `ServerpodRelayApiClient(serverUrl: config.baseUrl, client: client)`.
-3. Repository uses `CollectionRemoteDataSource(api)` where `api` is that relay client. List collections calls `client.collections.list()` with the same client that has the JWT attached by the auth session manager.
+1. User configures base URL (and optional API key), then switches to API mode.
+2. Providers resolve remote repositories/data sources.
+3. Remote data sources call `RestRelayApiClient`, which fetches and updates workspace data over REST.
 
-### Sync to remote (local → API)
+### Sync local to remote
 
-1. User is in local mode; taps “Sync to remote” in the drawer. Drawer loads `DataSourceConfig` (and for Serverpod, awaits `serverpodClientProvider(config.baseUrl).future`).
-2. `SyncToRemoteService.sync(config, ..., serverpodClient: client)` builds a `RelayApiClient` (REST or Serverpod with optional client) and pushes each local collection, request, and environment to the remote.
+1. User taps "Sync to remote" in local mode.
+2. App loads local collections/requests/environments.
+3. `SyncToRemoteService` writes them to the configured REST backend.

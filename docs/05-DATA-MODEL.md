@@ -55,7 +55,7 @@ Defined in `lib/core/models/workspace_bundle.dart`. JSON shape matches what role
 |-------|------|-------------|
 | `baseUrl` | String | API base URL. |
 | `apiKey` | String? | Optional Bearer key (REST). |
-| `apiStyle` | ApiStyle | `rest` or `serverpod`. |
+| `apiStyle` | ApiStyle | `rest`. |
 
 Defined in `lib/core/models/data_source_config.dart`. `isValid` is true when `baseUrl.trim().isNotEmpty`.
 
@@ -66,4 +66,4 @@ Defined in `lib/core/models/data_source_config.dart`. `isValid` is true when `ba
 
 ## Alignment with Backend
 
-When using the API (REST or Serverpod RPC), the app uses the same logical model as role-server. The **relay_server_client** package (from role-server) provides protocol types (`CollectionModel`, `ApiRequestModel`, `EnvironmentModel`, `WorkspaceBundle`); the app either uses these directly for RPC or maps to/from its own `lib/core/models` and the server JSON (see `ServerpodRelayApiClient` and `RestRelayApiClient` conversion helpers).
+When using the API, the app uses the same logical model as role-server over REST. App models in `lib/core/models` are serialized to JSON and exchanged through the workspace REST endpoints.

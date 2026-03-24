@@ -29,8 +29,7 @@ Replace `<platform>` with one of:
 
 ## Dependencies for Distribution
 
-- **relay_server_client**: The app depends on `relay_server_client` via a pinned public source (git ref or package version), so builds work from a clean clone without a local `role-server` checkout.
-- **Contributor override (optional)**: When developing client+server together, use a local `pubspec_overrides.yaml` to point `relay_server_client` to `../role-server/relay_server_client`.
+- Flutter dependencies are resolved directly from `pubspec.yaml` with `flutter pub get`.
 
 ## Code Signing and Store Submission
 
@@ -41,7 +40,7 @@ Replace `<platform>` with one of:
 
 ## Environment and Backend URL
 
-The app does not bake in a default backend URL. Users set the base URL (and optional API key / Serverpod) in the app after install. For enterprise or controlled environments, you could ship a build that pre-fills a base URL (e.g. by changing default in `DataSourcePreferencesService` or a config screen); that would be a custom fork or build variant.
+The app does not bake in a default backend URL. Users set the base URL (and optional API key) in the app after install. For enterprise or controlled environments, you could ship a build that pre-fills a base URL (e.g. by changing default in `DataSourcePreferencesService` or a config screen); that would be a custom fork or build variant.
 
 ## Versioning
 
