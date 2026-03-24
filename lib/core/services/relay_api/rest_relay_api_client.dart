@@ -1,90 +1,71 @@
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
-import 'package:relay/core/models/workspace_bundle.dart';
+import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
-import 'package:relay/core/services/workspace_api/workspace_api_client.dart';
+import 'package:relay/core/services/role_node_api/role_node_http.dart';
+import 'package:relay/core/utils/extension.dart';
 
-/// Relay API client backed by workspace GET/PUT (REST). Fetches full workspace
-/// and performs list/get/create/update/delete in memory, then PUTs back.
 class RestRelayApiClient implements RelayApiClient {
-  RestRelayApiClient(this._workspace);
+  RestRelayApiClient({required String baseUrl, String? apiKey}) : _http = RoleNodeHttp(baseUrl: baseUrl, accessToken: apiKey);
 
-  final WorkspaceApiClient _workspace;
-
-  Future<WorkspaceBundle> _getBundle() => _workspace.getWorkspace();
-
-  Future<void> _putBundle(WorkspaceBundle bundle) => _workspace.putWorkspace(bundle);
+  final RoleNodeHttp _http;
 
   @override
   Future<List<CollectionModel>> listCollections() async {
-    final bundle = await _getBundle();
-    final list = bundle.collections.map((b) => b.collection).toList();
-    list.sort((a, b) => a.name.compareTo(b.name));
+    final workspaceId = await _http.resolveWorkspaceId();
+    final data = await _http.get('/api/workspaces/$workspaceId/collections');
+    final list = _asList(data).map(_collectionFromApi).toList();
+    list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return list;
   }
 
   @override
   Future<CollectionModel?> getCollection(String id) async {
-    final list = await listCollections();
-    try {
-      return list.firstWhere((c) => c.id == id);
-    } catch (_) {
-      return null;
-    }
+    final workspaceId = await _http.resolveWorkspaceId();
+    final data = await _http.get('/api/workspaces/$workspaceId/collections/$id');
+    if (data is! Map<String, dynamic>) return null;
+    return _collectionFromApi(data);
   }
 
   @override
   Future<void> createCollection(CollectionModel collection) async {
-    final bundle = await _getBundle();
-    final newCollections = List<CollectionBundle>.from(bundle.collections)
-      ..add(CollectionBundle(collection: collection, requests: []));
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: newCollections,
-      environments: bundle.environments,
-    ));
+    final workspaceId = await _http.resolveWorkspaceId();
+    await _http.post('/api/workspaces/$workspaceId/collections', data: {'name': collection.name, 'description': collection.description});
   }
 
   @override
   Future<void> updateCollection(CollectionModel collection) async {
-    final bundle = await _getBundle();
-    final newCollections = <CollectionBundle>[];
-    for (final cb in bundle.collections) {
-      if (cb.collection.id == collection.id) {
-        newCollections.add(CollectionBundle(collection: collection, requests: cb.requests));
-      } else {
-        newCollections.add(cb);
-      }
-    }
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: newCollections,
-      environments: bundle.environments,
-    ));
+    final workspaceId = await _http.resolveWorkspaceId();
+    await _http.patch(
+      '/api/workspaces/$workspaceId/collections/${collection.id}',
+      data: {'name': collection.name, 'description': collection.description},
+    );
   }
 
   @override
   Future<void> deleteCollection(String id) async {
-    final bundle = await _getBundle();
-    final newCollections = bundle.collections.where((cb) => cb.collection.id != id).toList();
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: newCollections,
-      environments: bundle.environments,
-    ));
+    final workspaceId = await _http.resolveWorkspaceId();
+    await _http.delete('/api/workspaces/$workspaceId/collections/$id');
   }
 
   @override
   Future<List<EnvironmentModel>> listEnvironments() async {
-    final bundle = await _getBundle();
-    return List.from(bundle.environments);
+    final workspaceId = await _http.resolveWorkspaceId();
+    final envData = await _http.get('/api/workspaces/$workspaceId/environments');
+    final envList = _asList(envData);
+    final output = <EnvironmentModel>[];
+
+    for (final env in envList) {
+      final id = _readString(env, ['id']);
+      final name = _readString(env, ['name']);
+      if (id == null || name == null) continue;
+      final vars = await _http.get('/api/workspaces/$workspaceId/environments/$id/variables');
+      output.add(EnvironmentModel(name: name, variables: _variablesFromApi(vars)));
+    }
+
+    output.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return output;
   }
 
   @override
@@ -99,62 +80,50 @@ class RestRelayApiClient implements RelayApiClient {
 
   @override
   Future<void> createEnvironment(EnvironmentModel environment) async {
-    final bundle = await _getBundle();
-    final newEnvs = List<EnvironmentModel>.from(bundle.environments)..add(environment);
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: bundle.collections,
-      environments: newEnvs,
-    ));
+    final workspaceId = await _http.resolveWorkspaceId();
+    final created = await _http.post('/api/workspaces/$workspaceId/environments', data: {'name': environment.name});
+    if (created is! Map<String, dynamic>) return;
+    final envId = _readString(created, ['id']);
+    if (envId == null) return;
+    await _replaceEnvironmentVariables(workspaceId, envId, environment.variables);
   }
 
   @override
   Future<void> updateEnvironment(EnvironmentModel environment) async {
-    final bundle = await _getBundle();
-    final newEnvs = bundle.environments
-        .map((e) => e.name == environment.name ? environment : e)
-        .toList();
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: bundle.collections,
-      environments: newEnvs,
-    ));
+    final workspaceId = await _http.resolveWorkspaceId();
+    final existing = await _findEnvironmentByName(workspaceId, environment.name);
+    if (existing == null) {
+      await createEnvironment(environment);
+      return;
+    }
+
+    await _http.patch('/api/workspaces/$workspaceId/environments/${existing.id}', data: {'name': environment.name});
+    await _replaceEnvironmentVariables(workspaceId, existing.id, environment.variables);
   }
 
   @override
   Future<void> deleteEnvironment(String name) async {
-    final bundle = await _getBundle();
-    final newEnvs = bundle.environments.where((e) => e.name != name).toList();
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: bundle.collections,
-      environments: newEnvs,
-    ));
+    final workspaceId = await _http.resolveWorkspaceId();
+    final existing = await _findEnvironmentByName(workspaceId, name);
+    if (existing == null) return;
+    await _http.delete('/api/workspaces/$workspaceId/environments/${existing.id}');
   }
 
   @override
   Future<List<ApiRequestModel>> listRequests(String collectionId) async {
-    final bundle = await _getBundle();
-    final cb = bundle.collections.where((b) => b.collection.id == collectionId).toList();
-    if (cb.isEmpty) return [];
-    return cb.first.requests
-        .map((r) => r.collectionId == collectionId ? r : r.copyWith(collectionId: collectionId))
-        .toList();
+    final workspaceId = await _http.resolveWorkspaceId();
+    final data = await _http.get('/api/workspaces/$workspaceId/collections/$collectionId/endpoints');
+    return _asList(data).map((e) => _requestFromApi(e, collectionId)).toList();
   }
 
   @override
   Future<ApiRequestModel?> getRequest(String requestId) async {
-    final bundle = await _getBundle();
-    for (final cb in bundle.collections) {
-      for (final r in cb.requests) {
-        if (r.id == requestId) {
-          return r.collectionId == cb.collection.id ? r : r.copyWith(collectionId: cb.collection.id);
+    final collections = await listCollections();
+    for (final collection in collections) {
+      final requests = await listRequests(collection.id);
+      for (final request in requests) {
+        if (request.id == requestId) {
+          return request;
         }
       }
     }
@@ -163,91 +132,305 @@ class RestRelayApiClient implements RelayApiClient {
 
   @override
   Future<void> createRequest(ApiRequestModel request) async {
-    final bundle = await _getBundle();
-    final newCollections = <CollectionBundle>[];
-    var added = false;
-    for (final cb in bundle.collections) {
-      if (cb.collection.id != request.collectionId) {
-        newCollections.add(cb);
-        continue;
-      }
-      final newRequests = List<ApiRequestModel>.from(cb.requests)..add(request);
-      newCollections.add(CollectionBundle(collection: cb.collection, requests: newRequests));
-      added = true;
-    }
-    if (!added) {
-      final now = DateTime.now();
-      final placeholder = CollectionModel(
-        id: request.collectionId,
-        name: 'Collection ${request.collectionId}',
-        description: '',
-        createdAt: now,
-        updatedAt: now,
-      );
-      newCollections.add(CollectionBundle(collection: placeholder, requests: [request]));
-    }
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: newCollections,
-      environments: bundle.environments,
-    ));
+    final workspaceId = await _http.resolveWorkspaceId();
+    await _http.post('/api/workspaces/$workspaceId/collections/${request.collectionId}/endpoints', data: _requestToApi(request));
   }
 
   @override
   Future<void> updateRequest(ApiRequestModel request) async {
-    final bundle = await _getBundle();
-    final newCollections = <CollectionBundle>[];
-    for (final cb in bundle.collections) {
-      final requests = cb.requests.where((r) => r.id != request.id).toList();
-      if (cb.collection.id == request.collectionId) {
-        requests.add(request);
-      }
-      newCollections.add(CollectionBundle(collection: cb.collection, requests: requests));
-    }
-    if (!newCollections.any((c) => c.collection.id == request.collectionId)) {
-      final now = DateTime.now();
-      newCollections.add(CollectionBundle(
-        collection: CollectionModel(
-          id: request.collectionId,
-          name: 'Collection ${request.collectionId}',
-          description: '',
-          createdAt: now,
-          updatedAt: now,
-        ),
-        requests: [request],
-      ));
-    }
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: newCollections,
-      environments: bundle.environments,
-    ));
+    final workspaceId = await _http.resolveWorkspaceId();
+    await _http.patch('/api/workspaces/$workspaceId/collections/${request.collectionId}/endpoints/${request.id}', data: _requestToApi(request));
   }
 
   @override
   Future<void> deleteRequest(String requestId) async {
     final request = await getRequest(requestId);
     if (request == null) return;
-    final bundle = await _getBundle();
-    final newCollections = <CollectionBundle>[];
-    for (final cb in bundle.collections) {
-      if (cb.collection.id != request.collectionId) {
-        newCollections.add(cb);
-        continue;
-      }
-      final newRequests = cb.requests.where((r) => r.id != requestId).toList();
-      newCollections.add(CollectionBundle(collection: cb.collection, requests: newRequests));
-    }
-    await _putBundle(WorkspaceBundle(
-      version: bundle.version,
-      exportedAt: bundle.exportedAt,
-      source: bundle.source,
-      collections: newCollections,
-      environments: bundle.environments,
-    ));
+
+    final workspaceId = await _http.resolveWorkspaceId();
+    await _http.delete('/api/workspaces/$workspaceId/collections/${request.collectionId}/endpoints/$requestId');
   }
+
+  Future<_RemoteEnvironment?> _findEnvironmentByName(String workspaceId, String name) async {
+    final envData = await _http.get('/api/workspaces/$workspaceId/environments');
+    final envList = _asList(envData);
+    for (final env in envList) {
+      final envName = _readString(env, ['name']);
+      if (envName != name) continue;
+      final envId = _readString(env, ['id']);
+      if (envId == null) return null;
+      return _RemoteEnvironment(id: envId, name: envName!);
+    }
+    return null;
+  }
+
+  Future<void> _replaceEnvironmentVariables(String workspaceId, String envId, Map<String, String> vars) async {
+    final existingVars = _asList(await _http.get('/api/workspaces/$workspaceId/environments/$envId/variables'));
+    for (final item in existingVars) {
+      final id = _readString(item, ['id']);
+      if (id == null) continue;
+      await _http.delete('/api/workspaces/$workspaceId/environments/$envId/variables/$id');
+    }
+
+    var position = 0;
+    for (final entry in vars.entries) {
+      await _http.post(
+        '/api/workspaces/$workspaceId/environments/$envId/variables',
+        data: {'key': entry.key, 'value': entry.value, 'enabled': true, 'isSecret': false, 'position': position},
+      );
+      position += 1;
+    }
+  }
+
+  static CollectionModel _collectionFromApi(Map<String, dynamic> json) {
+    final now = DateTime.now();
+    return CollectionModel(
+      id: _readString(json, ['id']) ?? 'unknown',
+      name: _readString(json, ['name']) ?? 'Collection',
+      description: _readString(json, ['description']) ?? '',
+      createdAt: _readDate(json, ['createdAt', 'created_at']) ?? now,
+      updatedAt: _readDate(json, ['updatedAt', 'updated_at']) ?? now,
+    );
+  }
+
+  static ApiRequestModel _requestFromApi(Map<String, dynamic> json, String collectionId) {
+    final now = DateTime.now();
+    final body = _readMap(json, ['body']);
+    final auth = _readMap(json, ['auth']);
+    return ApiRequestModel(
+      id: _readString(json, ['id']) ?? 'unknown',
+      name: _readString(json, ['name']) ?? 'Request',
+      method: HttpMethodX.fromString(_readString(json, ['method']) ?? 'GET'),
+      urlTemplate: _readString(json, ['url', 'urlTemplate']) ?? '',
+      headers: _entriesToMap(json['headers']),
+      queryParams: _entriesToMap(json['queryParams']),
+      body: _bodyTextFromApi(body),
+      bodyType: _bodyTypeFromApi(body),
+      formDataFields: _formDataFromApi(body),
+      authType: _authTypeFromApi(auth),
+      authConfig: _authConfigFromApi(auth),
+      description: _readString(json, ['description']),
+      filePath: null,
+      collectionId: collectionId,
+      environmentName: null,
+      createdAt: _readDate(json, ['createdAt', 'created_at']) ?? now,
+      updatedAt: _readDate(json, ['updatedAt', 'updated_at']) ?? now,
+    );
+  }
+
+  static Map<String, dynamic> _requestToApi(ApiRequestModel request) {
+    final headers = request.headers.entries.where((e) => e.key.trim().isNotEmpty).map((e) => {'key': e.key, 'value': e.value}).toList();
+    final queryParams = request.queryParams.entries.where((e) => e.key.trim().isNotEmpty).map((e) => {'key': e.key, 'value': e.value}).toList();
+
+    return {
+      'name': request.name,
+      'method': request.method.name.toUpperCase(),
+      'url': request.urlTemplate,
+      'folderId': null,
+      'headers': headers,
+      'queryParams': queryParams,
+      'body': _bodyToApi(request),
+      'auth': _authToApi(request),
+      'position': 0,
+    };
+  }
+
+  static Map<String, String> _variablesFromApi(dynamic data) {
+    final map = <String, String>{};
+    final list = _asList(data);
+    for (final item in list) {
+      final enabled = item['enabled'];
+      if (enabled is bool && !enabled) continue;
+      final key = _readString(item, ['key', 'keyName']);
+      if (key == null || key.isEmpty) continue;
+      map[key] = _readString(item, ['value', 'valueText']) ?? '';
+    }
+    return map;
+  }
+
+  static Map<String, dynamic> _bodyToApi(ApiRequestModel request) {
+    switch (request.bodyType) {
+      case BodyType.none:
+        return {'mode': 'none'};
+      case BodyType.raw:
+        return {
+          'mode': 'raw',
+          'contentType': request.headers['Content-Type'] ?? request.headers['content-type'] ?? 'application/json',
+          'raw': request.body ?? '',
+        };
+      case BodyType.urlEncoded:
+        return {
+          'mode': 'urlencoded',
+          'urlencoded': request.formDataFields.entries.map((e) => {'key': e.key, 'value': e.value}).toList(),
+        };
+      case BodyType.formData:
+        return {
+          'mode': 'formdata',
+          'formdata': request.formDataFields.entries.map((e) => {'key': e.key, 'type': 'text', 'value': e.value}).toList(),
+        };
+      case BodyType.binary:
+        return {
+          'mode': 'binary',
+          'file': {'name': 'file', 'contentBase64': request.body ?? ''},
+        };
+    }
+  }
+
+  static Map<String, dynamic> _authToApi(ApiRequestModel request) {
+    switch (request.authType) {
+      case AuthType.none:
+        return {'type': 'none'};
+      case AuthType.bearer:
+        return {'type': 'bearer', 'token': request.authConfig[AuthConfigKeys.token] ?? ''};
+      case AuthType.basic:
+        return {
+          'type': 'basic',
+          'username': request.authConfig[AuthConfigKeys.username] ?? '',
+          'password': request.authConfig[AuthConfigKeys.password] ?? '',
+        };
+      case AuthType.apiKey:
+        return {'type': 'apiKey', 'key': request.authConfig[AuthConfigKeys.key] ?? '', 'value': request.authConfig[AuthConfigKeys.value] ?? ''};
+    }
+  }
+
+  static BodyType _bodyTypeFromApi(Map<String, dynamic>? body) {
+    final mode = (body?['mode']?.toString() ?? 'raw').toLowerCase();
+    switch (mode) {
+      case 'none':
+        return BodyType.none;
+      case 'urlencoded':
+        return BodyType.urlEncoded;
+      case 'formdata':
+        return BodyType.formData;
+      case 'binary':
+        return BodyType.binary;
+      default:
+        return BodyType.raw;
+    }
+  }
+
+  static String? _bodyTextFromApi(Map<String, dynamic>? body) {
+    if (body == null) return null;
+    final mode = (body['mode']?.toString() ?? '').toLowerCase();
+    if (mode == 'raw') return body['raw']?.toString();
+    if (mode == 'binary') {
+      final file = body['file'];
+      if (file is Map<String, dynamic>) {
+        return file['contentBase64']?.toString();
+      }
+    }
+    return null;
+  }
+
+  static Map<String, String> _formDataFromApi(Map<String, dynamic>? body) {
+    if (body == null) return const {};
+    final mode = (body['mode']?.toString() ?? '').toLowerCase();
+    if (mode != 'formdata' && mode != 'urlencoded') return const {};
+    final key = mode == 'formdata' ? 'formdata' : 'urlencoded';
+    final entries = body[key];
+    if (entries is! List) return const {};
+    final output = <String, String>{};
+    for (final item in entries.whereType<Map<String, dynamic>>()) {
+      final k = _readString(item, ['key']);
+      if (k == null || k.isEmpty) continue;
+      output[k] = _readString(item, ['value']) ?? '';
+    }
+    return output;
+  }
+
+  static AuthType _authTypeFromApi(Map<String, dynamic>? auth) {
+    final type = (auth?['type']?.toString() ?? 'none').toLowerCase();
+    switch (type) {
+      case 'bearer':
+        return AuthType.bearer;
+      case 'basic':
+        return AuthType.basic;
+      case 'apikey':
+      case 'api_key':
+        return AuthType.apiKey;
+      default:
+        return AuthType.none;
+    }
+  }
+
+  static Map<String, String> _authConfigFromApi(Map<String, dynamic>? auth) {
+    if (auth == null) return const {};
+    final type = _authTypeFromApi(auth);
+    switch (type) {
+      case AuthType.none:
+        return const {};
+      case AuthType.bearer:
+        return {
+          AuthConfigKeys.token: _readString(auth, ['token']) ?? '',
+        };
+      case AuthType.basic:
+        return {
+          AuthConfigKeys.username: _readString(auth, ['username']) ?? '',
+          AuthConfigKeys.password: _readString(auth, ['password']) ?? '',
+        };
+      case AuthType.apiKey:
+        return {
+          AuthConfigKeys.key: _readString(auth, ['key']) ?? '',
+          AuthConfigKeys.value: _readString(auth, ['value']) ?? '',
+        };
+    }
+  }
+
+  static Map<String, String> _entriesToMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value.map((k, v) => MapEntry(k, v?.toString() ?? ''));
+    }
+    if (value is Map) {
+      final output = <String, String>{};
+      value.forEach((k, v) {
+        if (k == null) return;
+        output[k.toString()] = v?.toString() ?? '';
+      });
+      return output;
+    }
+    if (value is! List) return const {};
+    final output = <String, String>{};
+    for (final item in value.whereType<Map<String, dynamic>>()) {
+      final key = _readString(item, ['key']);
+      if (key == null || key.isEmpty) continue;
+      output[key] = _readString(item, ['value']) ?? '';
+    }
+    return output;
+  }
+
+  static List<Map<String, dynamic>> _asList(dynamic value) {
+    if (value is! List) return const [];
+    return value.whereType<Map<String, dynamic>>().toList();
+  }
+
+  static String? _readString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      final str = value.toString().trim();
+      if (str.isNotEmpty) return str;
+    }
+    return null;
+  }
+
+  static DateTime? _readDate(Map<String, dynamic> json, List<String> keys) {
+    final value = _readString(json, keys);
+    if (value == null) return null;
+    return DateTime.tryParse(value);
+  }
+
+  static Map<String, dynamic>? _readMap(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is Map<String, dynamic>) return value;
+    }
+    return null;
+  }
+}
+
+class _RemoteEnvironment {
+  _RemoteEnvironment({required this.id, required this.name});
+
+  final String id;
+  final String name;
 }

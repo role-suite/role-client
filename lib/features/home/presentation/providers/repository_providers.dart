@@ -6,7 +6,6 @@ import 'package:relay/core/services/file_storage_service.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/core/services/relay_api/rest_relay_api_client.dart';
 import 'package:relay/core/services/workspace_service.dart';
-import 'package:relay/core/services/workspace_api/rest_workspace_client.dart';
 import 'package:relay/features/home/data/datasources/collection_data_source.dart';
 import 'package:relay/features/home/data/datasources/collection_local_data_source.dart';
 import 'package:relay/features/home/data/datasources/collection_remote_data_source.dart';
@@ -33,8 +32,7 @@ final collectionLocalDataSourceProvider = Provider<CollectionLocalDataSource>((r
 });
 
 RelayApiClient _createRelayApiClient(DataSourceConfig config) {
-  final workspace = RestWorkspaceClient(baseUrl: config.baseUrl, apiKey: config.apiKey);
-  return RestRelayApiClient(workspace);
+  return RestRelayApiClient(baseUrl: config.baseUrl, apiKey: config.apiKey);
 }
 
 final activeRelayApiClientProvider = Provider<RelayApiClient?>((ref) {

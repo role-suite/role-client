@@ -1,7 +1,6 @@
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/core/services/relay_api/rest_relay_api_client.dart';
-import 'package:relay/core/services/workspace_api/rest_workspace_client.dart';
 import 'package:relay/features/home/domain/repositories/collection_repository.dart';
 import 'package:relay/features/home/domain/repositories/environment_repository.dart';
 import 'package:relay/features/home/domain/repositories/request_repository.dart';
@@ -12,7 +11,7 @@ class SyncToRemoteService {
   SyncToRemoteService._();
 
   static RelayApiClient _createClient(DataSourceConfig config) {
-    return RestRelayApiClient(RestWorkspaceClient(baseUrl: config.baseUrl, apiKey: config.apiKey));
+    return RestRelayApiClient(baseUrl: config.baseUrl, apiKey: config.apiKey);
   }
 
   /// Syncs all local collections, their requests, and environments to the remote.
