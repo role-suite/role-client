@@ -26,6 +26,8 @@ import 'package:relay/core/presentation/widgets/variable_highlight_text.dart';
 
 const String _noEnvironmentMenuValue = '__menu_no_environment__';
 
+enum _ResponseBodyViewMode { pretty, raw, preview }
+
 class RequestRunnerPage extends ConsumerStatefulWidget {
   const RequestRunnerPage({super.key, required this.request, this.onDelete, this.startInEditMode = false});
 
@@ -43,6 +45,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
   DioException? _error;
   Duration? _duration;
   bool _isPermissionError = false;
+  _ResponseBodyViewMode _responseBodyViewMode = _ResponseBodyViewMode.pretty;
   late ApiRequestModel _currentRequest;
   bool _isEditing = false;
   bool _isSavingEdits = false;
@@ -125,11 +128,15 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     final runtimeHeaders = _buildHeadersFromControllers();
     final runtimeFormData = _buildFormDataFieldsFromControllers();
     final rawBodyText = _requestBodyController.text.trim();
+    final runtimeUrl = _urlController.text.trim();
     final request = _currentRequest.copyWith(
+      method: _selectedMethod,
+      urlTemplate: runtimeUrl.isEmpty ? _currentRequest.urlTemplate : runtimeUrl,
       headers: runtimeHeaders,
       formDataFields: runtimeFormData,
       body: rawBodyText.isEmpty ? null : rawBodyText,
       bodyType: _selectedBodyType,
+      environmentName: _selectedEnvironmentName,
     );
 
     // Use request's saved environment if it exists, otherwise use active environment
@@ -168,6 +175,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
       setState(() {
         _response = response;
         _duration = stopwatch.elapsed;
+        _responseBodyViewMode = _looksLikeHtmlResponse(response) ? _ResponseBodyViewMode.preview : _ResponseBodyViewMode.pretty;
       });
     } on DioException catch (e) {
       stopwatch.stop();
@@ -225,103 +233,195 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
         titleSpacing: 0,
         title: Row(
           children: [
-            MethodBadge(method: request.method),
+            MethodBadge(method: _selectedMethod),
             const SizedBox(width: 12),
             Expanded(child: Text(request.name, overflow: TextOverflow.ellipsis)),
           ],
         ),
-        actions: [
-          _buildEnvironmentAction(context, environmentsAsync, _selectedEnvironmentName),
-          const SizedBox(width: 8),
-          if (widget.onDelete != null) IconButton(tooltip: 'Delete request', icon: const Icon(Icons.delete_outline), onPressed: widget.onDelete),
-          IconButton(
-            tooltip: _isEditing ? 'Close editor' : 'Edit request',
-            icon: Icon(_isEditing ? Icons.edit_off : Icons.edit),
-            onPressed: _toggleEditingMode,
-          ),
-        ],
+        actions: const [],
       ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
+            constraints: const BoxConstraints(maxWidth: 1180),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // URL
-                    VariableHighlightText(
-                      text: request.urlTemplate,
-                      style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'monospace'),
-                    ),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildRequestComposerBar(context, environmentsAsync, envList),
+                  if (request.description != null && request.description!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    if (request.description != null && request.description!.isNotEmpty) ...[
-                      Text(request.description!, style: theme.textTheme.bodySmall),
-                      const SizedBox(height: 12),
-                    ],
-                    if (_isEditing) ...[_buildEditForm(context, environmentsAsync), const SizedBox(height: 24)],
-                    // Request/response details combined into a single tab controller
-                    Column(
-                      key: _responseSectionKey,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TabBar(
-                          controller: _tabController,
-                          isScrollable: true,
-                          labelColor: theme.colorScheme.primary,
-                          indicatorColor: theme.colorScheme.primary,
-                          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                          tabs: const [
-                            Tab(text: 'Request Body'),
-                            Tab(text: 'Request Headers'),
-                            Tab(text: 'Response Body'),
-                            Tab(text: 'Response Headers'),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Text(request.description!, style: theme.textTheme.bodySmall),
+                    ),
+                  ],
+                  if (_isEditing) ...[
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: SingleChildScrollView(controller: _scrollController, child: _buildEditForm(context, environmentsAsync)),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: Container(
+                        key: _responseSectionKey,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8)),
+                        ),
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: TabBar(
+                                controller: _tabController,
+                                isScrollable: true,
+                                dividerColor: Colors.transparent,
+                                labelColor: theme.colorScheme.primary,
+                                indicator: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.75)),
+                                ),
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                                tabs: const [
+                                  Tab(text: 'Request Body'),
+                                  Tab(text: 'Request Headers'),
+                                  Tab(text: 'Response Body'),
+                                  Tab(text: 'Response Headers'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: TabBarView(
+                                controller: _tabController,
+                                children: [
+                                  _buildRequestBodyTab(context, envList),
+                                  _buildRequestHeadersTab(context),
+                                  _buildResponseBodyTab(context),
+                                  _buildResponseHeadersTab(context),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 320,
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildRequestBodyTab(context, envList),
-                              _buildRequestHeadersTab(context),
-                              _buildResponseBodyTab(context),
-                              _buildResponseHeadersTab(context),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 24),
-                    // Send button + meta
+                    const SizedBox(height: 10),
                     Row(
                       children: [
-                        AppButton(label: _isSending ? 'Sending...' : 'Send', icon: Icons.play_arrow, onPressed: _isSending ? null : _sendRequest),
-                        if (!_isEditing) ...[
-                          const SizedBox(width: 8),
-                          AppButton(
-                            label: _isSavingEdits ? 'Saving...' : 'Save Changes',
-                            icon: Icons.save_outlined,
-                            onPressed: (_isSending || _isSavingEdits) ? null : () => _saveEdits(context),
-                          ),
-                        ],
-                        const SizedBox(width: 16),
                         if (_response != null || _error != null) _buildMetaInfo(context),
                         const Spacer(),
-                        if (_isSending) const SizedBox(width: 120, child: LinearProgressIndicator()),
+                        if (_isSending) const SizedBox(width: 160, child: LinearProgressIndicator()),
                       ],
                     ),
-                    const SizedBox(height: 16),
                   ],
-                ),
+                ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRequestComposerBar(BuildContext context, AsyncValue<List<EnvironmentModel>> environmentsAsync, List<EnvironmentModel>? envList) {
+    final theme = Theme.of(context);
+    final isCompact = MediaQuery.of(context).size.width < 840;
+
+    final methodSelector = SizedBox(
+      width: isCompact ? double.infinity : 130,
+      child: AppDropdown<HttpMethod>(
+        label: 'Method',
+        value: _selectedMethod,
+        isExpanded: true,
+        items: HttpMethod.values.map((method) => DropdownMenuItem(value: method, child: Text(method.name.toUpperCase()))).toList(),
+        onChanged: (value) {
+          if (value == null) return;
+          setState(() => _selectedMethod = value);
+        },
+      ),
+    );
+
+    final urlField = AppTextField(
+      controller: _urlController,
+      label: 'Request URL',
+      hint: 'https://api.example.com/endpoint',
+      keyboardType: TextInputType.url,
+      suffixIcon: _buildEnvVariableInsertButton(context, envList, _urlController, isDisabled: _isSending),
+    );
+
+    final actionRow = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        AppButton(label: _isSending ? 'Sending...' : 'Send', icon: Icons.play_arrow, onPressed: _isSending ? null : _sendRequest),
+        if (!_isEditing)
+          AppButton(
+            label: _isSavingEdits ? 'Saving...' : 'Save Changes',
+            icon: Icons.save_outlined,
+            onPressed: (_isSending || _isSavingEdits) ? null : () => _saveEdits(context),
+          ),
+        IconButton(
+          tooltip: _isEditing ? 'Close editor' : 'Edit request',
+          icon: Icon(_isEditing ? Icons.edit_off : Icons.edit),
+          onPressed: _toggleEditingMode,
+        ),
+      ],
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.85)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isCompact) ...[
+            methodSelector,
+            const SizedBox(height: 8),
+            urlField,
+            const SizedBox(height: 8),
+            Row(children: [Expanded(child: actionRow)]),
+          ] else ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                methodSelector,
+                const SizedBox(width: 10),
+                Expanded(child: urlField),
+                const SizedBox(width: 10),
+                actionRow,
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildEnvironmentAction(context, environmentsAsync, _selectedEnvironmentName),
+              const SizedBox(width: 8),
+              Chip(
+                label: Text('Body: ${_selectedBodyType.displayName}'),
+                backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                visualDensity: VisualDensity.compact,
+              ),
+              const Spacer(),
+              if (widget.onDelete != null) IconButton(tooltip: 'Delete request', icon: const Icon(Icons.delete_outline), onPressed: widget.onDelete),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1074,20 +1174,47 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     final statusCode = _response?.statusCode;
     final statusText = _response?.statusMessage;
 
-    final durationText = _duration != null ? '${_duration!.inMilliseconds} ms' : null;
+    final durationText = _duration != null ? '${_duration!.inMilliseconds} ms' : '--';
+    final sizeText = _response != null ? _formatBytes(_estimateResponseSizeInBytes(_response!.data)) : '--';
+    final statusValue = statusCode != null ? '$statusCode ${statusText ?? ''}'.trim() : '--';
+    final statusColor = statusCode == null
+        ? Theme.of(context).colorScheme.onSurfaceVariant
+        : (statusCode >= 200 && statusCode < 300 ? Colors.green : Colors.orange);
 
-    return Row(
-      children: [
-        if (statusCode != null) ...[
-          Text(
-            '$statusCode ${statusText ?? ''}'.trim(),
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: statusCode >= 200 && statusCode < 300 ? Colors.green : Colors.orange, fontWeight: FontWeight.w600),
+    Widget metricChip(String label, String value, {Color? valueColor}) {
+      final theme = Theme.of(context);
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8)),
+        ),
+        child: RichText(
+          text: TextSpan(
+            style: theme.textTheme.bodySmall,
+            children: [
+              TextSpan(
+                text: '$label: ',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              TextSpan(
+                text: value,
+                style: TextStyle(fontWeight: FontWeight.w700, color: valueColor ?? theme.colorScheme.onSurface),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-        ],
-        if (durationText != null) Text(durationText, style: Theme.of(context).textTheme.bodySmall),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        metricChip('Status', statusValue, valueColor: statusColor),
+        metricChip('Time', durationText),
+        metricChip('Size', sizeText),
       ],
     );
   }
@@ -1248,15 +1375,41 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
       return _buildStatusPanel(context, 'Send the request to see the response.', color: Theme.of(context).colorScheme.onSurfaceVariant);
     }
 
-    final isHtml = _isHtmlResponseBody();
+    final response = _response!;
+    final isHtml = _looksLikeHtmlResponse(response);
     final rawBody = _extractResponseBodyAsString();
-    if (isHtml && rawBody != null && rawBody.trim().isNotEmpty) {
-      return _buildHtmlPanel(context, rawBody);
+    final prettyBody = _prettifyContent(response.data);
+
+    final effectiveMode = _responseBodyViewMode == _ResponseBodyViewMode.preview && !isHtml ? _ResponseBodyViewMode.pretty : _responseBodyViewMode;
+
+    Widget content;
+    switch (effectiveMode) {
+      case _ResponseBodyViewMode.pretty:
+        final rendered = prettyBody.isEmpty ? (rawBody ?? '') : prettyBody;
+        content = _buildMonospacePanel(context, rendered.isEmpty ? 'No response body' : rendered, selectable: true);
+      case _ResponseBodyViewMode.raw:
+        final rendered = rawBody ?? prettyBody;
+        content = _buildMonospacePanel(context, rendered.isEmpty ? 'No response body' : rendered, selectable: true);
+      case _ResponseBodyViewMode.preview:
+        if (isHtml && rawBody != null && rawBody.trim().isNotEmpty) {
+          content = _buildHtmlPanel(context, rawBody);
+        } else {
+          content = _buildStatusPanel(
+            context,
+            'Preview is available for HTML responses only.',
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          );
+        }
     }
 
-    final bodyText = _prettifyContent(_response!.data);
-    final content = bodyText.isEmpty ? 'No response body' : bodyText;
-    return _buildMonospacePanel(context, content, selectable: true);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildResponseBodyModeSwitcher(context, canPreview: isHtml),
+        const SizedBox(height: 8),
+        Expanded(child: content),
+      ],
+    );
   }
 
   Widget _buildResponseHeadersTab(BuildContext context) {
@@ -1279,6 +1432,67 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     final headers = _response!.headers.map.map((key, values) => MapEntry(key, values.join(', ')));
     final content = headers.isEmpty ? 'No response headers' : _prettifyMap(headers);
     return _buildMonospacePanel(context, content, selectable: true);
+  }
+
+  Widget _buildResponseBodyModeSwitcher(BuildContext context, {required bool canPreview}) {
+    final selected = {_responseBodyViewMode};
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SegmentedButton<_ResponseBodyViewMode>(
+        segments: [
+          const ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.pretty, label: Text('Pretty')),
+          const ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.raw, label: Text('Raw')),
+          ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.preview, enabled: canPreview, label: const Text('Preview')),
+        ],
+        selected: selected,
+        onSelectionChanged: (modes) {
+          if (modes.isEmpty) return;
+          final mode = modes.first;
+          setState(() {
+            _responseBodyViewMode = mode;
+          });
+        },
+        showSelectedIcon: false,
+      ),
+    );
+  }
+
+  bool _looksLikeHtmlResponse(Response<dynamic> response) {
+    final contentType = response.headers.value('content-type')?.toLowerCase() ?? '';
+    if (contentType.contains('text/html') || contentType.contains('application/xhtml')) {
+      return true;
+    }
+
+    final body = _extractResponseBodyAsString();
+    if (body == null) {
+      return false;
+    }
+
+    final snippet = body.trimLeft().toLowerCase();
+    if (snippet.isEmpty) {
+      return false;
+    }
+
+    return snippet.startsWith('<!doctype html') || snippet.startsWith('<html') || (snippet.contains('<html') && snippet.contains('</html>'));
+  }
+
+  int _estimateResponseSizeInBytes(dynamic data) {
+    if (data == null) return 0;
+    if (data is List<int>) return data.length;
+    if (data is String) return utf8.encode(data).length;
+    try {
+      return utf8.encode(jsonEncode(data)).length;
+    } catch (_) {
+      return utf8.encode(data.toString()).length;
+    }
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    final kb = bytes / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(1)} KB';
+    final mb = kb / 1024;
+    return '${mb.toStringAsFixed(2)} MB';
   }
 
   Widget _buildPermissionErrorPanel(BuildContext context, String baseError) {
@@ -1361,29 +1575,6 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
         ),
       ),
     );
-  }
-
-  bool _isHtmlResponseBody() {
-    if (_response == null) {
-      return false;
-    }
-
-    final contentType = _response!.headers.value('content-type')?.toLowerCase() ?? '';
-    if (contentType.contains('text/html') || contentType.contains('application/xhtml')) {
-      return true;
-    }
-
-    final body = _extractResponseBodyAsString();
-    if (body == null) {
-      return false;
-    }
-
-    final snippet = body.trimLeft().toLowerCase();
-    if (snippet.isEmpty) {
-      return false;
-    }
-
-    return snippet.startsWith('<!doctype html') || snippet.startsWith('<html') || (snippet.contains('<html') && snippet.contains('</html>'));
   }
 
   String? _extractResponseBodyAsString() {
