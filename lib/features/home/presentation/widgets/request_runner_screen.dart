@@ -134,7 +134,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     debugPrint('Resolved URL: $resolvedUrl');
     debugPrint('Resolved headers: ${built.headers}');
     debugPrint('Resolved query params: $resolvedQueryParams');
-    debugPrint('Body: ${built.body}');
+    debugPrint('Body: ${_truncateForLog(built.body)}');
 
     final dio = ApiService.instance.dio;
 
@@ -159,7 +159,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
       debugPrint('  error: ${e.error}');
       debugPrint('  status code: ${e.response?.statusCode}');
       debugPrint('  status message: ${e.response?.statusMessage}');
-      debugPrint('  data: ${e.response?.data}');
+      debugPrint('  data: ${_truncateForLog(e.response?.data)}');
 
       // Detect macOS-style permission errors (Operation not permitted / errno = 1)
       bool permissionError = false;
@@ -1106,6 +1106,15 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
 
   String _prettifyMap(Map data) {
     return JsonUtils.pretty(data);
+  }
+
+  String _truncateForLog(Object? value, {int maxLength = 1200}) {
+    final text = value?.toString() ?? 'null';
+    if (text.length <= maxLength) {
+      return text;
+    }
+    final hiddenCount = text.length - maxLength;
+    return '${text.substring(0, maxLength)}... [truncated $hiddenCount chars]';
   }
 
   void _rebuildParamControllersFrom(ApiRequestModel request) {
