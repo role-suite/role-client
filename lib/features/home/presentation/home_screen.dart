@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/app_constants.dart';
+import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
@@ -26,13 +27,12 @@ import 'package:relay/features/home/collection/presentation/widgets/dialogs/dele
 import 'package:relay/features/home/environment/presentation/widgets/dialogs/delete_environment_dialog.dart';
 import 'package:relay/features/home/request/presentation/widgets/dialogs/delete_request_dialog.dart';
 import 'package:relay/features/home/environment/presentation/widgets/dialogs/environment_dialog.dart';
+import 'package:relay/features/home/presentation/widgets/dialogs/data_source_config_dialog.dart';
 import 'package:relay/features/home/request/presentation/widgets/request_runner_screen.dart';
 import 'package:relay/features/home/presentation/providers/update_providers.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/update_dialog.dart';
-
-import '../../../core/presentation/layout/max_width_layout.dart';
-import '../../../core/presentation/layout/scaffold.dart';
-import '../../../core/presentation/widgets/app_button.dart';
+import 'package:relay/features/request_chain/presentation/request_chain_config_screen.dart';
+import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
 import '../../../core/presentation/widgets/loading_indicator.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -44,6 +44,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _hasCheckedForUpdates = false;
+  String _requestSearchQuery = '';
+  static const int _navHttp = 0;
+  int _activeTopNav = _navHttp;
 
   @override
   Widget build(BuildContext context) {
@@ -72,85 +75,476 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final activeEnvName = ref.watch(activeEnvironmentNameProvider);
     final isMobileLayout = MediaQuery.of(context).size.width < 600;
 
-    return AppScaffold(
-      title: AppConstants.appName,
-      drawer: HomeDrawer(
-        onCreateCollection: () => _openCreateCollectionDialog(context),
-        onCreateEnvironment: () => _openCreateEnvironmentDialog(context),
-        onImportWorkspace: () => _handleImportWorkspace(context, ref),
-        onExportWorkspace: () => _handleExportWorkspace(context, ref),
-      ),
-      actions: [
-        // Collection selector
-        collectionsAsync.when(
-          data: (collections) => CollectionSelector(
-            collections: collections,
-            selectedCollectionId: selectedCollectionId,
-            onSelect: (id) {
-              ref.read(selectedCollectionIdProvider.notifier).select(id);
-            },
-            onDelete: (collection) => _onDeleteCollection(context, collection),
-            iconOnly: isMobileLayout,
-          ),
-          loading: () => const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (_, _) => const SizedBox.shrink(),
+    final requestBody = filteredRequestsAsync.when(
+      data: (filteredRequests) {
+        final visibleRequests = filteredRequests.where((request) {
+          if (_requestSearchQuery.trim().isEmpty) {
+            return true;
+          }
+          final q = _requestSearchQuery.toLowerCase();
+          return request.name.toLowerCase().contains(q) ||
+              request.urlTemplate.toLowerCase().contains(q) ||
+              request.method.name.toLowerCase().contains(q);
+        }).toList();
+
+        if (visibleRequests.isEmpty) {
+          return HomeEmptyState(
+            onCreateRequest: () => _openCreateRequestDialog(context, selectedCollectionId),
+            title: filteredRequests.isEmpty ? 'No Requests Yet' : 'No Results',
+            message: filteredRequests.isEmpty
+                ? 'Create your first request to start building and testing APIs.'
+                : 'Try another search term or clear your filters to see more requests.',
+          );
+        }
+
+        return HomeRequestsList(
+          requests: visibleRequests,
+          onTapRequest: (request) => _showRequestDetails(context, ref, request),
+          onEditRequest: (request) => _showRequestDetails(context, ref, request, startInEditMode: true),
+        );
+      },
+      loading: () => const LoadingIndicator(message: 'Loading requests...'),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Error loading requests: $error'),
+            const SizedBox(height: 16),
+            FilledButton(onPressed: () => ref.read(requestsNotifierProvider.notifier).refresh(), child: const Text('Retry')),
+          ],
         ),
-        const SizedBox(width: 8),
-        // Environment selector
-        environmentsAsync.when(
-          data: (envs) => EnvironmentSelector(
-            envs: envs,
-            activeEnvName: activeEnvName,
-            onSelect: (name) {
-              if (name != null && name.startsWith('__action__')) {
-                // Handle special actions
-                return;
-              }
-              ref.read(activeEnvironmentNameProvider.notifier).setActiveName(name);
-              ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
-            },
-            onEdit: (env) => _openEditEnvironmentDialog(context, env),
-            onDelete: (env) => _onDeleteEnvironment(context, env),
-            iconOnly: isMobileLayout,
-          ),
-          loading: () => const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (_, _) => const SizedBox.shrink(),
-        ),
-        const SizedBox(width: 8),
-      ],
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openCreateRequestDialog(context, selectedCollectionId),
-        icon: const Icon(Icons.add),
-        label: const Text('New Request'),
       ),
-      body: MaxWidthLayout(
-        maxWidth: 1200,
-        child: filteredRequestsAsync.when(
-          data: (filteredRequests) => filteredRequests.isEmpty
-              ? HomeEmptyState(onCreateRequest: () => _openCreateRequestDialog(context, selectedCollectionId))
-              : HomeRequestsList(
-                  requests: filteredRequests,
-                  onTapRequest: (request) => _showRequestDetails(context, ref, request),
-                  onEditRequest: (request) => _showRequestDetails(context, ref, request, startInEditMode: true),
+    );
+
+    final drawer = HomeDrawer(
+      onCreateCollection: () => _openCreateCollectionDialog(context),
+      onCreateEnvironment: () => _openCreateEnvironmentDialog(context),
+      onImportWorkspace: () => _handleImportWorkspace(context, ref),
+      onExportWorkspace: () => _handleExportWorkspace(context, ref),
+    );
+
+    return Scaffold(
+      drawer: isMobileLayout ? drawer : null,
+      floatingActionButton: isMobileLayout
+          ? FloatingActionButton.extended(
+              onPressed: () => _openCreateRequestDialog(context, selectedCollectionId),
+              icon: const Icon(Icons.add),
+              label: const Text('New Request'),
+            )
+          : null,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTopToolbar(context, isMobileLayout, collectionsAsync, environmentsAsync, selectedCollectionId, activeEnvName),
+            Expanded(
+              child: isMobileLayout
+                  ? requestBody
+                  : Row(
+                      children: [
+                        _buildWorkspaceSidebar(context, collectionsAsync, environmentsAsync, selectedCollectionId, activeEnvName),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 12, 16, 16),
+                            child: Column(
+                              children: [
+                                _buildRequestListHeader(context, selectedCollectionId),
+                                const SizedBox(height: 10),
+                                Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.8)),
+                                    ),
+                                    child: requestBody,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopToolbar(
+    BuildContext context,
+    bool isMobileLayout,
+    AsyncValue<List<CollectionModel>> collectionsAsync,
+    AsyncValue<List<EnvironmentModel>> environmentsAsync,
+    String? selectedCollectionId,
+    String? activeEnvName,
+  ) {
+    final theme = Theme.of(context);
+    return Container(
+      height: 58,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: theme.brightness == Brightness.dark ? const Color(0xFF161A20) : const Color(0xFFF7F8FA),
+        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8))),
+      ),
+      child: Row(
+        children: [
+          if (isMobileLayout)
+            Builder(
+              builder: (context) =>
+                  IconButton(icon: const Icon(Icons.menu), tooltip: 'Open menu', onPressed: () => Scaffold.of(context).openDrawer()),
+            ),
+          const SizedBox(width: 6),
+          Text(AppConstants.appName, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+          const SizedBox(width: 12),
+          if (!isMobileLayout) ...[
+            _topChip(context, Icons.http, 'HTTP', selected: _activeTopNav == _navHttp, onTap: () => setState(() => _activeTopNav = _navHttp)),
+            const SizedBox(width: 8),
+            _topChip(
+              context,
+              Icons.play_circle_outline,
+              'Runner',
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionRunnerScreen()));
+              },
+            ),
+            const SizedBox(width: 8),
+            _topChip(
+              context,
+              Icons.account_tree_outlined,
+              'Flows',
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RequestChainConfigScreen()));
+              },
+            ),
+            const SizedBox(width: 10),
+            _topCompactAction(context, icon: Icons.file_download_outlined, label: 'Import', onTap: () => _handleImportWorkspace(context, ref)),
+            const SizedBox(width: 6),
+            _topCompactAction(context, icon: Icons.file_upload_outlined, label: 'Export', onTap: () => _handleExportWorkspace(context, ref)),
+            const SizedBox(width: 6),
+            _topCompactAction(context, icon: Icons.add_box_outlined, label: 'Collection', onTap: () => _openCreateCollectionDialog(context)),
+            const SizedBox(width: 6),
+            _topCompactAction(context, icon: Icons.add_circle_outline, label: 'Environment', onTap: () => _openCreateEnvironmentDialog(context)),
+          ],
+          const Spacer(),
+          if (!isMobileLayout) ...[
+            const SizedBox.shrink(),
+          ] else ...[
+            collectionsAsync.when(
+              data: (collections) => CollectionSelector(
+                collections: collections,
+                selectedCollectionId: selectedCollectionId,
+                onSelect: (id) {
+                  ref.read(selectedCollectionIdProvider.notifier).select(id);
+                },
+                onDelete: (collection) => _onDeleteCollection(context, collection),
+                iconOnly: true,
+              ),
+              loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
+            IconButton(tooltip: 'Create collection', onPressed: () => _openCreateCollectionDialog(context), icon: const Icon(Icons.add_box_outlined)),
+            const SizedBox(width: 4),
+            environmentsAsync.when(
+              data: (envs) => EnvironmentSelector(
+                envs: envs,
+                activeEnvName: activeEnvName,
+                onSelect: (name) {
+                  if (name != null && name.startsWith('__action__')) {
+                    return;
+                  }
+                  ref.read(activeEnvironmentNameProvider.notifier).setActiveName(name);
+                  ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
+                },
+                onEdit: (env) => _openEditEnvironmentDialog(context, env),
+                onDelete: (env) => _onDeleteEnvironment(context, env),
+                iconOnly: true,
+              ),
+              loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
+            IconButton(
+              tooltip: 'Create environment',
+              onPressed: () => _openCreateEnvironmentDialog(context),
+              icon: const Icon(Icons.add_circle_outline),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _topChip(BuildContext context, IconData icon, String label, {required VoidCallback onTap, bool selected = false}) {
+    final theme = Theme.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35) : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: selected ? theme.colorScheme.primary.withValues(alpha: 0.6) : theme.colorScheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _topCompactAction(BuildContext context, {required IconData icon, required String label, required VoidCallback onTap}) {
+    final theme = Theme.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.9)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Text(label, style: theme.textTheme.labelSmall),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkspaceSidebar(
+    BuildContext context,
+    AsyncValue<List<CollectionModel>> collectionsAsync,
+    AsyncValue<List<EnvironmentModel>> environmentsAsync,
+    String? selectedCollectionId,
+    String? activeEnvName,
+  ) {
+    final theme = Theme.of(context);
+
+    Widget sectionCard({required String title, required Widget child}) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.9)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: theme.textTheme.labelLarge),
+            const SizedBox(height: 8),
+            child,
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: 300,
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: theme.brightness == Brightness.dark ? const Color(0xFF101318) : const Color(0xFFFBFCFD),
+        border: Border(right: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8))),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton.icon(
+              onPressed: () => _openCreateRequestDialog(context, selectedCollectionId),
+              icon: const Icon(Icons.add),
+              label: const Text('New Request'),
+            ),
+            const SizedBox(height: 10),
+            sectionCard(
+              title: 'Collection',
+              child: collectionsAsync.when(
+                data: (collections) => CollectionSelector(
+                  collections: collections,
+                  selectedCollectionId: selectedCollectionId,
+                  onSelect: (id) => ref.read(selectedCollectionIdProvider.notifier).select(id),
+                  onDelete: (collection) => _onDeleteCollection(context, collection),
                 ),
-          loading: () => const LoadingIndicator(message: 'Loading requests...'),
-          error: (error, stack) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+                loading: () => const SizedBox(height: 36, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+                error: (_, _) => Text('Failed to load collections', style: theme.textTheme.bodySmall),
+              ),
+            ),
+            sectionCard(
+              title: 'Environment',
+              child: environmentsAsync.when(
+                data: (envs) => EnvironmentSelector(
+                  envs: envs,
+                  activeEnvName: activeEnvName,
+                  onSelect: (name) {
+                    if (name != null && name.startsWith('__action__')) return;
+                    ref.read(activeEnvironmentNameProvider.notifier).setActiveName(name);
+                    ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
+                  },
+                  onEdit: (env) => _openEditEnvironmentDialog(context, env),
+                  onDelete: (env) => _onDeleteEnvironment(context, env),
+                ),
+                loading: () => const SizedBox(height: 36, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+                error: (_, _) => Text('Failed to load environments', style: theme.textTheme.bodySmall),
+              ),
+            ),
+            sectionCard(title: 'Data Source', child: _buildDesktopDataSourceCard(context)),
+            sectionCard(title: 'Appearance', child: _buildDesktopThemeCard(context)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopDataSourceCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final state = ref.watch(dataSourceStateNotifierProvider);
+
+    return state.when(
+      loading: () => const SizedBox(height: 36, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+      error: (_, _) => Text('Data source unavailable. Using local.', style: theme.textTheme.bodySmall),
+      data: (s) {
+        final isApi = s.mode == DataSourceMode.api;
+        final configValid = s.config.isValid;
+
+        Future<void> switchMode(DataSourceMode mode) async {
+          if (mode == DataSourceMode.api && !configValid) {
+            if (!context.mounted) return;
+            await showDialog<void>(
+              context: context,
+              builder: (_) => DataSourceConfigDialog(initialConfig: s.config),
+            );
+            final latest = ref.read(dataSourceStateNotifierProvider).asData?.value;
+            if (!(latest?.config.isValid ?? false)) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('API source is not configured. Kept Local mode.')));
+              }
+              return;
+            }
+          }
+
+          await ref.read(dataSourceStateNotifierProvider.notifier).setMode(mode);
+          _invalidateWorkspaceProviders();
+          await _resetSelectionAndEnvironment();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Text('Error loading requests: $error'),
-                const SizedBox(height: 16),
-                AppButton(label: 'Retry', onPressed: () => ref.read(requestsNotifierProvider.notifier).refresh()),
+                ChoiceChip(label: const Text('Local'), selected: !isApi, onSelected: (_) => switchMode(DataSourceMode.local)),
+                ChoiceChip(label: const Text('API'), selected: isApi, onSelected: (_) => switchMode(DataSourceMode.api)),
               ],
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              isApi
+                  ? (configValid ? 'Connected to ${_shortUrl(s.config.baseUrl)}' : 'API selected but not configured')
+                  : 'Using local workspace storage',
+              style: theme.textTheme.bodySmall,
+            ),
+            if (isApi || !configValid)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => DataSourceConfigDialog(initialConfig: s.config),
+                  ),
+                  icon: const Icon(Icons.settings, size: 16),
+                  label: const Text('Configure'),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopThemeCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    final themeMode = ref.watch(themeModeNotifierProvider);
+    final isSystemMode = themeMode == ThemeMode.system;
+    final isDark = themeMode == ThemeMode.dark || (isSystemMode && mediaQuery.platformBrightness == Brightness.dark);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(isDark ? Icons.nightlight_round : Icons.wb_sunny_outlined, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(child: Text(isSystemMode ? 'System theme' : (isDark ? 'Dark theme' : 'Light theme'), style: theme.textTheme.bodySmall)),
+            Switch.adaptive(
+              value: isDark,
+              onChanged: (value) => ref.read(themeModeNotifierProvider.notifier).setThemeMode(value ? ThemeMode.dark : ThemeMode.light),
+            ),
+          ],
         ),
+        if (!isSystemMode)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => ref.read(themeModeNotifierProvider.notifier).setThemeMode(ThemeMode.system),
+              child: const Text('Use system'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRequestListHeader(BuildContext context, String? selectedCollectionId) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              onChanged: (value) => setState(() => _requestSearchQuery = value),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Search requests by name, URL, method...',
+                prefixIcon: const Icon(Icons.search, size: 18),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          FilledButton.icon(
+            onPressed: () => _openCreateRequestDialog(context, selectedCollectionId),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('New'),
+          ),
+        ],
       ),
     );
   }
@@ -366,6 +760,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.read(collectionsNotifierProvider.notifier).refresh();
     ref.read(requestsNotifierProvider.notifier).refresh();
     ref.read(environmentsNotifierProvider.notifier).refresh();
+  }
+
+  void _invalidateWorkspaceProviders() {
+    ref.invalidate(collectionsNotifierProvider);
+    ref.invalidate(requestsNotifierProvider);
+    ref.invalidate(environmentsNotifierProvider);
+    ref.invalidate(activeEnvironmentNotifierProvider);
+  }
+
+  Future<void> _resetSelectionAndEnvironment() async {
+    ref.read(selectedCollectionIdProvider.notifier).select('default');
+    await ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
+    ref.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
+  }
+
+  String _shortUrl(String url) {
+    if (url.length <= 40) return url;
+    return '${url.substring(0, 20)}...${url.substring(url.length - 15)}';
   }
 
   String _generateUniqueName(String baseName, Iterable<String> existingNames) {

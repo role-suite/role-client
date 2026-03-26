@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/api_request_model.dart';
 
-import 'package:relay/core/presentation/widgets/app_card.dart';
 import 'package:relay/core/presentation/widgets/method_badge.dart';
 
 class HomeRequestsView extends ConsumerWidget {
@@ -40,21 +39,38 @@ class HomeRequestsView extends ConsumerWidget {
                     },
                   ),
                 },
-                child: AppCard(
-                  margin: const EdgeInsets.only(bottom: 12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
                   onTap: () => onTapRequest(request),
-                  actions: [
-                    Tooltip(
-                      message: 'Run request "${request.name}"',
-                      child: IconButton(icon: const Icon(Icons.play_arrow), onPressed: () => onTapRequest(request), tooltip: 'Run'),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Theme.of(context).colorScheme.surface,
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.7)),
                     ),
-                    if (onEditRequest != null)
-                      Tooltip(
-                        message: 'Edit request "${request.name}"',
-                        child: IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => onEditRequest!(request), tooltip: 'Edit'),
-                      ),
-                  ],
-                  child: _RequestCardContent(request: request),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _RequestCardContent(request: request)),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.play_arrow),
+                          onPressed: () => onTapRequest(request),
+                          tooltip: 'Run',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        if (onEditRequest != null)
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () => onEditRequest!(request),
+                            tooltip: 'Edit',
+                            visualDensity: VisualDensity.compact,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
