@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/features/home/presentation/providers/environment_providers.dart';
+import 'package:relay/features/home/environment/presentation/providers/environment_providers.dart';
 import 'package:relay/features/home/presentation/providers/home_ui_providers.dart';
 
 void main() {

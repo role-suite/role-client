@@ -1,18 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/features/home/domain/usecases/create_collection_usecase.dart';
-import 'package:relay/features/home/domain/usecases/create_environment_usecase.dart';
-import 'package:relay/features/home/domain/usecases/create_request_usecase.dart';
-import 'package:relay/features/home/domain/usecases/delete_collection_usecase.dart';
-import 'package:relay/features/home/domain/usecases/delete_environment_usecase.dart';
-import 'package:relay/features/home/domain/usecases/delete_request_usecase.dart';
-import 'package:relay/features/home/domain/usecases/get_active_environment_usecase.dart';
-import 'package:relay/features/home/domain/usecases/get_all_collections_usecase.dart';
-import 'package:relay/features/home/domain/usecases/get_all_environments_usecase.dart';
-import 'package:relay/features/home/domain/usecases/get_all_requests_usecase.dart';
-import 'package:relay/features/home/domain/usecases/get_requests_by_collection_usecase.dart';
-import 'package:relay/features/home/domain/usecases/set_active_environment_usecase.dart';
-import 'package:relay/features/home/domain/usecases/update_environment_usecase.dart';
-import 'package:relay/features/home/domain/usecases/update_request_usecase.dart';
+import 'package:relay/features/home/collection/domain/usecases/create_collection_usecase.dart';
+import 'package:relay/features/home/environment/domain/usecases/create_environment_usecase.dart';
+import 'package:relay/features/home/request/domain/usecases/create_request_usecase.dart';
+import 'package:relay/features/home/collection/domain/usecases/delete_collection_usecase.dart';
+import 'package:relay/features/home/environment/domain/usecases/delete_environment_usecase.dart';
+import 'package:relay/features/home/request/domain/usecases/delete_request_usecase.dart';
+import 'package:relay/features/home/environment/domain/usecases/get_active_environment_usecase.dart';
+import 'package:relay/features/home/collection/domain/usecases/get_all_collections_usecase.dart';
+import 'package:relay/features/home/environment/domain/usecases/get_all_environments_usecase.dart';
+import 'package:relay/features/home/request/domain/usecases/get_all_requests_usecase.dart';
+import 'package:relay/features/home/request/domain/usecases/get_requests_by_collection_usecase.dart';
+import 'package:relay/features/home/environment/domain/usecases/set_active_environment_usecase.dart';
+import 'package:relay/features/home/environment/domain/usecases/update_environment_usecase.dart';
+import 'package:relay/features/home/request/domain/usecases/update_request_usecase.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 
 /// Provider for GetAllRequestsUseCase

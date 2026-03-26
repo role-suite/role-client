@@ -1,9 +1,9 @@
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/core/services/relay_api/rest_relay_api_client.dart';
-import 'package:relay/features/home/domain/repositories/collection_repository.dart';
-import 'package:relay/features/home/domain/repositories/environment_repository.dart';
-import 'package:relay/features/home/domain/repositories/request_repository.dart';
+import 'package:relay/features/home/collection/domain/repositories/collection_repository.dart';
+import 'package:relay/features/home/environment/domain/repositories/environment_repository.dart';
+import 'package:relay/features/home/request/domain/repositories/request_repository.dart';
 
 /// Pushes local collections, requests, and environments to a remote API.
 /// Use when the app is in local mode to sync data to the configured remote.

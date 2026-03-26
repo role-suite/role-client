@@ -1,9 +1,9 @@
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
-import 'package:relay/features/home/domain/repositories/collection_repository.dart';
-import 'package:relay/features/home/domain/repositories/environment_repository.dart';
-import 'package:relay/features/home/domain/repositories/request_repository.dart';
+import 'package:relay/features/home/collection/domain/repositories/collection_repository.dart';
+import 'package:relay/features/home/environment/domain/repositories/environment_repository.dart';
+import 'package:relay/features/home/request/domain/repositories/request_repository.dart';
 
 class FakeCollectionRepository implements CollectionRepository {
   FakeCollectionRepository({List<CollectionModel>? initialCollections, this.throwOnGetAll = false}) : _collections = [...?initialCollections];

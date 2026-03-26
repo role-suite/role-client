@@ -6,10 +6,10 @@ import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/utils/extension.dart';
-import 'package:relay/features/home/presentation/providers/collection_providers.dart';
-import 'package:relay/features/home/presentation/providers/environment_providers.dart';
+import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
+import 'package:relay/features/home/environment/presentation/providers/environment_providers.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
-import 'package:relay/features/home/presentation/providers/request_providers.dart';
+import 'package:relay/features/home/request/presentation/providers/request_providers.dart';
 
 import '../test_helpers/fake_home_repositories.dart';
 
