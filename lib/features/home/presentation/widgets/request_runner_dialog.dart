@@ -42,7 +42,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     });
 
     final envRepository = ref.read(environmentRepositoryProvider);
-    
+
     // Use request's saved environment if it exists, otherwise use active environment
     EnvironmentModel? environment;
     if (widget.request.environmentName != null) {
@@ -52,9 +52,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
 
     String resolve(String s) => envRepository.resolveTemplate(s, environment);
     final resolvedUrl = resolve(widget.request.urlTemplate);
-    final resolvedQueryParams = <String, String>{
-      for (final entry in widget.request.queryParams.entries) entry.key: resolve(entry.value),
-    };
+    final resolvedQueryParams = <String, String>{for (final entry in widget.request.queryParams.entries) entry.key: resolve(entry.value)};
     final built = RequestBuildHelper.buildForSend(widget.request, resolve, rawBody: widget.request.body);
 
     debugPrint('==== Relay Request ====');
@@ -276,7 +274,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
 
     final bodyText = _prettifyContent(_response!.data);
     final content = bodyText.isEmpty ? 'No response body' : bodyText;
-    return _buildMonospacePanel(context, content);
+    return _buildMonospacePanel(context, content, selectable: true);
   }
 
   Widget _buildResponseHeadersTab(BuildContext context) {
@@ -298,7 +296,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
 
     final headers = _response!.headers.map.map((key, values) => MapEntry(key, values.join(', ')));
     final content = headers.isEmpty ? 'No response headers' : _prettifyMap(headers);
-    return _buildMonospacePanel(context, content);
+    return _buildMonospacePanel(context, content, selectable: true);
   }
 
   Widget _buildPermissionErrorPanel(BuildContext context, String baseError) {
@@ -338,13 +336,14 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     );
   }
 
-  Widget _buildMonospacePanel(BuildContext context, String content) {
+  Widget _buildMonospacePanel(BuildContext context, String content, {bool selectable = false}) {
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
         child: VariableHighlightText(
           text: content,
           style: const TextStyle(fontFamily: 'monospace'),
+          selectable: selectable,
         ),
       ),
     );

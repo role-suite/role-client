@@ -949,7 +949,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
 
     final bodyText = _prettifyContent(_response!.data);
     final content = bodyText.isEmpty ? 'No response body' : bodyText;
-    return _buildMonospacePanel(context, content);
+    return _buildMonospacePanel(context, content, selectable: true);
   }
 
   Widget _buildResponseHeadersTab(BuildContext context) {
@@ -971,7 +971,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
 
     final headers = _response!.headers.map.map((key, values) => MapEntry(key, values.join(', ')));
     final content = headers.isEmpty ? 'No response headers' : _prettifyMap(headers);
-    return _buildMonospacePanel(context, content);
+    return _buildMonospacePanel(context, content, selectable: true);
   }
 
   Widget _buildPermissionErrorPanel(BuildContext context, String baseError) {
@@ -1011,13 +1011,14 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
     );
   }
 
-  Widget _buildMonospacePanel(BuildContext context, String content) {
+  Widget _buildMonospacePanel(BuildContext context, String content, {bool selectable = false}) {
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
         child: VariableHighlightText(
           text: content,
           style: const TextStyle(fontFamily: 'monospace'),
+          selectable: selectable,
         ),
       ),
     );
