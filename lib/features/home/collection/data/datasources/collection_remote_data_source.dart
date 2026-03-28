@@ -31,12 +31,21 @@ class CollectionRemoteDataSource implements CollectionDataSource {
 
   @override
   Future<void> saveCollection(CollectionModel collection) async {
+    if (!_isPersistedApiId(collection.id)) {
+      await _api.createCollection(collection);
+      return;
+    }
+
     final existing = await getCollectionById(collection.id);
     if (existing == null) {
       await _api.createCollection(collection);
     } else {
       await _api.updateCollection(collection);
     }
+  }
+
+  bool _isPersistedApiId(String id) {
+    return int.tryParse(id.trim()) != null;
   }
 
   @override

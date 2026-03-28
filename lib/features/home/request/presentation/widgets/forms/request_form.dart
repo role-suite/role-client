@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/request_enums.dart';
@@ -19,6 +20,8 @@ class RequestForm extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
+    final dataSourceState = ref.watch(currentDataSourceStateProvider);
+    final isApiMode = dataSourceState?.mode == DataSourceMode.api;
     final environments = environmentsAsync.asData?.value;
     final isCompact = MediaQuery.of(context).size.width < 600;
 
@@ -334,14 +337,26 @@ class RequestForm extends ConsumerWidget {
             const SizedBox(height: 16),
             collectionsAsync.when(
               data: (collections) {
-                final allCollections = [
-                  if (!collections.any((c) => c.id == 'default'))
-                    CollectionModel(id: 'default', name: 'Default', createdAt: DateTime.now(), updatedAt: DateTime.now()),
-                  ...collections,
-                ];
+                final allCollections = [...collections];
+                if (!isApiMode && !allCollections.any((c) => c.id == 'default')) {
+                  allCollections.insert(0, CollectionModel(id: 'default', name: 'Default', createdAt: DateTime.now(), updatedAt: DateTime.now()));
+                }
+
+                if (allCollections.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                final currentSelection = controller.selectedCollectionId;
+                final resolvedSelection = allCollections.any((c) => c.id == currentSelection) ? currentSelection : allCollections.first.id;
+                if (resolvedSelection != currentSelection) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    controller.selectedCollectionId = resolvedSelection;
+                  });
+                }
+
                 return AppDropdown<String>(
                   label: 'Collection',
-                  value: controller.selectedCollectionId ?? 'default',
+                  value: resolvedSelection,
                   items: allCollections
                       .map(
                         (collection) =>

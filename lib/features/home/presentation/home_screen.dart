@@ -28,6 +28,7 @@ import 'package:relay/features/home/environment/presentation/widgets/dialogs/del
 import 'package:relay/features/home/request/presentation/widgets/dialogs/delete_request_dialog.dart';
 import 'package:relay/features/home/environment/presentation/widgets/dialogs/environment_dialog.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/data_source_config_dialog.dart';
+import 'package:relay/features/home/presentation/utils/api_auth_flow.dart';
 import 'package:relay/features/home/request/presentation/widgets/request_runner_screen.dart';
 import 'package:relay/features/home/presentation/providers/update_providers.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/update_dialog.dart';
@@ -70,10 +71,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final selectedCollectionId = ref.watch(selectedCollectionIdProvider);
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
+    final dataSourceState = ref.watch(currentDataSourceStateProvider);
     final filteredRequestsAsync = ref.watch(filteredRequestsProvider);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
     final activeEnvName = ref.watch(activeEnvironmentNameProvider);
     final isMobileLayout = MediaQuery.of(context).size.width < 600;
+
+    final loadedCollections = collectionsAsync.asData?.value;
+    if (loadedCollections != null && loadedCollections.isNotEmpty) {
+      final selectedExists = selectedCollectionId != null && loadedCollections.any((c) => c.id == selectedCollectionId);
+      if (!selectedExists) {
+        final preferredId = dataSourceState?.mode == DataSourceMode.api
+            ? loadedCollections.first.id
+            : (loadedCollections.any((c) => c.id == 'default') ? 'default' : loadedCollections.first.id);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(selectedCollectionIdProvider.notifier).select(preferredId);
+        });
+      }
+    }
 
     final requestBody = filteredRequestsAsync.when(
       data: (filteredRequests) {
@@ -439,6 +455,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             }
           }
 
+          if (mode == DataSourceMode.api) {
+            if (!context.mounted) return;
+            final latest = ref.read(dataSourceStateNotifierProvider).asData?.value;
+            final currentConfig = latest?.config ?? s.config;
+            final isAuthenticated = await ensureApiSourceAuthenticated(context, ref, currentConfig);
+            if (!isAuthenticated) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in required to use API source. Kept Local mode.')));
+              }
+              return;
+            }
+          }
+
           await ref.read(dataSourceStateNotifierProvider.notifier).setMode(mode);
           _invalidateWorkspaceProviders();
           await _resetSelectionAndEnvironment();
@@ -770,7 +799,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _resetSelectionAndEnvironment() async {
-    ref.read(selectedCollectionIdProvider.notifier).select('default');
+    ref.read(selectedCollectionIdProvider.notifier).select(null);
     await ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
     ref.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
   }

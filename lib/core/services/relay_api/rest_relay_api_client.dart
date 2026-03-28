@@ -57,7 +57,7 @@ class RestRelayApiClient implements RelayApiClient {
     final output = <EnvironmentModel>[];
 
     for (final env in envList) {
-      final id = _readString(env, ['id']);
+      final id = _readString(env, ['id', '_id']);
       final name = _readString(env, ['name']);
       if (id == null || name == null) continue;
       final vars = await _http.get('/api/workspaces/$workspaceId/environments/$id/variables');
@@ -83,7 +83,7 @@ class RestRelayApiClient implements RelayApiClient {
     final workspaceId = await _http.resolveWorkspaceId();
     final created = await _http.post('/api/workspaces/$workspaceId/environments', data: {'name': environment.name});
     if (created is! Map<String, dynamic>) return;
-    final envId = _readString(created, ['id']);
+    final envId = _readString(created, ['id', '_id']);
     if (envId == null) return;
     await _replaceEnvironmentVariables(workspaceId, envId, environment.variables);
   }
@@ -157,7 +157,7 @@ class RestRelayApiClient implements RelayApiClient {
     for (final env in envList) {
       final envName = _readString(env, ['name']);
       if (envName != name) continue;
-      final envId = _readString(env, ['id']);
+      final envId = _readString(env, ['id', '_id']);
       if (envId == null) return null;
       return _RemoteEnvironment(id: envId, name: envName!);
     }
@@ -185,7 +185,7 @@ class RestRelayApiClient implements RelayApiClient {
   static CollectionModel _collectionFromApi(Map<String, dynamic> json) {
     final now = DateTime.now();
     return CollectionModel(
-      id: _readString(json, ['id']) ?? 'unknown',
+      id: _readString(json, ['id', '_id']) ?? 'unknown',
       name: _readString(json, ['name']) ?? 'Collection',
       description: _readString(json, ['description']) ?? '',
       createdAt: _readDate(json, ['createdAt', 'created_at']) ?? now,
@@ -198,7 +198,7 @@ class RestRelayApiClient implements RelayApiClient {
     final body = _readMap(json, ['body']);
     final auth = _readMap(json, ['auth']);
     return ApiRequestModel(
-      id: _readString(json, ['id']) ?? 'unknown',
+      id: _readString(json, ['id', '_id']) ?? 'unknown',
       name: _readString(json, ['name']) ?? 'Request',
       method: HttpMethodX.fromString(_readString(json, ['method']) ?? 'GET'),
       urlTemplate: _readString(json, ['url', 'urlTemplate']) ?? '',

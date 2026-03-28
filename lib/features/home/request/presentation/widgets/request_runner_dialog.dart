@@ -361,13 +361,20 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
 
   Widget _buildHtmlPanel(BuildContext context, String html) {
     final theme = Theme.of(context);
+    final hasTableTag = RegExp(r'<\s*table[\s>]', caseSensitive: false).hasMatch(html);
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HtmlWidget(html, textStyle: theme.textTheme.bodyMedium),
+            if (hasTableTag)
+              Text(
+                'HTML preview is unavailable for responses containing table markup. Use Raw to inspect the response body.',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              )
+            else
+              HtmlWidget(html, textStyle: theme.textTheme.bodyMedium),
             const SizedBox(height: 12),
             Divider(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 8),

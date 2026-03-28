@@ -12,7 +12,7 @@ class RequestFormController extends ChangeNotifier {
     _urlController = TextEditingController(text: initialRequest?.urlTemplate ?? '');
     _bodyController = TextEditingController(text: initialRequest?.body ?? '');
     _selectedMethod = initialRequest?.method ?? HttpMethod.get;
-    _selectedCollectionId = initialRequest?.collectionId ?? initialCollectionId ?? 'default';
+    _selectedCollectionId = initialRequest?.collectionId ?? initialCollectionId;
     _selectedEnvironmentName = initialRequest?.environmentName ?? initialEnvironmentName;
     _selectedBodyType = initialRequest?.bodyType ?? BodyType.raw;
     _selectedAuthType = initialRequest?.authType ?? AuthType.none;
@@ -239,6 +239,9 @@ class RequestFormController extends ChangeNotifier {
     if (_nameController.text.trim().isEmpty || _urlController.text.trim().isEmpty) {
       return 'Please fill in all required fields';
     }
+    if ((_selectedCollectionId ?? '').trim().isEmpty) {
+      return 'Please select a valid collection';
+    }
     return null;
   }
 
@@ -258,7 +261,7 @@ class RequestFormController extends ChangeNotifier {
       formDataFields: formDataFields,
       authType: _selectedAuthType,
       authConfig: buildAuthConfig(),
-      collectionId: _selectedCollectionId ?? 'default',
+      collectionId: (_selectedCollectionId ?? '').trim(),
       environmentName: _selectedEnvironmentName,
       createdAt: now,
       updatedAt: now,

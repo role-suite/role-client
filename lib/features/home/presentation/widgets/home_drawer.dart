@@ -9,6 +9,7 @@ import 'package:relay/features/collection_runner/presentation/collection_run_his
 import 'package:relay/features/collection_runner/presentation/collection_runner_screen.dart';
 import 'package:relay/features/request_chain/presentation/request_chain_config_screen.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
+import 'package:relay/features/home/presentation/utils/api_auth_flow.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/data_source_config_dialog.dart';
 
 class HomeDrawer extends ConsumerWidget {
@@ -202,7 +203,7 @@ class _DataSourceSection extends ConsumerWidget {
   }
 
   Future<void> _resetSelectionAndEnvironment(WidgetRef r) async {
-    r.read(selectedCollectionIdProvider.notifier).select('default');
+    r.read(selectedCollectionIdProvider.notifier).select(null);
     await r.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
     r.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
   }
@@ -280,6 +281,17 @@ class _DataSourceSection extends ConsumerWidget {
                                 ScaffoldMessenger.of(
                                   context,
                                 ).showSnackBar(const SnackBar(content: Text('API source is not configured. Switched back to Local.')));
+                              }
+                              return;
+                            }
+
+                            if (!context.mounted) return;
+                            final isAuthenticated = await ensureApiSourceAuthenticated(context, ref, latestState!.config);
+                            if (!isAuthenticated) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(const SnackBar(content: Text('Sign in required to use API source. Kept Local mode.')));
                               }
                               return;
                             }

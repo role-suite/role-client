@@ -10,6 +10,7 @@ class DataSourcePreferencesService {
   static const _modeKey = 'data_source_mode';
   static const _baseUrlKey = 'data_source_api_base_url';
   static const _apiKeyKey = 'data_source_api_key';
+  static const _refreshTokenKey = 'data_source_api_refresh_token';
   static const _apiStyleKey = 'data_source_api_style';
 
   static Future<DataSourceMode> loadMode() async {
@@ -31,7 +32,8 @@ class DataSourcePreferencesService {
     final prefs = await SharedPreferences.getInstance();
     final baseUrl = prefs.getString(_baseUrlKey) ?? '';
     final apiKey = prefs.getString(_apiKeyKey);
-    return DataSourceConfig(baseUrl: baseUrl, apiKey: apiKey, apiStyle: ApiStyle.rest);
+    final refreshToken = prefs.getString(_refreshTokenKey);
+    return DataSourceConfig(baseUrl: baseUrl, apiKey: apiKey, refreshToken: refreshToken, apiStyle: ApiStyle.rest);
   }
 
   static Future<void> saveConfig(DataSourceConfig config) async {
@@ -42,6 +44,11 @@ class DataSourcePreferencesService {
       await prefs.setString(_apiKeyKey, config.apiKey!);
     } else {
       await prefs.remove(_apiKeyKey);
+    }
+    if (config.refreshToken != null && config.refreshToken!.isNotEmpty) {
+      await prefs.setString(_refreshTokenKey, config.refreshToken!);
+    } else {
+      await prefs.remove(_refreshTokenKey);
     }
   }
 }

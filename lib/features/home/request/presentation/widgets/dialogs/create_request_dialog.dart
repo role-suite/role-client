@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
 import '../../controllers/request_form_controller.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
@@ -36,6 +37,29 @@ class _CreateRequestDialogState extends ConsumerState<CreateRequestDialog> {
     final validationError = _formController.validateRequiredFields();
     if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(validationError), backgroundColor: Colors.orange));
+      return;
+    }
+
+    final collections = ref.read(collectionsNotifierProvider).asData?.value;
+    if (collections == null || collections.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No collections are available. Create one first.'), backgroundColor: Colors.orange));
+      return;
+    }
+
+    final selectedCollectionId = _formController.selectedCollectionId;
+    final hasSelectedCollection = selectedCollectionId != null && collections.any((c) => c.id == selectedCollectionId);
+    if (!hasSelectedCollection) {
+      _formController.selectedCollectionId = collections.first.id;
+    }
+
+    final dataSourceState = ref.read(currentDataSourceStateProvider);
+    final resolvedCollectionId = _formController.selectedCollectionId ?? '';
+    if (dataSourceState?.mode == DataSourceMode.api && int.tryParse(resolvedCollectionId) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid API collection selected. Re-select a collection and try again.'), backgroundColor: Colors.orange),
+      );
       return;
     }
 

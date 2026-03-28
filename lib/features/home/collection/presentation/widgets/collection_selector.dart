@@ -19,12 +19,11 @@ class CollectionSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ensure default collection exists
-    final allCollections = [
-      if (!collections.any((c) => c.id == 'default'))
-        CollectionModel(id: 'default', name: 'Default', createdAt: DateTime.now(), updatedAt: DateTime.now()),
-      ...collections,
-    ];
+    if (collections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final allCollections = collections;
 
     final theme = Theme.of(context);
     final bool isDefaultSelected = selectedCollectionId == null || selectedCollectionId == 'default';

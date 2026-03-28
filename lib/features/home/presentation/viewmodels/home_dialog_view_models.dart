@@ -10,8 +10,14 @@ class CreateCollectionViewModel {
 
   final Ref _ref;
 
-  Future<void> createCollection(CollectionModel collection) async {
+  Future<String?> createCollection(CollectionModel collection) async {
     await _ref.read(collectionsNotifierProvider.notifier).addCollection(collection);
+
+    final collections = _ref.read(collectionsNotifierProvider).asData?.value ?? const <CollectionModel>[];
+    final matches = collections.where((c) => c.name.trim().toLowerCase() == collection.name.trim().toLowerCase()).toList();
+    if (matches.isEmpty) return null;
+    matches.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return matches.first.id;
   }
 
   void selectCollection(String id) {
@@ -68,7 +74,7 @@ class DeleteEntitiesViewModel {
 
     final selectedId = _ref.read(selectedCollectionIdProvider);
     if (selectedId == collection.id) {
-      _ref.read(selectedCollectionIdProvider.notifier).select('default');
+      _ref.read(selectedCollectionIdProvider.notifier).select(null);
     }
   }
 

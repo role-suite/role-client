@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
+import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/collection_model.dart';
@@ -15,6 +16,7 @@ import 'package:relay/core/utils/extension.dart';
 import 'package:relay/core/utils/request_build_helper.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
+import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
 import 'package:relay/features/home/request/presentation/providers/request_providers.dart';
 import 'package:relay/features/home/environment/presentation/providers/environment_providers.dart';
 
@@ -429,6 +431,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
   Widget _buildEditForm(BuildContext context, AsyncValue<List<EnvironmentModel>> environmentsAsync) {
     final theme = Theme.of(context);
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
+    final dataSourceState = ref.watch(currentDataSourceStateProvider);
+    final isApiMode = dataSourceState?.mode == DataSourceMode.api;
     final envList = environmentsAsync.asData?.value;
     final isCompact = MediaQuery.of(context).size.width < 600;
 
@@ -563,13 +567,27 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
             collectionsAsync.when(
               data: (collections) {
                 final allCollections = [...collections];
-                if (!allCollections.any((c) => c.id == 'default')) {
+                if (!isApiMode && !allCollections.any((c) => c.id == 'default')) {
                   allCollections.insert(0, CollectionModel(id: 'default', name: 'Default', createdAt: DateTime.now(), updatedAt: DateTime.now()));
+                }
+
+                if (allCollections.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                final resolvedSelection = allCollections.any((c) => c.id == _selectedCollectionId) ? _selectedCollectionId : allCollections.first.id;
+                if (resolvedSelection != _selectedCollectionId) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    setState(() {
+                      _selectedCollectionId = resolvedSelection;
+                    });
+                  });
                 }
 
                 return AppDropdown<String>(
                   label: 'Collection',
-                  value: _selectedCollectionId ?? 'default',
+                  value: resolvedSelection,
                   items: allCollections
                       .map(
                         (collection) =>
@@ -1111,6 +1129,29 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
       ).showSnackBar(const SnackBar(content: Text('Name and URL are required to update a request.'), backgroundColor: Colors.orange));
       return;
     }
+    final collections = ref.read(collectionsNotifierProvider).asData?.value;
+    final candidateCollectionId = (_selectedCollectionId ?? _currentRequest.collectionId).trim();
+    var targetCollectionId = candidateCollectionId;
+    if (collections != null && collections.isNotEmpty) {
+      final exists = collections.any((c) => c.id == candidateCollectionId);
+      if (!exists) {
+        targetCollectionId = collections.first.id;
+      }
+    }
+    if (targetCollectionId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a valid collection before saving.'), backgroundColor: Colors.orange));
+      return;
+    }
+
+    final dataSourceState = ref.read(currentDataSourceStateProvider);
+    if (dataSourceState?.mode == DataSourceMode.api && int.tryParse(targetCollectionId) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid API collection selected. Re-select a collection and try again.'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
 
     final params = <String, String>{};
     for (int i = 0; i < _paramKeyControllers.length; i++) {
@@ -1142,7 +1183,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
       body: normalizedBody,
       bodyType: _selectedBodyType,
       formDataFields: normalizedFormData,
-      collectionId: _selectedCollectionId ?? 'default',
+      collectionId: targetCollectionId,
       environmentName: _selectedEnvironmentName,
       updatedAt: DateTime.now(),
     );
@@ -1558,13 +1599,20 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
 
   Widget _buildHtmlPanel(BuildContext context, String html) {
     final theme = Theme.of(context);
+    final hasTableTag = RegExp(r'<\s*table[\s>]', caseSensitive: false).hasMatch(html);
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HtmlWidget(html, textStyle: theme.textTheme.bodyMedium),
+            if (hasTableTag)
+              Text(
+                'HTML preview is unavailable for responses containing table markup. Use Raw to inspect the response body.',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              )
+            else
+              HtmlWidget(html, textStyle: theme.textTheme.bodyMedium),
             const SizedBox(height: 12),
             Divider(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 8),

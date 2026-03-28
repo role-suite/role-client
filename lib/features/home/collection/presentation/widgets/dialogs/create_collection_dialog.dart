@@ -47,8 +47,10 @@ class _CreateCollectionDialogState extends ConsumerState<CreateCollectionDialog>
     setState(() => _isSubmitting = true);
 
     try {
-      await viewModel.createCollection(collection);
-      viewModel.selectCollection(collection.id);
+      final persistedCollectionId = await viewModel.createCollection(collection);
+      if (persistedCollectionId != null) {
+        viewModel.selectCollection(persistedCollectionId);
+      }
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(
