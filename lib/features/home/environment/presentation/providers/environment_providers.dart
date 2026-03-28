@@ -113,6 +113,35 @@ class EnvironmentsNotifier extends AsyncNotifier<List<EnvironmentModel>> {
   void refresh() {
     _loadEnvironments();
   }
+
+  void applyRemoteUpsert(EnvironmentModel environment) {
+    final current = state.asData?.value;
+    if (current == null) {
+      state = AsyncData([environment]);
+      return;
+    }
+
+    final next = [...current];
+    final index = next.indexWhere((e) => e.name == environment.name);
+    if (index >= 0) {
+      next[index] = environment;
+    } else {
+      next.add(environment);
+    }
+    next.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    state = AsyncData(next);
+  }
+
+  void applyRemoteDelete(String name) {
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData(current.where((e) => e.name != name).toList());
+  }
+
+  void replaceFromRemote(List<EnvironmentModel> environments) {
+    final next = [...environments]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    state = AsyncData(next);
+  }
 }
 
 /// Provider for EnvironmentsNotifier

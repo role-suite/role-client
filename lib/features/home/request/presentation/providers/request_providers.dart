@@ -64,6 +64,33 @@ class RequestsNotifier extends AsyncNotifier<List<ApiRequestModel>> {
   void refresh() {
     _loadRequests();
   }
+
+  void applyRemoteUpsert(ApiRequestModel request) {
+    final current = state.asData?.value;
+    if (current == null) {
+      state = AsyncData([request]);
+      return;
+    }
+
+    final next = [...current];
+    final index = next.indexWhere((r) => r.id == request.id);
+    if (index >= 0) {
+      next[index] = request;
+    } else {
+      next.add(request);
+    }
+    state = AsyncData(next);
+  }
+
+  void applyRemoteDelete(String id) {
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData(current.where((r) => r.id != id).toList());
+  }
+
+  void replaceFromRemote(List<ApiRequestModel> requests) {
+    state = AsyncData([...requests]);
+  }
 }
 
 /// Provider for RequestsNotifier

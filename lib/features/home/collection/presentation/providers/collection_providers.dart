@@ -54,6 +54,35 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
   void refresh() {
     _loadCollections();
   }
+
+  void applyRemoteUpsert(CollectionModel collection) {
+    final current = state.asData?.value;
+    if (current == null) {
+      state = AsyncData([collection]);
+      return;
+    }
+
+    final next = [...current];
+    final index = next.indexWhere((c) => c.id == collection.id);
+    if (index >= 0) {
+      next[index] = collection;
+    } else {
+      next.add(collection);
+    }
+    next.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    state = AsyncData(next);
+  }
+
+  void applyRemoteDelete(String id) {
+    final current = state.asData?.value;
+    if (current == null) return;
+    state = AsyncData(current.where((c) => c.id != id).toList());
+  }
+
+  void replaceFromRemote(List<CollectionModel> collections) {
+    final next = [...collections]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    state = AsyncData(next);
+  }
 }
 
 /// Provider for CollectionsNotifier

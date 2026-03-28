@@ -27,9 +27,9 @@ class RoleNodeHttp {
     }
   }
 
-  Future<dynamic> get(String path) async {
+  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters}) async {
     requireBaseUrl();
-    final response = await _dio.get<Map<String, dynamic>>('$_baseUrl$path');
+    final response = await _dio.get<Map<String, dynamic>>('$_baseUrl$path', queryParameters: queryParameters);
     return _unwrap(response.data);
   }
 

@@ -16,6 +16,7 @@ import 'package:relay/core/utils/uuid.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
+import 'package:relay/features/home/presentation/providers/collection_selection_utils.dart';
 import 'package:relay/features/home/collection/presentation/widgets/collection_selector.dart';
 import 'package:relay/features/home/environment/presentation/widgets/environment_selector.dart';
 import 'package:relay/features/home/presentation/widgets/home_drawer.dart';
@@ -51,6 +52,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(workspaceUpdatesPollingProvider);
+
     // Listen for update availability and show dialog
     ref.listen<AsyncValue<dynamic>>(updateAvailableProvider, (previous, next) async {
       if (!_hasCheckedForUpdates && next.hasValue && next.value != null) {
@@ -79,11 +82,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final loadedCollections = collectionsAsync.asData?.value;
     if (loadedCollections != null && loadedCollections.isNotEmpty) {
-      final selectedExists = selectedCollectionId != null && loadedCollections.any((c) => c.id == selectedCollectionId);
-      if (!selectedExists) {
-        final preferredId = dataSourceState?.mode == DataSourceMode.api
-            ? loadedCollections.first.id
-            : (loadedCollections.any((c) => c.id == 'default') ? 'default' : loadedCollections.first.id);
+      final preferredId = resolvePreferredCollectionId(
+        loadedCollections: loadedCollections,
+        selectedCollectionId: selectedCollectionId,
+        mode: dataSourceState?.mode ?? DataSourceMode.local,
+      );
+      if (preferredId != selectedCollectionId) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           ref.read(selectedCollectionIdProvider.notifier).select(preferredId);
