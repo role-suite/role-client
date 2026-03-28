@@ -11,8 +11,8 @@ class JsonUtils {
       } else if (data is Map || data is List) {
         return const JsonEncoder.withIndent('  ').convert(data);
       }
-    } catch (e) {
-      AppLogger.error(e.toString());
+    } catch (_) {
+      // Non-JSON payloads (e.g. HTML/text) are expected in some responses.
     }
     return data?.toString() ?? '';
   }

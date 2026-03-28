@@ -1,0 +1,109 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:relay/core/constants/data_source_mode.dart';
+import 'package:relay/core/presentation/widgets/app_button.dart';
+import '../../controllers/request_form_controller.dart';
+import 'package:relay/features/home/presentation/providers/providers.dart';
+import 'package:relay/features/home/presentation/viewmodels/home_dialog_view_models.dart';
+import '../forms/request_form.dart';
+
+class CreateRequestDialog extends ConsumerStatefulWidget {
+  const CreateRequestDialog({super.key, this.initialCollectionId});
+
+  final String? initialCollectionId;
+
+  @override
+  ConsumerState<CreateRequestDialog> createState() => _CreateRequestDialogState();
+}
+
+class _CreateRequestDialogState extends ConsumerState<CreateRequestDialog> {
+  late final RequestFormController _formController;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final activeEnv = ref.read(activeEnvironmentNameProvider);
+    _formController = RequestFormController(initialCollectionId: widget.initialCollectionId, initialEnvironmentName: activeEnv);
+  }
+
+  @override
+  void dispose() {
+    _formController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleCreateRequest() async {
+    final validationError = _formController.validateRequiredFields();
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(validationError), backgroundColor: Colors.orange));
+      return;
+    }
+
+    final collections = ref.read(collectionsNotifierProvider).asData?.value;
+    if (collections == null || collections.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No collections are available. Create one first.'), backgroundColor: Colors.orange));
+      return;
+    }
+
+    final selectedCollectionId = _formController.selectedCollectionId;
+    final hasSelectedCollection = selectedCollectionId != null && collections.any((c) => c.id == selectedCollectionId);
+    if (!hasSelectedCollection) {
+      _formController.selectedCollectionId = collections.first.id;
+    }
+
+    final dataSourceState = ref.read(currentDataSourceStateProvider);
+    final resolvedCollectionId = _formController.selectedCollectionId ?? '';
+    if (dataSourceState?.mode == DataSourceMode.api && int.tryParse(resolvedCollectionId) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid API collection selected. Re-select a collection and try again.'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final viewModel = ref.read(createRequestViewModelProvider);
+    setState(() => _isSubmitting = true);
+
+    try {
+      final request = _formController.buildRequest();
+      await viewModel.createRequest(request);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Request "${request.name}" created successfully'), backgroundColor: Colors.green));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to create request: $e'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final availableWidth = mediaQuery.size.width - 32; // respect default dialog margin
+    final contentMaxWidth = availableWidth > 600 ? 600.0 : availableWidth;
+    final safeMaxWidth = contentMaxWidth > 0 ? contentMaxWidth : mediaQuery.size.width;
+
+    return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      title: const Text('Create New Request'),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: safeMaxWidth),
+        child: SingleChildScrollView(
+          child: RequestForm(controller: _formController, isSubmitting: _isSubmitting),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        AppButton(label: _isSubmitting ? 'Creating...' : 'Create', onPressed: _isSubmitting ? null : _handleCreateRequest),
+      ],
+    );
+  }
+}

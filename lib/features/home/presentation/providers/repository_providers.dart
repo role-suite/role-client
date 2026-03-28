@@ -1,30 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/constants/api_style.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/services/environment_service.dart';
 import 'package:relay/core/services/file_storage_service.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/core/services/relay_api/rest_relay_api_client.dart';
-import 'package:relay/core/services/relay_api/serverpod_client_provider.dart';
-import 'package:relay/core/services/relay_api/serverpod_relay_api_client.dart';
 import 'package:relay/core/services/workspace_service.dart';
-import 'package:relay/core/services/workspace_api/rest_workspace_client.dart';
-import 'package:relay/features/home/data/datasources/collection_data_source.dart';
-import 'package:relay/features/home/data/datasources/collection_local_data_source.dart';
-import 'package:relay/features/home/data/datasources/collection_remote_data_source.dart';
-import 'package:relay/features/home/data/datasources/request_data_source.dart';
-import 'package:relay/features/home/data/datasources/request_local_data_source.dart';
-import 'package:relay/features/home/data/datasources/request_remote_data_source.dart';
-import 'package:relay/features/home/data/repositories/collection_repository_impl.dart';
-import 'package:relay/features/home/data/repositories/environment_repository_impl.dart';
-import 'package:relay/features/home/data/repositories/environment_repository_remote_impl.dart';
-import 'package:relay/features/home/data/repositories/request_repository_impl.dart';
-import 'package:relay/features/home/domain/repositories/collection_repository.dart';
-import 'package:relay/features/home/domain/repositories/environment_repository.dart';
-import 'package:relay/features/home/domain/repositories/request_repository.dart';
+import 'package:relay/features/home/collection/data/datasources/collection_data_source.dart';
+import 'package:relay/features/home/collection/data/datasources/collection_local_data_source.dart';
+import 'package:relay/features/home/collection/data/datasources/collection_remote_data_source.dart';
+import 'package:relay/features/home/request/data/datasources/request_data_source.dart';
+import 'package:relay/features/home/request/data/datasources/request_local_data_source.dart';
+import 'package:relay/features/home/request/data/datasources/request_remote_data_source.dart';
+import 'package:relay/features/home/collection/data/repositories/collection_repository_impl.dart';
+import 'package:relay/features/home/environment/data/repositories/environment_repository_impl.dart';
+import 'package:relay/features/home/environment/data/repositories/environment_repository_remote_impl.dart';
+import 'package:relay/features/home/request/data/repositories/request_repository_impl.dart';
+import 'package:relay/features/home/collection/domain/repositories/collection_repository.dart';
+import 'package:relay/features/home/environment/domain/repositories/environment_repository.dart';
+import 'package:relay/features/home/request/domain/repositories/request_repository.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
-import 'package:relay_server_client/relay_server_client.dart';
 
 /// Provider for RequestLocalDataSource
 final requestLocalDataSourceProvider = Provider<RequestLocalDataSource>((ref) {
@@ -36,24 +31,9 @@ final collectionLocalDataSourceProvider = Provider<CollectionLocalDataSource>((r
   return CollectionLocalDataSource(FileStorageService.instance, WorkspaceService.instance);
 });
 
-RelayApiClient _createRelayApiClient(DataSourceConfig config, Client? serverpodClient) {
-  switch (config.apiStyle) {
-    case ApiStyle.serverpod:
-      return ServerpodRelayApiClient(serverUrl: config.baseUrl, client: serverpodClient);
-    case ApiStyle.rest:
-      final workspace = RestWorkspaceClient(baseUrl: config.baseUrl, apiKey: config.apiKey);
-      return RestRelayApiClient(workspace);
-  }
+RelayApiClient _createRelayApiClient(DataSourceConfig config) {
+  return RestRelayApiClient(baseUrl: config.baseUrl, apiKey: config.apiKey);
 }
-
-final activeServerpodClientProvider = Provider<Client?>((ref) {
-  final state = ref.watch(currentDataSourceStateProvider);
-  if (state == null || state.mode != DataSourceMode.api || !state.config.isValid || state.config.apiStyle != ApiStyle.serverpod) {
-    return null;
-  }
-
-  return ref.watch(serverpodClientProvider(state.config.baseUrl)).whenOrNull(data: (client) => client);
-});
 
 final activeRelayApiClientProvider = Provider<RelayApiClient?>((ref) {
   final state = ref.watch(currentDataSourceStateProvider);
@@ -61,7 +41,7 @@ final activeRelayApiClientProvider = Provider<RelayApiClient?>((ref) {
     return null;
   }
 
-  return _createRelayApiClient(state.config, ref.watch(activeServerpodClientProvider));
+  return _createRelayApiClient(state.config);
 });
 
 /// Active collection data source (local or remote depending on data source mode).

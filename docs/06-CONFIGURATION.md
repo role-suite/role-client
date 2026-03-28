@@ -11,7 +11,7 @@ Stored via `DataSourcePreferencesService` (SharedPreferences). Keys:
 | `data_source_mode` | String | `"local"` or `"api"`. |
 | `data_source_api_base_url` | String | Base URL when mode is API. |
 | `data_source_api_key` | String? | Optional API key (REST). |
-| `data_source_api_style` | String | `"rest"` or `"serverpod"`. |
+| `data_source_api_style` | String | `"rest"`. |
 
 - **Load**: `DataSourcePreferencesService.loadMode()`, `loadConfig()`.
 - **Save**: `saveMode(mode)`, `saveConfig(config)` (e.g. from the data source config dialog).

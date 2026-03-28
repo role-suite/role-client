@@ -16,8 +16,8 @@ import 'package:relay/features/collection_runner/presentation/controllers/collec
 import 'package:relay/features/collection_runner/presentation/providers/collection_runner_providers.dart';
 import 'package:relay/features/collection_runner/presentation/collection_run_history_screen.dart';
 import 'package:relay/features/collection_runner/presentation/widgets/collection_run_result_card.dart';
-import 'package:relay/features/home/presentation/providers/collection_providers.dart';
-import 'package:relay/features/home/presentation/providers/environment_providers.dart';
+import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
+import 'package:relay/features/home/environment/presentation/providers/environment_providers.dart';
 
 const _noEnvironmentOption = '__collection_runner_no_environment__';
 

@@ -3,7 +3,16 @@ import 'package:relay/core/utils/template_resolver.dart';
 
 /// A widget that displays text with environment variables highlighted
 class VariableHighlightText extends StatelessWidget {
-  const VariableHighlightText({super.key, required this.text, this.style, this.variableStyle, this.textAlign, this.maxLines, this.overflow});
+  const VariableHighlightText({
+    super.key,
+    required this.text,
+    this.style,
+    this.variableStyle,
+    this.textAlign,
+    this.maxLines,
+    this.overflow,
+    this.selectable = false,
+  });
 
   final String text;
   final TextStyle? style;
@@ -11,6 +20,7 @@ class VariableHighlightText extends StatelessWidget {
   final TextAlign? textAlign;
   final int? maxLines;
   final TextOverflow? overflow;
+  final bool selectable;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +38,9 @@ class VariableHighlightText extends StatelessWidget {
     final matches = regex.allMatches(text);
 
     if (matches.isEmpty) {
+      if (selectable) {
+        return SelectableText(text, style: defaultStyle, textAlign: textAlign ?? TextAlign.start, maxLines: maxLines);
+      }
       return Text(text, style: defaultStyle, textAlign: textAlign, maxLines: maxLines, overflow: overflow);
     }
 
@@ -54,6 +67,14 @@ class VariableHighlightText extends StatelessWidget {
     // Add remaining text
     if (lastEnd < text.length) {
       spans.add(TextSpan(text: text.substring(lastEnd), style: defaultStyle));
+    }
+
+    if (selectable) {
+      return SelectableText.rich(
+        TextSpan(children: spans),
+        textAlign: textAlign ?? TextAlign.start,
+        maxLines: maxLines,
+      );
     }
 
     return RichText(

@@ -213,7 +213,6 @@ lib/
 │   ├── utils/               # Logger, UUID, request helpers
 │   └── presentation/       # Shared layout and widgets
 ├── features/
-│   ├── auth/                # Sign-in (email, Serverpod)
 │   ├── home/                # Collections, requests, environments, request runner, drawer
 │   ├── collection_runner/   # Run collections sequentially
 │   └── request_chain/       # Request chains and config
@@ -227,7 +226,6 @@ lib/
 | [Flutter](https://flutter.dev) | Cross-platform UI framework |
 | [Riverpod](https://riverpod.dev) | State management |
 | [Dio](https://pub.dev/packages/dio) | HTTP client for requests and REST workspace |
-| [Serverpod](https://serverpod.dev) client | Optional backend sync and email auth (when using API + Serverpod RPC) |
 | [SharedPreferences](https://pub.dev/packages/shared_preferences) | Data source and theme preferences |
 | [PathProvider](https://pub.dev/packages/path_provider) | Local workspace file paths |
 | [FilePicker](https://pub.dev/packages/file_picker) | File selection dialogs |
@@ -322,7 +320,7 @@ Contributions are welcome! Here's how you can help:
 You can choose **Local** or **API** as the data source (drawer → Data source):
 
 - **Local**: Data is stored on your device (application documents directory). No server required.
-- **API**: Data is synced with a **role-server** backend. Collections, requests, and environments are read from and written to the server (REST or Serverpod RPC). Optional email sign-in or API key applies when the server requires it.
+- **API**: Data is synced with a **role-server** backend over REST. Collections, requests, and environments are read from and written to the server. Optional API key applies when the server requires it.
 
 See [docs/03-CONNECTING-TO-BACKEND.md](docs/03-CONNECTING-TO-BACKEND.md) and [docs/04-AUTHENTICATION.md](docs/04-AUTHENTICATION.md) for configuration.
 

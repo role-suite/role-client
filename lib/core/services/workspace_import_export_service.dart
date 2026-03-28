@@ -7,9 +7,9 @@ import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/workspace_bundle.dart';
 import 'package:relay/core/utils/extension.dart';
 import 'package:relay/core/utils/uuid.dart';
-import 'package:relay/features/home/domain/repositories/collection_repository.dart';
-import 'package:relay/features/home/domain/repositories/environment_repository.dart';
-import 'package:relay/features/home/domain/repositories/request_repository.dart';
+import 'package:relay/features/home/collection/domain/repositories/collection_repository.dart';
+import 'package:relay/features/home/environment/domain/repositories/environment_repository.dart';
+import 'package:relay/features/home/request/domain/repositories/request_repository.dart';
 
 class WorkspaceImportExportService {
   WorkspaceImportExportService({

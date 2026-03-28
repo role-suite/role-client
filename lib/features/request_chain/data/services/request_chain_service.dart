@@ -7,7 +7,7 @@ import 'package:relay/core/utils/request_build_helper.dart';
 import 'package:relay/core/utils/template_resolver.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_item.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_result.dart';
-import 'package:relay/features/home/domain/repositories/environment_repository.dart';
+import 'package:relay/features/home/environment/domain/repositories/environment_repository.dart';
 
 /// Service for executing request chains with delays and response body injection
 class RequestChainService {

@@ -8,8 +8,8 @@ This folder contains technical documentation for maintaining and operating the *
 |----------|-------------|
 | [01-OVERVIEW.md](01-OVERVIEW.md) | Project purpose, stack, and repository layout |
 | [02-ARCHITECTURE.md](02-ARCHITECTURE.md) | App architecture, data flow, and data sources |
-| [03-CONNECTING-TO-BACKEND.md](03-CONNECTING-TO-BACKEND.md) | Data source modes, API config, REST vs Serverpod RPC |
-| [04-AUTHENTICATION.md](04-AUTHENTICATION.md) | Sign-in (email), Serverpod client auth, and session |
+| [03-CONNECTING-TO-BACKEND.md](03-CONNECTING-TO-BACKEND.md) | Data source modes, API config, and REST backend usage |
+| [04-AUTHENTICATION.md](04-AUTHENTICATION.md) | API key authentication for REST backend access |
 | [05-DATA-MODEL.md](05-DATA-MODEL.md) | App models, workspace bundle, and local storage |
 | [06-CONFIGURATION.md](06-CONFIGURATION.md) | Preferences, data source config, and theme |
 | [07-DEPLOYMENT.md](07-DEPLOYMENT.md) | Building for release and distribution |
@@ -20,7 +20,7 @@ This folder contains technical documentation for maintaining and operating the *
 
 - **Run locally:** [08-DEVELOPMENT.md#running-the-app](08-DEVELOPMENT.md#running-the-app)
 - **Configure API data source:** [03-CONNECTING-TO-BACKEND.md](03-CONNECTING-TO-BACKEND.md)
-- **Sign in (email) with Serverpod:** [04-AUTHENTICATION.md](04-AUTHENTICATION.md)
+- **Configure API auth:** [04-AUTHENTICATION.md](04-AUTHENTICATION.md)
 - **Build release:** [07-DEPLOYMENT.md](07-DEPLOYMENT.md)
 - **Add a new feature:** [09-MAINTENANCE.md](09-MAINTENANCE.md)
 

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/constants/api_style.dart';
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
 import 'package:relay/core/presentation/widgets/app_text_field.dart';
+import 'package:relay/features/home/presentation/auth_screen.dart';
 
 /// Dialog to set API base URL and optional API key for the remote workspace.
 class DataSourceConfigDialog extends ConsumerStatefulWidget {
@@ -19,7 +19,6 @@ class DataSourceConfigDialog extends ConsumerStatefulWidget {
 class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog> {
   late final TextEditingController _baseUrlController;
   late final TextEditingController _apiKeyController;
-  ApiStyle _apiStyle = ApiStyle.rest;
   bool _isSaving = false;
   String? _error;
 
@@ -29,7 +28,6 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
     final c = widget.initialConfig;
     _baseUrlController = TextEditingController(text: c?.baseUrl ?? '');
     _apiKeyController = TextEditingController(text: c?.apiKey ?? '');
-    _apiStyle = c?.apiStyle ?? ApiStyle.rest;
   }
 
   @override
@@ -50,18 +48,17 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
       _isSaving = true;
     });
     try {
-      final config = DataSourceConfig(
-        baseUrl: baseUrl,
-        apiKey: _apiKeyController.text.trim().isEmpty ? null : _apiKeyController.text.trim(),
-        apiStyle: _apiStyle,
-      );
+      final existing = widget.initialConfig;
+      final trimmedApiKey = _apiKeyController.text.trim();
+      final refreshToken = existing != null && existing.baseUrl.trim() == baseUrl ? existing.refreshToken : null;
+      final config = DataSourceConfig(baseUrl: baseUrl, apiKey: trimmedApiKey.isEmpty ? null : trimmedApiKey, refreshToken: refreshToken);
       await ref.read(dataSourceStateNotifierProvider.notifier).setConfig(config);
       if (!mounted) return;
       ref.invalidate(collectionsNotifierProvider);
       ref.invalidate(requestsNotifierProvider);
       ref.invalidate(environmentsNotifierProvider);
       ref.invalidate(activeEnvironmentNotifierProvider);
-      ref.read(selectedCollectionIdProvider.notifier).select('default');
+      ref.read(selectedCollectionIdProvider.notifier).select(null);
       await ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
       ref.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
       if (!mounted) return;
@@ -76,6 +73,20 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
     }
   }
 
+  Future<void> _openAuthPage() async {
+    final baseUrl = _baseUrlController.text.trim();
+    final existing = widget.initialConfig;
+    final config = DataSourceConfig(
+      baseUrl: baseUrl,
+      apiKey: _apiKeyController.text.trim().isEmpty ? null : _apiKeyController.text.trim(),
+      refreshToken: existing != null && existing.baseUrl.trim() == baseUrl ? existing.refreshToken : null,
+    );
+    final result = await Navigator.of(context).push<DataSourceConfig>(MaterialPageRoute(builder: (_) => AuthScreen(initialConfig: config)));
+
+    if (!mounted || result == null) return;
+    Navigator.of(context).pop(result);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -86,29 +97,11 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Choose REST (GET/PUT /workspace) or Serverpod RPC, then enter the server URL.', style: theme.textTheme.bodySmall),
+            Text('Enter your REST API base URL to load and save workspace data.', style: theme.textTheme.bodySmall),
             const SizedBox(height: 12),
-            Text('API style', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                ChoiceChip(
-                  label: const Text('REST'),
-                  selected: _apiStyle == ApiStyle.rest,
-                  onSelected: (_) => setState(() => _apiStyle = ApiStyle.rest),
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('Serverpod RPC'),
-                  selected: _apiStyle == ApiStyle.serverpod,
-                  onSelected: (_) => setState(() => _apiStyle = ApiStyle.serverpod),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             AppTextField(
               controller: _baseUrlController,
-              label: _apiStyle == ApiStyle.serverpod ? 'Server URL' : 'Base URL',
+              label: 'Base URL',
               hint: 'https://api.example.com',
               keyboardType: TextInputType.url,
               onChanged: (_) => setState(() => _error = null),
@@ -120,6 +113,15 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
               hint: 'Bearer token or key',
               obscureText: true,
               onChanged: (_) => setState(() => _error = null),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _isSaving ? null : _openAuthPage,
+                icon: const Icon(Icons.lock_open, size: 16),
+                label: const Text('Sign in / Register'),
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
