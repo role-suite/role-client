@@ -282,24 +282,29 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
                                 color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: TabBar(
-                                controller: _tabController,
-                                isScrollable: true,
-                                dividerColor: Colors.transparent,
-                                labelColor: theme.colorScheme.primary,
-                                indicator: BoxDecoration(
-                                  color: theme.colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.75)),
-                                ),
-                                indicatorSize: TabBarIndicatorSize.tab,
-                                unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                                tabs: const [
-                                  Tab(text: 'Request Body'),
-                                  Tab(text: 'Request Headers'),
-                                  Tab(text: 'Response Body'),
-                                  Tab(text: 'Response Headers'),
-                                ],
+                              child: Builder(
+                                builder: (context) {
+                                  final isCompactTabs = MediaQuery.of(context).size.width < 600;
+                                  return TabBar(
+                                    controller: _tabController,
+                                    isScrollable: isCompactTabs,
+                                    dividerColor: Colors.transparent,
+                                    labelColor: theme.colorScheme.primary,
+                                    indicator: BoxDecoration(
+                                      color: theme.colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.75)),
+                                    ),
+                                    indicatorSize: TabBarIndicatorSize.tab,
+                                    unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                                    tabs: const [
+                                      Tab(text: 'Request Body'),
+                                      Tab(text: 'Request Headers'),
+                                      Tab(text: 'Response Body'),
+                                      Tab(text: 'Response Headers'),
+                                    ],
+                                  );
+                                },
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -1477,25 +1482,29 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
 
   Widget _buildResponseBodyModeSwitcher(BuildContext context, {required bool canPreview}) {
     final selected = {_responseBodyViewMode};
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SegmentedButton<_ResponseBodyViewMode>(
-        segments: [
-          const ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.pretty, label: Text('Pretty')),
-          const ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.raw, label: Text('Raw')),
-          ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.preview, enabled: canPreview, label: const Text('Preview')),
-        ],
-        selected: selected,
-        onSelectionChanged: (modes) {
-          if (modes.isEmpty) return;
-          final mode = modes.first;
-          setState(() {
-            _responseBodyViewMode = mode;
-          });
-        },
-        showSelectedIcon: false,
-      ),
+    final isCompact = MediaQuery.of(context).size.width < 600;
+    final switcher = SegmentedButton<_ResponseBodyViewMode>(
+      segments: [
+        const ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.pretty, label: Text('Pretty')),
+        const ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.raw, label: Text('Raw')),
+        ButtonSegment<_ResponseBodyViewMode>(value: _ResponseBodyViewMode.preview, enabled: canPreview, label: const Text('Preview')),
+      ],
+      selected: selected,
+      onSelectionChanged: (modes) {
+        if (modes.isEmpty) return;
+        final mode = modes.first;
+        setState(() {
+          _responseBodyViewMode = mode;
+        });
+      },
+      showSelectedIcon: false,
     );
+
+    if (isCompact) {
+      return SingleChildScrollView(scrollDirection: Axis.horizontal, child: switcher);
+    }
+
+    return Align(alignment: Alignment.centerLeft, child: switcher);
   }
 
   bool _looksLikeHtmlResponse(Response<dynamic> response) {
@@ -1574,12 +1583,14 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
   }
 
   Widget _buildMonospacePanel(BuildContext context, String content, {bool selectable = false}) {
+    final isCompact = MediaQuery.of(context).size.width < 600;
+    final baseStyle = isCompact ? Theme.of(context).textTheme.bodyMedium : Theme.of(context).textTheme.bodySmall;
     return _buildPanelContainer(
       context,
       SingleChildScrollView(
         child: VariableHighlightText(
           text: content,
-          style: const TextStyle(fontFamily: 'monospace'),
+          style: (baseStyle ?? const TextStyle()).copyWith(fontFamily: 'monospace'),
           selectable: selectable,
         ),
       ),
@@ -1587,8 +1598,9 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
   }
 
   Widget _buildPanelContainer(BuildContext context, Widget child) {
+    final isCompact = MediaQuery.of(context).size.width < 600;
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(isCompact ? 12 : 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
@@ -1599,6 +1611,8 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
 
   Widget _buildHtmlPanel(BuildContext context, String html) {
     final theme = Theme.of(context);
+    final isCompact = MediaQuery.of(context).size.width < 600;
+    final monospaceStyle = (isCompact ? theme.textTheme.bodyMedium : theme.textTheme.bodySmall)?.copyWith(fontFamily: 'monospace');
     final hasTableTag = RegExp(r'<\s*table[\s>]', caseSensitive: false).hasMatch(html);
     return _buildPanelContainer(
       context,
@@ -1612,13 +1626,13 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> with Sing
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               )
             else
-              HtmlWidget(html, textStyle: theme.textTheme.bodyMedium),
+              HtmlWidget(html, textStyle: isCompact ? theme.textTheme.bodyLarge : theme.textTheme.bodyMedium),
             const SizedBox(height: 12),
             Divider(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 8),
             Text('Raw HTML', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            SelectableText(html, style: const TextStyle(fontFamily: 'monospace')),
+            SelectableText(html, style: monospaceStyle ?? const TextStyle(fontFamily: 'monospace')),
           ],
         ),
       ),

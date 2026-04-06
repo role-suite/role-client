@@ -17,6 +17,64 @@ class CollectionSelector extends StatelessWidget {
   final void Function(CollectionModel collection) onDelete;
   final bool iconOnly;
 
+  Future<void> _openMobileSelector(BuildContext context, ThemeData theme, List<CollectionModel> allCollections) async {
+    final selectedId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final maxHeight = MediaQuery.of(context).size.height * 0.7;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text('Select Collection', style: theme.textTheme.titleMedium),
+                ),
+                const Divider(height: 0),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: allCollections.length,
+                    separatorBuilder: (_, __) => const Divider(height: 0),
+                    itemBuilder: (context, index) {
+                      final collection = allCollections[index];
+                      final displayName = collection.name.isNotEmpty ? collection.name : collection.id;
+                      final isDefault = collection.id == 'default';
+                      final isSelected = selectedCollectionId == collection.id;
+
+                      return ListTile(
+                        leading: isSelected ? const Icon(Icons.check) : const SizedBox(width: 24),
+                        title: Text(displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        onTap: () => Navigator.of(context).pop(collection.id),
+                        trailing: isDefault
+                            ? null
+                            : IconButton(
+                                tooltip: 'Delete collection',
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  onDelete(collection);
+                                },
+                                icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                              ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selectedId != null) {
+      onSelect(selectedId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (collections.isEmpty) {
@@ -34,20 +92,26 @@ class CollectionSelector extends StatelessWidget {
       return collection.name.isNotEmpty ? collection.name : collection.id;
     }();
 
+    if (iconOnly) {
+      return IconButton(
+        tooltip: 'Select Collection',
+        icon: Icon(Icons.folder, size: 24, color: iconColor),
+        onPressed: () => _openMobileSelector(context, theme, allCollections),
+      );
+    }
+
     return PopupMenuButton<String>(
       tooltip: 'Select Collection',
       color: theme.colorScheme.surfaceContainerHighest,
       surfaceTintColor: theme.colorScheme.surfaceContainerHighest,
-      icon: iconOnly
-          ? Icon(Icons.folder, size: 24, color: iconColor)
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.folder, size: 20, color: iconColor),
-                const SizedBox(width: 4),
-                Text(selectedLabel, style: theme.textTheme.labelMedium),
-              ],
-            ),
+      icon: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.folder, size: 20, color: iconColor),
+          const SizedBox(width: 4),
+          Text(selectedLabel, style: theme.textTheme.labelMedium),
+        ],
+      ),
       onSelected: onSelect,
       itemBuilder: (context) => [
         ...allCollections.map((collection) {

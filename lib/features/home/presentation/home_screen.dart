@@ -152,11 +152,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: const Text('New Request'),
             )
           : null,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopToolbar(context, isMobileLayout, collectionsAsync, environmentsAsync, selectedCollectionId, activeEnvName),
-            Expanded(
+      body: Column(
+        children: [
+          _buildTopToolbar(context, isMobileLayout, collectionsAsync, environmentsAsync, selectedCollectionId, activeEnvName),
+          Expanded(
+            child: SafeArea(
+              top: false,
               child: isMobileLayout
                   ? requestBody
                   : Row(
@@ -186,8 +187,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ],
                     ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -201,96 +202,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String? activeEnvName,
   ) {
     final theme = Theme.of(context);
+    final toolbarColor = theme.brightness == Brightness.dark ? const Color(0xFF161A20) : const Color(0xFFF7F8FA);
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.2);
+    final titleWidget = Text(AppConstants.appName, style: titleStyle, maxLines: 1, overflow: TextOverflow.ellipsis);
+
     return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark ? const Color(0xFF161A20) : const Color(0xFFF7F8FA),
-        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8))),
-      ),
-      child: Row(
-        children: [
-          if (isMobileLayout)
-            Builder(
-              builder: (context) =>
-                  IconButton(icon: const Icon(Icons.menu), tooltip: 'Open menu', onPressed: () => Scaffold.of(context).openDrawer()),
-            ),
-          const SizedBox(width: 6),
-          Text(AppConstants.appName, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.2)),
-          const SizedBox(width: 12),
-          if (!isMobileLayout) ...[
-            _topChip(context, Icons.http, 'HTTP', selected: _activeTopNav == _navHttp, onTap: () => setState(() => _activeTopNav = _navHttp)),
-            const SizedBox(width: 8),
-            _topChip(
-              context,
-              Icons.play_circle_outline,
-              'Runner',
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionRunnerScreen()));
-              },
-            ),
-            const SizedBox(width: 8),
-            _topChip(
-              context,
-              Icons.account_tree_outlined,
-              'Flows',
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RequestChainConfigScreen()));
-              },
-            ),
-            const SizedBox(width: 10),
-            _topCompactAction(context, icon: Icons.file_download_outlined, label: 'Import', onTap: () => _handleImportWorkspace(context, ref)),
-            const SizedBox(width: 6),
-            _topCompactAction(context, icon: Icons.file_upload_outlined, label: 'Export', onTap: () => _handleExportWorkspace(context, ref)),
-            const SizedBox(width: 6),
-            _topCompactAction(context, icon: Icons.add_box_outlined, label: 'Collection', onTap: () => _openCreateCollectionDialog(context)),
-            const SizedBox(width: 6),
-            _topCompactAction(context, icon: Icons.add_circle_outline, label: 'Environment', onTap: () => _openCreateEnvironmentDialog(context)),
-          ],
-          const Spacer(),
-          if (!isMobileLayout) ...[
-            const SizedBox.shrink(),
-          ] else ...[
-            collectionsAsync.when(
-              data: (collections) => CollectionSelector(
-                collections: collections,
-                selectedCollectionId: selectedCollectionId,
-                onSelect: (id) {
-                  ref.read(selectedCollectionIdProvider.notifier).select(id);
-                },
-                onDelete: (collection) => _onDeleteCollection(context, collection),
-                iconOnly: true,
-              ),
-              loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-              error: (_, _) => const SizedBox.shrink(),
-            ),
-            IconButton(tooltip: 'Create collection', onPressed: () => _openCreateCollectionDialog(context), icon: const Icon(Icons.add_box_outlined)),
-            const SizedBox(width: 4),
-            environmentsAsync.when(
-              data: (envs) => EnvironmentSelector(
-                envs: envs,
-                activeEnvName: activeEnvName,
-                onSelect: (name) {
-                  if (name != null && name.startsWith('__action__')) {
-                    return;
-                  }
-                  ref.read(activeEnvironmentNameProvider.notifier).setActiveName(name);
-                  ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
-                },
-                onEdit: (env) => _openEditEnvironmentDialog(context, env),
-                onDelete: (env) => _onDeleteEnvironment(context, env),
-                iconOnly: true,
-              ),
-              loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-              error: (_, _) => const SizedBox.shrink(),
-            ),
-            IconButton(
-              tooltip: 'Create environment',
-              onPressed: () => _openCreateEnvironmentDialog(context),
-              icon: const Icon(Icons.add_circle_outline),
-            ),
-          ],
-        ],
+      color: toolbarColor,
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          height: kToolbarHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8))),
+          ),
+          child: Row(
+            children: [
+              if (isMobileLayout)
+                Builder(
+                  builder: (context) =>
+                      IconButton(icon: const Icon(Icons.menu), tooltip: 'Open menu', onPressed: () => Scaffold.of(context).openDrawer()),
+                ),
+              const SizedBox(width: 6),
+              if (isMobileLayout) Flexible(child: titleWidget) else titleWidget,
+              const SizedBox(width: 12),
+              if (!isMobileLayout) ...[
+                _topChip(context, Icons.http, 'HTTP', selected: _activeTopNav == _navHttp, onTap: () => setState(() => _activeTopNav = _navHttp)),
+                const SizedBox(width: 8),
+                _topChip(
+                  context,
+                  Icons.play_circle_outline,
+                  'Runner',
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionRunnerScreen()));
+                  },
+                ),
+                const SizedBox(width: 8),
+                _topChip(
+                  context,
+                  Icons.account_tree_outlined,
+                  'Flows',
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RequestChainConfigScreen()));
+                  },
+                ),
+                const SizedBox(width: 10),
+                _topCompactAction(context, icon: Icons.file_download_outlined, label: 'Import', onTap: () => _handleImportWorkspace(context, ref)),
+                const SizedBox(width: 6),
+                _topCompactAction(context, icon: Icons.file_upload_outlined, label: 'Export', onTap: () => _handleExportWorkspace(context, ref)),
+                const SizedBox(width: 6),
+                _topCompactAction(context, icon: Icons.add_box_outlined, label: 'Collection', onTap: () => _openCreateCollectionDialog(context)),
+                const SizedBox(width: 6),
+                _topCompactAction(context, icon: Icons.add_circle_outline, label: 'Environment', onTap: () => _openCreateEnvironmentDialog(context)),
+              ],
+              const Spacer(),
+              if (!isMobileLayout) ...[
+                const SizedBox.shrink(),
+              ] else ...[
+                collectionsAsync.when(
+                  data: (collections) => CollectionSelector(
+                    collections: collections,
+                    selectedCollectionId: selectedCollectionId,
+                    onSelect: (id) {
+                      ref.read(selectedCollectionIdProvider.notifier).select(id);
+                    },
+                    onDelete: (collection) => _onDeleteCollection(context, collection),
+                    iconOnly: true,
+                  ),
+                  loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                  error: (_, _) => const SizedBox.shrink(),
+                ),
+                environmentsAsync.when(
+                  data: (envs) => EnvironmentSelector(
+                    envs: envs,
+                    activeEnvName: activeEnvName,
+                    onSelect: (name) {
+                      if (name != null && name.startsWith('__action__')) {
+                        return;
+                      }
+                      ref.read(activeEnvironmentNameProvider.notifier).setActiveName(name);
+                      ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(name);
+                    },
+                    onEdit: (env) => _openEditEnvironmentDialog(context, env),
+                    onDelete: (env) => _onDeleteEnvironment(context, env),
+                    iconOnly: true,
+                  ),
+                  loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                  error: (_, _) => const SizedBox.shrink(),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
