@@ -3,6 +3,7 @@ import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
+import 'package:relay/core/services/role_node_api/role_node_endpoints.dart';
 import 'package:relay/core/services/role_node_api/role_node_http.dart';
 import 'package:relay/core/utils/extension.dart';
 
@@ -15,7 +16,7 @@ class RestRelayApiClient implements RelayApiClient {
   @override
   Future<List<CollectionModel>> listCollections() async {
     final workspaceId = await _http.resolveWorkspaceId();
-    final data = await _http.get('/api/workspaces/$workspaceId/collections');
+    final data = await _http.get(RoleNodeEndpoints.workspaceCollections(workspaceId));
     final list = _asList(data).map(_collectionFromApi).toList();
     list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return list;
@@ -24,7 +25,7 @@ class RestRelayApiClient implements RelayApiClient {
   @override
   Future<CollectionModel?> getCollection(String id) async {
     final workspaceId = await _http.resolveWorkspaceId();
-    final data = await _http.get('/api/workspaces/$workspaceId/collections/$id');
+    final data = await _http.get(RoleNodeEndpoints.workspaceCollection(workspaceId, id));
     if (data is! Map<String, dynamic>) return null;
     return _collectionFromApi(data);
   }
@@ -32,14 +33,14 @@ class RestRelayApiClient implements RelayApiClient {
   @override
   Future<void> createCollection(CollectionModel collection) async {
     final workspaceId = await _http.resolveWorkspaceId();
-    await _http.post('/api/workspaces/$workspaceId/collections', data: {'name': collection.name, 'description': collection.description});
+    await _http.post(RoleNodeEndpoints.workspaceCollections(workspaceId), data: {'name': collection.name, 'description': collection.description});
   }
 
   @override
   Future<void> updateCollection(CollectionModel collection) async {
     final workspaceId = await _http.resolveWorkspaceId();
     await _http.patch(
-      '/api/workspaces/$workspaceId/collections/${collection.id}',
+      RoleNodeEndpoints.workspaceCollection(workspaceId, collection.id),
       data: {'name': collection.name, 'description': collection.description},
     );
   }
@@ -47,13 +48,13 @@ class RestRelayApiClient implements RelayApiClient {
   @override
   Future<void> deleteCollection(String id) async {
     final workspaceId = await _http.resolveWorkspaceId();
-    await _http.delete('/api/workspaces/$workspaceId/collections/$id');
+    await _http.delete(RoleNodeEndpoints.workspaceCollection(workspaceId, id));
   }
 
   @override
   Future<List<EnvironmentModel>> listEnvironments() async {
     final workspaceId = await _http.resolveWorkspaceId();
-    final envData = await _http.get('/api/workspaces/$workspaceId/environments');
+    final envData = await _http.get(RoleNodeEndpoints.workspaceEnvironments(workspaceId));
     final envList = _asList(envData);
     final output = <EnvironmentModel>[];
 
@@ -61,7 +62,7 @@ class RestRelayApiClient implements RelayApiClient {
       final id = _readString(env, ['id', '_id']);
       final name = _readString(env, ['name']);
       if (id == null || name == null) continue;
-      final vars = await _http.get('/api/workspaces/$workspaceId/environments/$id/variables');
+      final vars = await _http.get(RoleNodeEndpoints.workspaceEnvironmentVariables(workspaceId, id));
       output.add(EnvironmentModel(name: name, variables: _variablesFromApi(vars)));
     }
 
@@ -82,7 +83,7 @@ class RestRelayApiClient implements RelayApiClient {
   @override
   Future<void> createEnvironment(EnvironmentModel environment) async {
     final workspaceId = await _http.resolveWorkspaceId();
-    final created = await _http.post('/api/workspaces/$workspaceId/environments', data: {'name': environment.name});
+    final created = await _http.post(RoleNodeEndpoints.workspaceEnvironments(workspaceId), data: {'name': environment.name});
     if (created is! Map<String, dynamic>) return;
     final envId = _readString(created, ['id', '_id']);
     if (envId == null) return;
@@ -98,7 +99,7 @@ class RestRelayApiClient implements RelayApiClient {
       return;
     }
 
-    await _http.patch('/api/workspaces/$workspaceId/environments/${existing.id}', data: {'name': environment.name});
+    await _http.patch(RoleNodeEndpoints.workspaceEnvironment(workspaceId, existing.id), data: {'name': environment.name});
     await _replaceEnvironmentVariables(workspaceId, existing.id, environment.variables);
   }
 
@@ -107,13 +108,13 @@ class RestRelayApiClient implements RelayApiClient {
     final workspaceId = await _http.resolveWorkspaceId();
     final existing = await _findEnvironmentByName(workspaceId, name);
     if (existing == null) return;
-    await _http.delete('/api/workspaces/$workspaceId/environments/${existing.id}');
+    await _http.delete(RoleNodeEndpoints.workspaceEnvironment(workspaceId, existing.id));
   }
 
   @override
   Future<List<ApiRequestModel>> listRequests(String collectionId) async {
     final workspaceId = await _http.resolveWorkspaceId();
-    final data = await _http.get('/api/workspaces/$workspaceId/collections/$collectionId/endpoints');
+    final data = await _http.get(RoleNodeEndpoints.workspaceCollectionEndpoints(workspaceId, collectionId));
     return _asList(data).map((e) => _requestFromApi(e, collectionId)).toList();
   }
 
@@ -134,13 +135,13 @@ class RestRelayApiClient implements RelayApiClient {
   @override
   Future<void> createRequest(ApiRequestModel request) async {
     final workspaceId = await _http.resolveWorkspaceId();
-    await _http.post('/api/workspaces/$workspaceId/collections/${request.collectionId}/endpoints', data: _requestToApi(request));
+    await _http.post(RoleNodeEndpoints.workspaceCollectionEndpoints(workspaceId, request.collectionId), data: _requestToApi(request));
   }
 
   @override
   Future<void> updateRequest(ApiRequestModel request) async {
     final workspaceId = await _http.resolveWorkspaceId();
-    await _http.patch('/api/workspaces/$workspaceId/collections/${request.collectionId}/endpoints/${request.id}', data: _requestToApi(request));
+    await _http.patch(RoleNodeEndpoints.workspaceCollectionEndpoint(workspaceId, request.collectionId, request.id), data: _requestToApi(request));
   }
 
   @override
@@ -149,11 +150,11 @@ class RestRelayApiClient implements RelayApiClient {
     if (request == null) return;
 
     final workspaceId = await _http.resolveWorkspaceId();
-    await _http.delete('/api/workspaces/$workspaceId/collections/${request.collectionId}/endpoints/$requestId');
+    await _http.delete(RoleNodeEndpoints.workspaceCollectionEndpoint(workspaceId, request.collectionId, requestId));
   }
 
   Future<_RemoteEnvironment?> _findEnvironmentByName(String workspaceId, String name) async {
-    final envData = await _http.get('/api/workspaces/$workspaceId/environments');
+    final envData = await _http.get(RoleNodeEndpoints.workspaceEnvironments(workspaceId));
     final envList = _asList(envData);
     for (final env in envList) {
       final envName = _readString(env, ['name']);
@@ -166,17 +167,17 @@ class RestRelayApiClient implements RelayApiClient {
   }
 
   Future<void> _replaceEnvironmentVariables(String workspaceId, String envId, Map<String, String> vars) async {
-    final existingVars = _asList(await _http.get('/api/workspaces/$workspaceId/environments/$envId/variables'));
+    final existingVars = _asList(await _http.get(RoleNodeEndpoints.workspaceEnvironmentVariables(workspaceId, envId)));
     for (final item in existingVars) {
       final id = _readString(item, ['id']);
       if (id == null) continue;
-      await _http.delete('/api/workspaces/$workspaceId/environments/$envId/variables/$id');
+      await _http.delete(RoleNodeEndpoints.workspaceEnvironmentVariable(workspaceId, envId, id));
     }
 
     var position = 0;
     for (final entry in vars.entries) {
       await _http.post(
-        '/api/workspaces/$workspaceId/environments/$envId/variables',
+        RoleNodeEndpoints.workspaceEnvironmentVariables(workspaceId, envId),
         data: {'key': entry.key, 'value': entry.value, 'enabled': true, 'isSecret': false, 'position': position},
       );
       position += 1;

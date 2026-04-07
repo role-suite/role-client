@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:relay/core/constants/app_constants.dart';
+import 'package:relay/core/services/role_node_api/role_node_endpoints.dart';
 
 class RoleNodeHttp {
   RoleNodeHttp({required String baseUrl, String? accessToken, String? workspaceId})
@@ -73,7 +74,7 @@ class RoleNodeHttp {
       return _workspaceIdCache!;
     }
 
-    final payload = await get('/api/workspaces');
+    final payload = await get(RoleNodeEndpoints.workspaces);
     final list = _asList(payload);
     if (list.isEmpty) {
       throw Exception('No workspace membership found for current user');
