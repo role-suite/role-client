@@ -5,6 +5,7 @@ import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
 import 'package:relay/core/presentation/widgets/app_text_field.dart';
 import 'package:relay/core/services/role_node_api/auth_api_client.dart';
+import 'package:relay/core/utils/error_utils.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 
 enum _AuthMode { signIn, register }
@@ -117,6 +118,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       ref.invalidate(requestsNotifierProvider);
       ref.invalidate(environmentsNotifierProvider);
       ref.invalidate(activeEnvironmentNotifierProvider);
+      ref.invalidate(workspaceMembersProvider);
+      ref.invalidate(currentWorkspaceIdProvider);
+      ref.invalidate(userProfileProvider);
+      ref.invalidate(workspacesProvider);
+      ref.invalidate(activeWorkspaceIdProvider);
       ref.read(selectedCollectionIdProvider.notifier).select(null);
       await ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
       ref.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
@@ -146,11 +152,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   String _humanizeError(Object error) {
-    final message = error.toString();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length).trim();
-    }
-    return message;
+    return humanizeApiError(error);
   }
 
   @override

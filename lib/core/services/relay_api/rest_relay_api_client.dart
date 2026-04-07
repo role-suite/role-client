@@ -7,7 +7,8 @@ import 'package:relay/core/services/role_node_api/role_node_http.dart';
 import 'package:relay/core/utils/extension.dart';
 
 class RestRelayApiClient implements RelayApiClient {
-  RestRelayApiClient({required String baseUrl, String? apiKey}) : _http = RoleNodeHttp(baseUrl: baseUrl, accessToken: apiKey);
+  RestRelayApiClient({required String baseUrl, String? apiKey, String? workspaceId})
+    : _http = RoleNodeHttp(baseUrl: baseUrl, accessToken: apiKey, workspaceId: workspaceId);
 
   final RoleNodeHttp _http;
 

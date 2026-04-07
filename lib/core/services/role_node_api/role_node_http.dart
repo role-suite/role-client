@@ -2,9 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:relay/core/constants/app_constants.dart';
 
 class RoleNodeHttp {
-  RoleNodeHttp({required String baseUrl, String? accessToken})
+  RoleNodeHttp({required String baseUrl, String? accessToken, String? workspaceId})
     : _baseUrl = baseUrl.trim().replaceAll(RegExp(r'/+$'), ''),
-      _accessToken = accessToken?.trim() {
+      _accessToken = accessToken?.trim(),
+      _workspaceIdCache = workspaceId?.trim() {
     _dio = Dio(
       BaseOptions(
         connectTimeout: AppConstants.defaultConnectTimeout,
@@ -29,26 +30,42 @@ class RoleNodeHttp {
 
   Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters}) async {
     requireBaseUrl();
-    final response = await _dio.get<Map<String, dynamic>>('$_baseUrl$path', queryParameters: queryParameters);
-    return _unwrap(response.data);
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('$_baseUrl$path', queryParameters: queryParameters);
+      return _unwrap(response.data);
+    } on DioException catch (error) {
+      throw _handleDioError(error);
+    }
   }
 
   Future<dynamic> post(String path, {Object? data}) async {
     requireBaseUrl();
-    final response = await _dio.post<Map<String, dynamic>>('$_baseUrl$path', data: data);
-    return _unwrap(response.data);
+    try {
+      final response = await _dio.post<Map<String, dynamic>>('$_baseUrl$path', data: data);
+      return _unwrap(response.data);
+    } on DioException catch (error) {
+      throw _handleDioError(error);
+    }
   }
 
   Future<dynamic> patch(String path, {Object? data}) async {
     requireBaseUrl();
-    final response = await _dio.patch<Map<String, dynamic>>('$_baseUrl$path', data: data);
-    return _unwrap(response.data);
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>('$_baseUrl$path', data: data);
+      return _unwrap(response.data);
+    } on DioException catch (error) {
+      throw _handleDioError(error);
+    }
   }
 
   Future<dynamic> delete(String path) async {
     requireBaseUrl();
-    final response = await _dio.delete<Map<String, dynamic>>('$_baseUrl$path');
-    return _unwrap(response.data);
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>('$_baseUrl$path');
+      return _unwrap(response.data);
+    } on DioException catch (error) {
+      throw _handleDioError(error);
+    }
   }
 
   Future<String> resolveWorkspaceId() async {
@@ -82,6 +99,23 @@ class RoleNodeHttp {
       return data['data'];
     }
     return data;
+  }
+
+  Exception _handleDioError(DioException error) {
+    final status = error.response?.statusCode;
+    final data = error.response?.data;
+    String message = 'Request failed';
+    if (data is Map<String, dynamic>) {
+      message = data['message']?.toString() ?? data['error']?.toString() ?? message;
+    } else if (data != null) {
+      message = data.toString();
+    } else if (error.message != null && error.message!.trim().isNotEmpty) {
+      message = error.message!.trim();
+    }
+    if (status != null) {
+      return Exception('HTTP $status: $message');
+    }
+    return Exception(message);
   }
 
   static List<Map<String, dynamic>> _asList(dynamic value) {

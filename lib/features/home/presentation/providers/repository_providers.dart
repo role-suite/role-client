@@ -20,6 +20,7 @@ import 'package:relay/features/home/collection/domain/repositories/collection_re
 import 'package:relay/features/home/environment/domain/repositories/environment_repository.dart';
 import 'package:relay/features/home/request/domain/repositories/request_repository.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
+import 'package:relay/features/home/presentation/providers/workspace_selection_providers.dart';
 
 /// Provider for RequestLocalDataSource
 final requestLocalDataSourceProvider = Provider<RequestLocalDataSource>((ref) {
@@ -37,11 +38,12 @@ RelayApiClient _createRelayApiClient(DataSourceConfig config) {
 
 final activeRelayApiClientProvider = Provider<RelayApiClient?>((ref) {
   final state = ref.watch(currentDataSourceStateProvider);
+  final activeWorkspaceId = ref.watch(activeWorkspaceIdProvider).asData?.value;
   if (state == null || state.mode != DataSourceMode.api || !state.config.isValid) {
     return null;
   }
 
-  return _createRelayApiClient(state.config);
+  return RestRelayApiClient(baseUrl: state.config.baseUrl, apiKey: state.config.apiKey, workspaceId: activeWorkspaceId);
 });
 
 /// Active collection data source (local or remote depending on data source mode).

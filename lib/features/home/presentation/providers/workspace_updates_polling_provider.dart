@@ -22,6 +22,7 @@ import 'collection_selection_utils.dart';
 import 'data_source_providers.dart';
 import 'home_ui_providers.dart';
 import 'repository_providers.dart';
+import 'workspace_selection_providers.dart';
 import 'package:relay/core/services/data_source_preferences_service.dart';
 
 const Duration _defaultPollInterval = Duration(seconds: 4);
@@ -54,8 +55,9 @@ final workspaceUpdatesPollLimitProvider = Provider<int>((ref) => _defaultPollLim
 final workspaceUpdatesInitialDelayProvider = Provider<Duration>((ref) => const Duration(milliseconds: 50));
 final workspaceUpdatesObserveLifecycleProvider = Provider<bool>((ref) => true);
 
-final workspaceUpdatesHttpFactoryProvider = Provider<WorkspaceUpdatesHttp Function(String baseUrl, String accessToken)>((ref) {
-  return (baseUrl, accessToken) => RoleNodeWorkspaceUpdatesHttp(RoleNodeHttp(baseUrl: baseUrl, accessToken: accessToken));
+final workspaceUpdatesHttpFactoryProvider = Provider<WorkspaceUpdatesHttp Function(String baseUrl, String accessToken, String? workspaceId)>((ref) {
+  return (baseUrl, accessToken, workspaceId) =>
+      RoleNodeWorkspaceUpdatesHttp(RoleNodeHttp(baseUrl: baseUrl, accessToken: accessToken, workspaceId: workspaceId));
 });
 
 final workspaceUpdatesPollingProvider = Provider<void>((ref) {
@@ -81,10 +83,11 @@ final workspaceUpdatesPollingProvider = Provider<void>((ref) {
   final initialDelay = ref.watch(workspaceUpdatesInitialDelayProvider);
   final observeLifecycle = ref.watch(workspaceUpdatesObserveLifecycleProvider);
 
+  final activeWorkspaceId = ref.watch(activeWorkspaceIdProvider).asData?.value;
   final poller = _WorkspaceUpdatesPoller(
     ref,
     api: api,
-    http: httpFactory(state.config.baseUrl, token),
+    http: httpFactory(state.config.baseUrl, token, activeWorkspaceId),
     pollInterval: pollInterval,
     offlineProbeInterval: offlineProbeInterval,
     pollLimit: pollLimit,

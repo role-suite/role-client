@@ -58,6 +58,8 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
       ref.invalidate(requestsNotifierProvider);
       ref.invalidate(environmentsNotifierProvider);
       ref.invalidate(activeEnvironmentNotifierProvider);
+      ref.invalidate(workspacesProvider);
+      ref.invalidate(activeWorkspaceIdProvider);
       ref.read(selectedCollectionIdProvider.notifier).select(null);
       await ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
       ref.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
