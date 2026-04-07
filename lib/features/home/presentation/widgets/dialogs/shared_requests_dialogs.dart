@@ -95,7 +95,8 @@ class _ShareRequestDialogState extends ConsumerState<ShareRequestDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedRequestId,
+              key: ValueKey(_selectedRequestId ?? 'none'),
+              initialValue: _selectedRequestId,
               items: widget.requests
                   .map((request) => DropdownMenuItem(value: request.id, child: Text('${request.method.name} ${request.name}')))
                   .toList(),
@@ -192,7 +193,8 @@ class _SharedRequestsInboxDialogState extends ConsumerState<SharedRequestsInboxD
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<String>(
-              value: _selectedCollectionId,
+              key: ValueKey(_selectedCollectionId ?? 'none'),
+              initialValue: _selectedCollectionId,
               items: widget.collections.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
               decoration: const InputDecoration(labelText: 'Import into collection', border: OutlineInputBorder()),
               onChanged: _isImporting
@@ -214,7 +216,7 @@ class _SharedRequestsInboxDialogState extends ConsumerState<SharedRequestsInboxD
                   height: 260,
                   child: ListView.separated(
                     itemCount: items.length,
-                    separatorBuilder: (_, __) => const Divider(height: 12),
+                    separatorBuilder: (_, _) => const Divider(height: 12),
                     itemBuilder: (context, index) {
                       final shared = items[index];
                       return Column(

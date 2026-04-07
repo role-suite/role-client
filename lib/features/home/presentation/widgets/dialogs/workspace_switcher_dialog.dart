@@ -43,7 +43,7 @@ class _WorkspaceSwitcherDialogState extends ConsumerState<WorkspaceSwitcherDialo
             return ListView.separated(
               shrinkWrap: true,
               itemCount: workspaces.length,
-              separatorBuilder: (_, __) => const Divider(height: 12),
+              separatorBuilder: (_, _) => const Divider(height: 12),
               itemBuilder: (context, index) {
                 final workspace = workspaces[index];
                 final selected = workspace.id == activeWorkspaceId;

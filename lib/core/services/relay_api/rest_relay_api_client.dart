@@ -220,8 +220,14 @@ class RestRelayApiClient implements RelayApiClient {
   }
 
   static Map<String, dynamic> _requestToApi(ApiRequestModel request) {
-    final headers = request.headers.entries.where((e) => e.key.trim().isNotEmpty).map((e) => {'key': e.key, 'value': e.value}).toList();
-    final queryParams = request.queryParams.entries.where((e) => e.key.trim().isNotEmpty).map((e) => {'key': e.key, 'value': e.value}).toList();
+    final headers = request.headers.entries
+        .where((e) => e.key.trim().isNotEmpty)
+        .map((e) => {'key': e.key, 'value': e.value, 'enabled': true})
+        .toList();
+    final queryParams = request.queryParams.entries
+        .where((e) => e.key.trim().isNotEmpty)
+        .map((e) => {'key': e.key, 'value': e.value, 'enabled': true})
+        .toList();
 
     return {
       'name': request.name,
@@ -262,17 +268,20 @@ class RestRelayApiClient implements RelayApiClient {
       case BodyType.urlEncoded:
         return {
           'mode': 'urlencoded',
-          'urlencoded': request.formDataFields.entries.map((e) => {'key': e.key, 'value': e.value}).toList(),
+          'entries': request.formDataFields.entries.map((e) => {'key': e.key, 'value': e.value}).toList(),
         };
       case BodyType.formData:
         return {
           'mode': 'formdata',
-          'formdata': request.formDataFields.entries.map((e) => {'key': e.key, 'type': 'text', 'value': e.value}).toList(),
+          'entries': request.formDataFields.entries.map((e) => {'type': 'text', 'key': e.key, 'value': e.value}).toList(),
         };
       case BodyType.binary:
+        final fileName = _fileNameFromPath(request.filePath) ?? 'file.bin';
         return {
           'mode': 'binary',
-          'file': {'name': 'file', 'contentBase64': request.body ?? ''},
+          'fileName': fileName,
+          'dataBase64': request.body ?? '',
+          'contentType': request.headers['Content-Type'] ?? request.headers['content-type'] ?? 'application/octet-stream',
         };
     }
   }
@@ -315,9 +324,11 @@ class RestRelayApiClient implements RelayApiClient {
     final mode = (body['mode']?.toString() ?? '').toLowerCase();
     if (mode == 'raw') return body['raw']?.toString();
     if (mode == 'binary') {
+      final dataBase64 = body['dataBase64'];
+      if (dataBase64 != null) return dataBase64.toString();
       final file = body['file'];
       if (file is Map<String, dynamic>) {
-        return file['contentBase64']?.toString();
+        return file['dataBase64']?.toString() ?? file['contentBase64']?.toString();
       }
     }
     return null;
@@ -327,11 +338,13 @@ class RestRelayApiClient implements RelayApiClient {
     if (body == null) return const {};
     final mode = (body['mode']?.toString() ?? '').toLowerCase();
     if (mode != 'formdata' && mode != 'urlencoded') return const {};
-    final key = mode == 'formdata' ? 'formdata' : 'urlencoded';
-    final entries = body[key];
+    final entries = body['entries'] ?? body[mode];
     if (entries is! List) return const {};
     final output = <String, String>{};
     for (final item in entries.whereType<Map<String, dynamic>>()) {
+      if (mode == 'formdata' && (item['type']?.toString().toLowerCase() ?? 'text') == 'file') {
+        continue;
+      }
       final k = _readString(item, ['key']);
       if (k == null || k.isEmpty) continue;
       output[k] = _readString(item, ['value']) ?? '';
@@ -392,11 +405,23 @@ class RestRelayApiClient implements RelayApiClient {
     if (value is! List) return const {};
     final output = <String, String>{};
     for (final item in value.whereType<Map<String, dynamic>>()) {
+      final enabled = item['enabled'];
+      if (enabled is bool && !enabled) continue;
       final key = _readString(item, ['key']);
       if (key == null || key.isEmpty) continue;
       output[key] = _readString(item, ['value']) ?? '';
     }
     return output;
+  }
+
+  static String? _fileNameFromPath(String? path) {
+    if (path == null) return null;
+    final trimmed = path.trim();
+    if (trimmed.isEmpty) return null;
+    final normalized = trimmed.replaceAll('\\', '/');
+    final parts = normalized.split('/');
+    final name = parts.isEmpty ? '' : parts.last.trim();
+    return name.isEmpty ? null : name;
   }
 
   static List<Map<String, dynamic>> _asList(dynamic value) {

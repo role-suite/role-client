@@ -38,7 +38,7 @@ class CollectionSelector extends StatelessWidget {
                 Expanded(
                   child: ListView.separated(
                     itemCount: allCollections.length,
-                    separatorBuilder: (_, __) => const Divider(height: 0),
+                    separatorBuilder: (_, _) => const Divider(height: 0),
                     itemBuilder: (context, index) {
                       final collection = allCollections[index];
                       final displayName = collection.name.isNotEmpty ? collection.name : collection.id;

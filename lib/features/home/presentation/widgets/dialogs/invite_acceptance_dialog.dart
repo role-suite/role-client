@@ -21,7 +21,6 @@ class InviteAcceptanceDialog extends ConsumerStatefulWidget {
 class _InviteAcceptanceDialogState extends ConsumerState<InviteAcceptanceDialog> {
   late final TextEditingController _tokenController;
   bool _isSubmitting = false;
-  InviteErrorType? _errorType;
   String? _errorMessage;
 
   @override
@@ -40,7 +39,6 @@ class _InviteAcceptanceDialogState extends ConsumerState<InviteAcceptanceDialog>
     final token = _tokenController.text.trim();
     if (token.isEmpty) {
       setState(() {
-        _errorType = InviteErrorType.generic;
         _errorMessage = 'Invite token is required.';
       });
       return;
@@ -49,7 +47,6 @@ class _InviteAcceptanceDialogState extends ConsumerState<InviteAcceptanceDialog>
     final state = ref.read(currentDataSourceStateProvider);
     if (state == null || !state.config.isValid) {
       setState(() {
-        _errorType = InviteErrorType.generic;
         _errorMessage = 'Configure API base URL before accepting invites.';
       });
       return;
@@ -59,7 +56,6 @@ class _InviteAcceptanceDialogState extends ConsumerState<InviteAcceptanceDialog>
     final ok = await ensureApiSourceAuthenticated(context, ref, state.config);
     if (!ok) {
       setState(() {
-        _errorType = InviteErrorType.generic;
         _errorMessage = 'Sign in required to accept the invite.';
       });
       return;
@@ -67,7 +63,6 @@ class _InviteAcceptanceDialogState extends ConsumerState<InviteAcceptanceDialog>
 
     setState(() {
       _isSubmitting = true;
-      _errorType = null;
       _errorMessage = null;
     });
 
@@ -80,7 +75,6 @@ class _InviteAcceptanceDialogState extends ConsumerState<InviteAcceptanceDialog>
       final mapped = _mapInviteError(e.toString());
       if (mounted) {
         setState(() {
-          _errorType = mapped.type;
           _errorMessage = mapped.message;
           _isSubmitting = false;
         });
@@ -126,7 +120,6 @@ class _InviteAcceptanceDialogState extends ConsumerState<InviteAcceptanceDialog>
               label: 'Invite token',
               hint: 'Paste invite token',
               onChanged: (_) => setState(() {
-                _errorType = null;
                 _errorMessage = null;
               }),
             ),

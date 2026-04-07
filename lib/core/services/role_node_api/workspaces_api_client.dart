@@ -61,7 +61,7 @@ class WorkspacesApiClient {
   Future<Map<String, dynamic>> convertToTeam({required String workspaceId, String? teamName}) async {
     final data = await _http.post(
       '/api/workspaces/$workspaceId/convert-to-team',
-      data: {if (teamName != null && teamName.trim().isNotEmpty) 'teamName': teamName.trim()},
+      data: {if (teamName != null && teamName.trim().isNotEmpty) 'name': teamName.trim()},
     );
     return _asMap(data);
   }

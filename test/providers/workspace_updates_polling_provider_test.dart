@@ -62,7 +62,7 @@ void main() {
       overrides: [
         activeRelayApiClientProvider.overrideWithValue(fakeApi),
         workspaceUpdatesHttpFactoryProvider.overrideWith((ref) {
-          return (baseUrl, accessToken) => fakeHttp;
+          return (baseUrl, accessToken, workspaceId) => fakeHttp;
         }),
         workspaceUpdatesPollIntervalProvider.overrideWith((ref) => const Duration(milliseconds: 30)),
         workspaceUpdatesInitialDelayProvider.overrideWith((ref) => const Duration(milliseconds: 1)),
@@ -105,7 +105,7 @@ void main() {
       overrides: [
         activeRelayApiClientProvider.overrideWithValue(fakeApi),
         workspaceUpdatesHttpFactoryProvider.overrideWith((ref) {
-          return (baseUrl, accessToken) => fakeHttp;
+          return (baseUrl, accessToken, workspaceId) => fakeHttp;
         }),
         workspaceUpdatesPollIntervalProvider.overrideWith((ref) => const Duration(milliseconds: 20)),
         workspaceUpdatesInitialDelayProvider.overrideWith((ref) => const Duration(milliseconds: 1)),

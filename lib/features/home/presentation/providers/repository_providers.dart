@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
-import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/services/environment_service.dart';
 import 'package:relay/core/services/file_storage_service.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
@@ -31,10 +30,6 @@ final requestLocalDataSourceProvider = Provider<RequestLocalDataSource>((ref) {
 final collectionLocalDataSourceProvider = Provider<CollectionLocalDataSource>((ref) {
   return CollectionLocalDataSource(FileStorageService.instance, WorkspaceService.instance);
 });
-
-RelayApiClient _createRelayApiClient(DataSourceConfig config) {
-  return RestRelayApiClient(baseUrl: config.baseUrl, apiKey: config.apiKey);
-}
 
 final activeRelayApiClientProvider = Provider<RelayApiClient?>((ref) {
   final state = ref.watch(currentDataSourceStateProvider);

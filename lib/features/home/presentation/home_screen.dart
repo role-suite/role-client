@@ -439,7 +439,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             DropdownButtonFormField<String>(
-                              value: activeWorkspaceId,
+                              key: ValueKey(activeWorkspaceId ?? 'none'),
+                              initialValue: activeWorkspaceId,
                               items: workspaces.map((workspace) => DropdownMenuItem(value: workspace.id, child: Text(workspace.name))).toList(),
                               decoration: const InputDecoration(labelText: 'Active workspace', border: OutlineInputBorder()),
                               onChanged: (value) {
@@ -543,7 +544,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       label: sharedRequestsAsync.when(
                         data: (items) => Text(items.isEmpty ? 'Open inbox' : 'Open inbox (${items.length})'),
                         loading: () => const Text('Open inbox'),
-                        error: (_, __) => const Text('Open inbox'),
+                        error: (_, _) => const Text('Open inbox'),
                       ),
                     ),
                   ),

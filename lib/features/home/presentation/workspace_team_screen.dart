@@ -316,7 +316,8 @@ class _WorkspaceTeamScreenState extends ConsumerState<WorkspaceTeamScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _inviteRole,
+                      key: ValueKey(_inviteRole),
+                      initialValue: _inviteRole,
                       items: const [
                         DropdownMenuItem(value: 'member', child: Text('Member')),
                         DropdownMenuItem(value: 'admin', child: Text('Admin')),
