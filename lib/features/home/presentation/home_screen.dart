@@ -9,6 +9,7 @@ import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
+import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/workspace_bundle.dart';
 import 'package:relay/core/utils/logger.dart';
@@ -29,7 +30,11 @@ import 'package:relay/features/home/environment/presentation/widgets/dialogs/del
 import 'package:relay/features/home/request/presentation/widgets/dialogs/delete_request_dialog.dart';
 import 'package:relay/features/home/environment/presentation/widgets/dialogs/environment_dialog.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/data_source_config_dialog.dart';
+import 'package:relay/features/home/presentation/widgets/dialogs/shared_requests_dialogs.dart';
+import 'package:relay/features/home/presentation/widgets/dialogs/invite_acceptance_dialog.dart';
 import 'package:relay/features/home/presentation/utils/api_auth_flow.dart';
+import 'package:relay/features/home/presentation/profile_screen.dart';
+import 'package:relay/features/home/presentation/workspace_team_screen.dart';
 import 'package:relay/features/home/request/presentation/widgets/request_runner_screen.dart';
 import 'package:relay/features/home/presentation/providers/update_providers.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/update_dialog.dart';
@@ -46,6 +51,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _hasCheckedForUpdates = false;
+  bool _inviteHandled = false;
   String _requestSearchQuery = '';
   static const int _navHttp = 0;
   int _activeTopNav = _navHttp;
@@ -53,6 +59,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     ref.watch(workspaceUpdatesPollingProvider);
+
+    if (!_inviteHandled && kIsWeb) {
+      final token = Uri.base.queryParameters['token'];
+      if (token != null && token.trim().isNotEmpty) {
+        _inviteHandled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          showDialog<bool>(
+            context: context,
+            builder: (_) => InviteAcceptanceDialog(initialToken: token.trim()),
+          );
+        });
+      }
+    }
 
     // Listen for update availability and show dialog
     ref.listen<AsyncValue<dynamic>>(updateAvailableProvider, (previous, next) async {
@@ -358,6 +378,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String? activeEnvName,
   ) {
     final theme = Theme.of(context);
+    final requestsAsync = ref.watch(requestsNotifierProvider);
+    final sharedRequestsAsync = ref.watch(sharedRequestsProvider);
+    final dataSourceState = ref.watch(currentDataSourceStateProvider);
+    final workspacesAsync = ref.watch(workspacesProvider);
+    final activeWorkspaceId = ref.watch(activeWorkspaceIdProvider).asData?.value;
+    final activeWorkspace = ref.watch(activeWorkspaceProvider);
 
     Widget sectionCard({required String title, required Widget child}) {
       return Container(
@@ -397,6 +423,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(height: 10),
             sectionCard(
+              title: 'Workspace',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (dataSourceState == null || dataSourceState.mode != DataSourceMode.api)
+                    Text('Switch to API mode to access multiple workspaces.', style: theme.textTheme.bodySmall)
+                  else
+                    workspacesAsync.when(
+                      data: (workspaces) {
+                        if (workspaces.isEmpty) {
+                          return Text('No workspaces available.', style: theme.textTheme.bodySmall);
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DropdownButtonFormField<String>(
+                              value: activeWorkspaceId,
+                              items: workspaces.map((workspace) => DropdownMenuItem(value: workspace.id, child: Text(workspace.name))).toList(),
+                              decoration: const InputDecoration(labelText: 'Active workspace', border: OutlineInputBorder()),
+                              onChanged: (value) {
+                                if (value == null) return;
+                                ref.read(activeWorkspaceIdProvider.notifier).setActiveWorkspaceId(value);
+                              },
+                            ),
+                            if (activeWorkspace != null && activeWorkspace.type.trim().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text('Type: ${activeWorkspace.type}', style: theme.textTheme.bodySmall),
+                            ],
+                          ],
+                        );
+                      },
+                      loading: () => const SizedBox(height: 32, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+                      error: (error, _) => Text(error.toString(), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+                    ),
+                ],
+              ),
+            ),
+            sectionCard(
               title: 'Collection',
               child: collectionsAsync.when(
                 data: (collections) => CollectionSelector(
@@ -425,6 +489,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 loading: () => const SizedBox(height: 36, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
                 error: (_, _) => Text('Failed to load environments', style: theme.textTheme.bodySmall),
+              ),
+            ),
+            sectionCard(
+              title: 'Account',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                      icon: const Icon(Icons.person_outline, size: 18),
+                      label: const Text('Profile'),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WorkspaceTeamScreen())),
+                      icon: const Icon(Icons.group_outlined, size: 18),
+                      label: const Text('Team workspace'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            sectionCard(
+              title: 'Team exchange',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Share requests with other teams and import their requests.', style: theme.textTheme.bodySmall),
+                  const SizedBox(height: 8),
+                  if (dataSourceState == null || dataSourceState.mode != DataSourceMode.api)
+                    Text('Requires API mode and authentication.', style: theme.textTheme.bodySmall),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: requestsAsync.asData?.value.isNotEmpty == true ? () => _openShareRequestDialog(context, requestsAsync) : null,
+                      icon: const Icon(Icons.send, size: 18),
+                      label: const Text('Share request'),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _openSharedInboxDialog(context, collectionsAsync),
+                      icon: const Icon(Icons.inbox_outlined, size: 18),
+                      label: sharedRequestsAsync.when(
+                        data: (items) => Text(items.isEmpty ? 'Open inbox' : 'Open inbox (${items.length})'),
+                        loading: () => const Text('Open inbox'),
+                        error: (_, __) => const Text('Open inbox'),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             sectionCard(title: 'Data Source', child: _buildDesktopDataSourceCard(context)),
@@ -798,11 +921,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.read(environmentsNotifierProvider.notifier).refresh();
   }
 
+  Future<bool> _ensureApiModeForSharing(BuildContext context) async {
+    final state = ref.read(dataSourceStateNotifierProvider).asData?.value;
+    if (state == null) return false;
+    var config = state.config;
+    if (!config.isValid) {
+      final result = await showDialog<DataSourceConfig?>(
+        context: context,
+        builder: (_) => DataSourceConfigDialog(initialConfig: config),
+      );
+      if (result == null) return false;
+      config = result;
+    }
+
+    if (!context.mounted) return false;
+    final latest = ref.read(dataSourceStateNotifierProvider).asData?.value;
+    final currentConfig = latest?.config ?? config;
+    final isAuthenticated = await ensureApiSourceAuthenticated(context, ref, currentConfig);
+    if (!isAuthenticated) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in required to use team exchange.')));
+      }
+      return false;
+    }
+
+    final currentState = ref.read(dataSourceStateNotifierProvider).asData?.value;
+    if (currentState != null && currentState.mode != DataSourceMode.api) {
+      await ref.read(dataSourceStateNotifierProvider.notifier).setMode(DataSourceMode.api);
+      _invalidateWorkspaceProviders();
+      await _resetSelectionAndEnvironment();
+    }
+
+    return true;
+  }
+
+  Future<void> _openShareRequestDialog(BuildContext context, AsyncValue<List<ApiRequestModel>> requestsAsync) async {
+    final ready = await _ensureApiModeForSharing(context);
+    if (!ready || !context.mounted) return;
+
+    final requests = requestsAsync.asData?.value ?? const <ApiRequestModel>[];
+    if (requests.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No requests available to share.')));
+      return;
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => ShareRequestDialog(requests: requests),
+    );
+    if (result == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request shared.')));
+    }
+  }
+
+  Future<void> _openSharedInboxDialog(BuildContext context, AsyncValue<List<CollectionModel>> collectionsAsync) async {
+    final ready = await _ensureApiModeForSharing(context);
+    if (!ready || !context.mounted) return;
+
+    final collections = collectionsAsync.asData?.value ?? const <CollectionModel>[];
+    if (collections.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Create a collection before importing.')));
+      return;
+    }
+    ref.invalidate(sharedRequestsProvider);
+    await showDialog<void>(
+      context: context,
+      builder: (_) => SharedRequestsInboxDialog(collections: collections, selectedCollectionId: ref.read(selectedCollectionIdProvider)),
+    );
+  }
+
   void _invalidateWorkspaceProviders() {
     ref.invalidate(collectionsNotifierProvider);
     ref.invalidate(requestsNotifierProvider);
     ref.invalidate(environmentsNotifierProvider);
     ref.invalidate(activeEnvironmentNotifierProvider);
+    ref.invalidate(workspacesProvider);
+    ref.invalidate(activeWorkspaceIdProvider);
   }
 
   Future<void> _resetSelectionAndEnvironment() async {

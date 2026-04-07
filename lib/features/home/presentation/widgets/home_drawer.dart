@@ -11,6 +11,9 @@ import 'package:relay/features/request_chain/presentation/request_chain_config_s
 import 'package:relay/features/home/presentation/providers/providers.dart';
 import 'package:relay/features/home/presentation/utils/api_auth_flow.dart';
 import 'package:relay/features/home/presentation/widgets/dialogs/data_source_config_dialog.dart';
+import 'package:relay/features/home/presentation/profile_screen.dart';
+import 'package:relay/features/home/presentation/workspace_team_screen.dart';
+import 'package:relay/features/home/presentation/widgets/dialogs/workspace_switcher_dialog.dart';
 
 class HomeDrawer extends ConsumerWidget {
   const HomeDrawer({
@@ -128,6 +131,33 @@ class HomeDrawer extends ConsumerWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.group_outlined),
+              title: const Text('Team workspace'),
+              subtitle: const Text('Invite, join, and manage members'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const WorkspaceTeamScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.workspaces_outline),
+              title: const Text('Switch workspace'),
+              subtitle: const Text('Choose an active team workspace'),
+              onTap: () async {
+                Navigator.of(context).pop();
+                await showDialog<void>(context: context, builder: (_) => const WorkspaceSwitcherDialog());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Profile'),
+              subtitle: const Text('Manage your account details'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ProfileScreen()));
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.history),
               title: const Text('Test Run History'),
               subtitle: const Text('View previous collection test runs'),
@@ -200,6 +230,8 @@ class _DataSourceSection extends ConsumerWidget {
     ref.invalidate(requestsNotifierProvider);
     ref.invalidate(environmentsNotifierProvider);
     ref.invalidate(activeEnvironmentNotifierProvider);
+    ref.invalidate(workspacesProvider);
+    ref.invalidate(activeWorkspaceIdProvider);
   }
 
   Future<void> _resetSelectionAndEnvironment(WidgetRef r) async {
