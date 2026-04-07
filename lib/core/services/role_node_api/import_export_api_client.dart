@@ -1,3 +1,4 @@
+import 'package:relay/core/services/role_node_api/role_node_endpoints.dart';
 import 'package:relay/core/services/role_node_api/role_node_http.dart';
 
 class ImportExportApiClient {
@@ -7,13 +8,13 @@ class ImportExportApiClient {
 
   Future<List<Map<String, dynamic>>> listJobs({String? workspaceId}) async {
     final wid = workspaceId ?? await _http.resolveWorkspaceId();
-    final data = await _http.get('/api/workspaces/$wid/import-export/jobs');
+    final data = await _http.get(RoleNodeEndpoints.workspaceImportExportJobs(wid));
     return _asList(data);
   }
 
   Future<Map<String, dynamic>> getJob(String jobId, {String? workspaceId}) async {
     final wid = workspaceId ?? await _http.resolveWorkspaceId();
-    final data = await _http.get('/api/workspaces/$wid/import-export/jobs/$jobId');
+    final data = await _http.get(RoleNodeEndpoints.workspaceImportExportJob(wid, jobId));
     return _asMap(data);
   }
 
@@ -26,7 +27,7 @@ class ImportExportApiClient {
   }) async {
     final wid = workspaceId ?? await _http.resolveWorkspaceId();
     final data = await _http.post(
-      '/api/workspaces/$wid/import-export/exports',
+      RoleNodeEndpoints.workspaceImportExportExports(wid),
       data: {'format': format, 'includeCollections': includeCollections, 'includeEnvironments': includeEnvironments, 'includeRuns': includeRuns},
     );
     return _asMap(data);
@@ -34,7 +35,7 @@ class ImportExportApiClient {
 
   Future<Map<String, dynamic>> createImport({String? workspaceId, String format = 'json', required Map<String, dynamic> payload}) async {
     final wid = workspaceId ?? await _http.resolveWorkspaceId();
-    final data = await _http.post('/api/workspaces/$wid/import-export/imports', data: {'format': format, 'payload': payload});
+    final data = await _http.post(RoleNodeEndpoints.workspaceImportExportImports(wid), data: {'format': format, 'payload': payload});
     return _asMap(data);
   }
 

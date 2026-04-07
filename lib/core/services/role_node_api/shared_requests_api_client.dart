@@ -6,6 +6,8 @@ class SharedRequestsApiClient {
 
   final RoleNodeHttp _http;
 
+  String get baseUrl => _http.baseUrl;
+
   Future<String> resolveWorkspaceId() async {
     return _http.resolveWorkspaceId();
   }

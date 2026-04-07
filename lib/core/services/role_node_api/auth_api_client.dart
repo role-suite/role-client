@@ -1,3 +1,4 @@
+import 'package:relay/core/services/role_node_api/role_node_endpoints.dart';
 import 'package:relay/core/services/role_node_api/role_node_http.dart';
 
 class AuthApiClient {
@@ -13,7 +14,7 @@ class AuthApiClient {
     String? teamName,
   }) async {
     final data = await _http.post(
-      '/api/auth/register',
+      RoleNodeEndpoints.authRegister,
       data: {
         'name': name,
         'email': email,
@@ -26,23 +27,23 @@ class AuthApiClient {
   }
 
   Future<Map<String, dynamic>> login({required String email, required String password}) async {
-    final data = await _http.post('/api/auth/login', data: {'email': email, 'password': password});
+    final data = await _http.post(RoleNodeEndpoints.authLogin, data: {'email': email, 'password': password});
     return _asMap(data);
   }
 
   Future<Map<String, dynamic>> refresh(String refreshToken) async {
-    final data = await _http.post('/api/auth/refresh', data: {'refreshToken': refreshToken});
+    final data = await _http.post(RoleNodeEndpoints.authRefresh, data: {'refreshToken': refreshToken});
     return _asMap(data);
   }
 
   Future<Map<String, dynamic>> logout(String refreshToken) async {
-    final data = await _http.post('/api/auth/logout', data: {'refreshToken': refreshToken});
+    final data = await _http.post(RoleNodeEndpoints.authLogout, data: {'refreshToken': refreshToken});
     return _asMap(data);
   }
 
   Future<Map<String, dynamic>> me(String accessToken) async {
     final http = RoleNodeHttp(baseUrl: _http.baseUrl, accessToken: accessToken);
-    final data = await http.get('/api/auth/me');
+    final data = await http.get(RoleNodeEndpoints.authMe);
     return _asMap(data);
   }
 

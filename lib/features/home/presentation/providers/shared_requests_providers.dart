@@ -19,14 +19,49 @@ final sharedRequestsApiClientProvider = Provider<SharedRequestsApiClient?>((ref)
   return SharedRequestsApiClient(baseUrl: state.config.baseUrl, accessToken: accessToken, workspaceId: activeWorkspaceId);
 });
 
+class SharedRequestsErrorNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setError(String? message) {
+    state = message;
+  }
+}
+
+final sharedRequestsErrorProvider = NotifierProvider<SharedRequestsErrorNotifier, String?>(SharedRequestsErrorNotifier.new);
+
 class SharedRequestsNotifier extends AsyncNotifier<List<SharedRequestModel>> {
+  String? _disabledBaseUrl;
+
   @override
   Future<List<SharedRequestModel>> build() async {
     final api = ref.watch(sharedRequestsApiClientProvider);
     if (api == null) return const [];
+    if (_disabledBaseUrl == api.baseUrl) return const [];
     final workspaceId = await api.resolveWorkspaceId();
-    final items = await api.listSharedRequests(workspaceId);
-    return items.map(SharedRequestModel.fromJson).toList();
+    try {
+      final items = await api.listSharedRequests(workspaceId);
+      return items.map(SharedRequestModel.fromJson).toList();
+    } catch (error) {
+      if (_isNotFoundError(error)) {
+        _disabledBaseUrl = api.baseUrl;
+        _deferError('Shared inbox is not supported by this server.');
+        return const [];
+      }
+      _deferError('Failed to load shared inbox.');
+      return const [];
+    }
+  }
+
+  bool _isNotFoundError(Object error) {
+    final message = error.toString();
+    return message.contains('HTTP 404') || message.contains('404');
+  }
+
+  void _deferError(String message) {
+    Future<void>.delayed(Duration.zero, () {
+      ref.read(sharedRequestsErrorProvider.notifier).setError(message);
+    });
   }
 }
 
