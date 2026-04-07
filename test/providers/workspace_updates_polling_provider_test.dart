@@ -7,6 +7,7 @@ import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
+import 'package:relay/core/services/role_node_api/workspace_updates_api_client.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
@@ -61,7 +62,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         activeRelayApiClientProvider.overrideWithValue(fakeApi),
-        workspaceUpdatesHttpFactoryProvider.overrideWith((ref) {
+        workspaceUpdatesApiFactoryProvider.overrideWith((ref) {
           return (baseUrl, accessToken, workspaceId) => fakeHttp;
         }),
         workspaceUpdatesPollIntervalProvider.overrideWith((ref) => const Duration(milliseconds: 30)),
@@ -104,7 +105,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         activeRelayApiClientProvider.overrideWithValue(fakeApi),
-        workspaceUpdatesHttpFactoryProvider.overrideWith((ref) {
+        workspaceUpdatesApiFactoryProvider.overrideWith((ref) {
           return (baseUrl, accessToken, workspaceId) => fakeHttp;
         }),
         workspaceUpdatesPollIntervalProvider.overrideWith((ref) => const Duration(milliseconds: 20)),
@@ -140,7 +141,7 @@ Future<void> _waitForCondition(bool Function() condition, {Duration timeout = co
   throw TimeoutException('Condition was not met within $timeout');
 }
 
-class _FakeWorkspaceUpdatesHttp implements WorkspaceUpdatesHttp {
+class _FakeWorkspaceUpdatesHttp implements WorkspaceUpdatesApi {
   _FakeWorkspaceUpdatesHttp({required this.workspaceId, this.updatesBySince = const {}, this.failUnauthorized = false});
 
   final String workspaceId;
@@ -150,33 +151,21 @@ class _FakeWorkspaceUpdatesHttp implements WorkspaceUpdatesHttp {
   int updatesCalls = 0;
 
   @override
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters}) async {
-    if (path == '/api/workspaces') {
-      return [
-        {'id': workspaceId},
-      ];
+  Future<Map<String, dynamic>> getUpdates({required String workspaceId, required int since, required int limit}) async {
+    updatesCalls += 1;
+    if (failUnauthorized) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/api/workspaces/$workspaceId/updates'),
+        response: Response(requestOptions: RequestOptions(path: '/api/workspaces/$workspaceId/updates'), statusCode: 401),
+        type: DioExceptionType.badResponse,
+      );
     }
-
-    if (path == '/api/workspaces/$workspaceId/updates') {
-      updatesCalls += 1;
-      if (failUnauthorized) {
-        throw DioException(
-          requestOptions: RequestOptions(path: path),
-          response: Response(requestOptions: RequestOptions(path: path), statusCode: 401),
-          type: DioExceptionType.badResponse,
-        );
-      }
-      final sinceValue = queryParameters?['since']?.toString() ?? '0';
-      final since = int.tryParse(sinceValue) ?? 0;
-      sinceHistory.add(since);
-      return updatesBySince[since] ??
-          {
-            'events': const [],
-            'cursor': {'next': since},
-          };
-    }
-
-    return null;
+    sinceHistory.add(since);
+    return updatesBySince[since] ??
+        {
+          'events': const [],
+          'cursor': {'next': since},
+        };
   }
 
   @override

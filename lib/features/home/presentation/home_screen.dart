@@ -11,6 +11,7 @@ import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/models/environment_model.dart';
+import 'package:relay/core/models/workspace_summary_model.dart';
 import 'package:relay/core/models/workspace_bundle.dart';
 import 'package:relay/core/utils/logger.dart';
 import 'package:relay/core/utils/uuid.dart';
@@ -90,6 +91,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           }
         });
       }
+    });
+
+    ref.listen<String?>(workspaceUpdatesPollingErrorProvider, (previous, next) {
+      if (next == null || next == previous) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next)));
+      });
+    });
+
+    ref.listen<String?>(sharedRequestsErrorProvider, (previous, next) {
+      if (next == null || next == previous) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next)));
+      });
     });
 
     final selectedCollectionId = ref.watch(selectedCollectionIdProvider);
@@ -435,13 +452,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         if (workspaces.isEmpty) {
                           return Text('No workspaces available.', style: theme.textTheme.bodySmall);
                         }
+                        final seenWorkspaceIds = <String>{};
+                        final uniqueWorkspaces = <WorkspaceSummaryModel>[];
+                        for (final workspace in workspaces) {
+                          if (workspace == null) continue;
+                          final id = workspace.id;
+                          if (seenWorkspaceIds.add(id)) {
+                            uniqueWorkspaces.add(workspace);
+                          }
+                        }
+                        final resolvedWorkspaceId = uniqueWorkspaces.any((w) => w.id == activeWorkspaceId) ? activeWorkspaceId : null;
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             DropdownButtonFormField<String>(
-                              key: ValueKey(activeWorkspaceId ?? 'none'),
-                              initialValue: activeWorkspaceId,
-                              items: workspaces.map((workspace) => DropdownMenuItem(value: workspace.id, child: Text(workspace.name))).toList(),
+                              key: ValueKey(resolvedWorkspaceId ?? 'none'),
+                              initialValue: resolvedWorkspaceId,
+                              items: uniqueWorkspaces.map((workspace) => DropdownMenuItem(value: workspace.id, child: Text(workspace.name))).toList(),
                               decoration: const InputDecoration(labelText: 'Active workspace', border: OutlineInputBorder()),
                               onChanged: (value) {
                                 if (value == null) return;

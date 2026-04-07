@@ -11,7 +11,7 @@ import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
-import 'package:relay/core/services/role_node_api/role_node_http.dart';
+import 'package:relay/core/services/role_node_api/workspace_updates_api_client.dart';
 import 'package:relay/core/utils/extension.dart';
 
 import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
@@ -29,25 +29,7 @@ const Duration _defaultPollInterval = Duration(seconds: 4);
 const Duration _offlineProbeInterval = Duration(seconds: 8);
 const int _defaultPollLimit = 50;
 const int _maxSeenEventIds = 1200;
-
-abstract class WorkspaceUpdatesHttp {
-  Future<String> resolveWorkspaceId();
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters});
-}
-
-class RoleNodeWorkspaceUpdatesHttp implements WorkspaceUpdatesHttp {
-  RoleNodeWorkspaceUpdatesHttp(this._http);
-
-  final RoleNodeHttp _http;
-
-  @override
-  Future<String> resolveWorkspaceId() => _http.resolveWorkspaceId();
-
-  @override
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters}) {
-    return _http.get(path, queryParameters: queryParameters);
-  }
-}
+const int _maxConsecutiveErrors = 5;
 
 final workspaceUpdatesPollIntervalProvider = Provider<Duration>((ref) => _defaultPollInterval);
 final workspaceUpdatesOfflineProbeIntervalProvider = Provider<Duration>((ref) => _offlineProbeInterval);
@@ -55,9 +37,21 @@ final workspaceUpdatesPollLimitProvider = Provider<int>((ref) => _defaultPollLim
 final workspaceUpdatesInitialDelayProvider = Provider<Duration>((ref) => const Duration(milliseconds: 50));
 final workspaceUpdatesObserveLifecycleProvider = Provider<bool>((ref) => true);
 
-final workspaceUpdatesHttpFactoryProvider = Provider<WorkspaceUpdatesHttp Function(String baseUrl, String accessToken, String? workspaceId)>((ref) {
-  return (baseUrl, accessToken, workspaceId) =>
-      RoleNodeWorkspaceUpdatesHttp(RoleNodeHttp(baseUrl: baseUrl, accessToken: accessToken, workspaceId: workspaceId));
+class WorkspaceUpdatesPollingErrorNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setError(String? message) {
+    state = message;
+  }
+}
+
+final workspaceUpdatesPollingErrorProvider = NotifierProvider<WorkspaceUpdatesPollingErrorNotifier, String?>(
+  WorkspaceUpdatesPollingErrorNotifier.new,
+);
+
+final workspaceUpdatesApiFactoryProvider = Provider<WorkspaceUpdatesApi Function(String baseUrl, String accessToken, String? workspaceId)>((ref) {
+  return (baseUrl, accessToken, workspaceId) => WorkspaceUpdatesApiClient(baseUrl: baseUrl, accessToken: accessToken, workspaceId: workspaceId);
 });
 
 final workspaceUpdatesPollingProvider = Provider<void>((ref) {
@@ -76,7 +70,7 @@ final workspaceUpdatesPollingProvider = Provider<void>((ref) {
     return;
   }
 
-  final httpFactory = ref.watch(workspaceUpdatesHttpFactoryProvider);
+  final httpFactory = ref.watch(workspaceUpdatesApiFactoryProvider);
   final pollInterval = ref.watch(workspaceUpdatesPollIntervalProvider);
   final offlineProbeInterval = ref.watch(workspaceUpdatesOfflineProbeIntervalProvider);
   final pollLimit = ref.watch(workspaceUpdatesPollLimitProvider);
@@ -103,7 +97,7 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
   _WorkspaceUpdatesPoller(
     this._ref, {
     required RelayApiClient api,
-    required WorkspaceUpdatesHttp http,
+    required WorkspaceUpdatesApi http,
     required Duration pollInterval,
     required Duration offlineProbeInterval,
     required int pollLimit,
@@ -119,7 +113,7 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
 
   final Ref _ref;
   final RelayApiClient _api;
-  final WorkspaceUpdatesHttp _http;
+  final WorkspaceUpdatesApi _http;
   final Duration _pollInterval;
   final Duration _offlineProbeInterval;
   final int _pollLimit;
@@ -133,7 +127,11 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
   bool _appVisible = true;
   bool _offline = false;
   bool _authInvalid = false;
+  bool _pausedByError = false;
   String? _activeWorkspaceId;
+
+  int _consecutiveErrors = 0;
+  int _offlineProbeFailures = 0;
 
   final Map<String, int> _cursorByWorkspaceId = <String, int>{};
   final Queue<String> _seenEventIdsOrder = Queue<String>();
@@ -142,6 +140,10 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
   void start() {
     if (_running) return;
     _running = true;
+    Future<void>.delayed(Duration.zero, () {
+      if (!_running) return;
+      _resetErrorState();
+    });
     if (_observeLifecycle) {
       WidgetsBinding.instance.addObserver(this);
     }
@@ -172,7 +174,7 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
   }
 
   void _resumePolling() {
-    if (_authInvalid || !_running || !_appVisible) return;
+    if (_authInvalid || _pausedByError || !_running || !_appVisible) return;
     if (_offline) {
       _startOfflineProbe();
       return;
@@ -182,14 +184,14 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
 
   void _scheduleNextPoll(Duration after) {
     _pollTimer?.cancel();
-    if (!_running || !_appVisible || _offline || _authInvalid) return;
+    if (!_running || !_appVisible || _offline || _authInvalid || _pausedByError) return;
     _pollTimer = Timer(after, () {
       unawaited(_pollOnce());
     });
   }
 
   Future<void> _pollOnce() async {
-    if (!_running || !_appVisible || _offline || _authInvalid || _pollInFlight) {
+    if (!_running || !_appVisible || _offline || _authInvalid || _pausedByError || _pollInFlight) {
       return;
     }
     _pollInFlight = true;
@@ -204,7 +206,7 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
       }
 
       final since = _cursorByWorkspaceId[workspaceId] ?? 0;
-      final response = await _http.get('/api/workspaces/$workspaceId/updates', queryParameters: {'since': since, 'limit': _pollLimit});
+      final response = await _http.getUpdates(workspaceId: workspaceId, since: since, limit: _pollLimit);
 
       final parsed = _parseUpdatesResponse(response, fallbackSince: since);
       var shouldFullRefetch = false;
@@ -226,6 +228,7 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
       }
 
       _offline = false;
+      _clearPollingError();
       _scheduleNextPoll(_pollInterval);
     } on DioException catch (e) {
       final code = e.response?.statusCode;
@@ -234,10 +237,16 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
       } else if (_isOfflineError(e)) {
         _handleOffline();
       } else {
-        _scheduleNextPoll(_pollInterval);
+        _recordFailure('Workspace updates paused after repeated errors.');
+        if (!_pausedByError) {
+          _scheduleNextPoll(_pollInterval);
+        }
       }
     } catch (_) {
-      _scheduleNextPoll(_pollInterval);
+      _recordFailure('Workspace updates paused after repeated errors.');
+      if (!_pausedByError) {
+        _scheduleNextPoll(_pollInterval);
+      }
     } finally {
       _pollInFlight = false;
     }
@@ -255,16 +264,22 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
 
   void _startOfflineProbe() {
     _offlineProbeTimer?.cancel();
-    if (!_running || !_appVisible || _authInvalid) return;
+    if (!_running || !_appVisible || _authInvalid || _pausedByError) return;
 
     _offlineProbeTimer = Timer.periodic(_offlineProbeInterval, (_) async {
-      if (!_running || !_appVisible || _authInvalid) return;
+      if (!_running || !_appVisible || _authInvalid || _pausedByError) return;
       try {
-        await _http.get('/api/workspaces');
+        await _http.resolveWorkspaceId();
         _offline = false;
+        _offlineProbeFailures = 0;
+        _clearPollingError();
         _offlineProbeTimer?.cancel();
         _scheduleNextPoll(_initialDelay);
       } catch (_) {
+        _offlineProbeFailures += 1;
+        if (_offlineProbeFailures >= _maxConsecutiveErrors) {
+          _pausePolling('Workspace updates paused while offline.');
+        }
         // Stay paused while offline.
       }
     });
@@ -274,6 +289,7 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
     _authInvalid = true;
     _pollTimer?.cancel();
     _offlineProbeTimer?.cancel();
+    _clearPollingError();
 
     final notifier = _ref.read(dataSourceStateNotifierProvider.notifier);
     final current = _ref.read(currentDataSourceStateProvider);
@@ -285,6 +301,33 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
     _ref.invalidate(requestsNotifierProvider);
     _ref.invalidate(environmentsNotifierProvider);
     _ref.invalidate(activeEnvironmentNotifierProvider);
+  }
+
+  void _recordFailure(String message) {
+    if (_pausedByError) return;
+    _consecutiveErrors += 1;
+    if (_consecutiveErrors < _maxConsecutiveErrors) return;
+    _pausePolling(message);
+  }
+
+  void _pausePolling(String message) {
+    if (_pausedByError) return;
+    _pausedByError = true;
+    _pollTimer?.cancel();
+    _offlineProbeTimer?.cancel();
+    _ref.read(workspaceUpdatesPollingErrorProvider.notifier).setError(message);
+  }
+
+  void _clearPollingError() {
+    _consecutiveErrors = 0;
+    _ref.read(workspaceUpdatesPollingErrorProvider.notifier).setError(null);
+  }
+
+  void _resetErrorState() {
+    _pausedByError = false;
+    _consecutiveErrors = 0;
+    _offlineProbeFailures = 0;
+    _ref.read(workspaceUpdatesPollingErrorProvider.notifier).setError(null);
   }
 
   Future<void> _fullRefetch() async {

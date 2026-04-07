@@ -55,12 +55,7 @@ class ActiveWorkspaceIdNotifier extends AsyncNotifier<String?> {
     await WorkspacePreferencesService.saveActiveWorkspaceId(stateValue.config.baseUrl, workspaceId);
     state = AsyncData(workspaceId);
 
-    ref.invalidate(collectionsNotifierProvider);
-    ref.invalidate(requestsNotifierProvider);
-    ref.invalidate(environmentsNotifierProvider);
-    ref.invalidate(activeEnvironmentNotifierProvider);
     ref.read(selectedCollectionIdProvider.notifier).select(null);
-    await ref.read(activeEnvironmentNotifierProvider.notifier).setActiveEnvironment(null);
     ref.read(activeEnvironmentNameProvider.notifier).setActiveName(null);
   }
 
