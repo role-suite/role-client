@@ -20,8 +20,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true
-          cache-dependency-path: pubspec.lock
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get
@@ -38,8 +38,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true
-          cache-dependency-path: pubspec.lock
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get

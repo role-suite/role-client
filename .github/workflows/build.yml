@@ -9,7 +9,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.29.0'
   VERSION_NUMBER: ${{ github.run_number }}
 
 jobs:
@@ -21,9 +20,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-          cache-dependency-path: pubspec.lock
+          channel: 'stable'
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get
@@ -50,9 +49,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-          cache-dependency-path: pubspec.lock
+          channel: 'stable'
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get
@@ -79,9 +78,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-          cache-dependency-path: pubspec.lock
+          channel: 'stable'
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get
@@ -108,9 +107,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-          cache-dependency-path: pubspec.lock
+          channel: 'stable'
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get
@@ -137,9 +136,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-          cache-dependency-path: pubspec.lock
+          channel: 'stable'
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get
@@ -161,9 +160,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-          cache-dependency-path: pubspec.lock
+          channel: 'stable'
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get
@@ -185,9 +184,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-          cache-dependency-path: pubspec.lock
+          channel: 'stable'
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
 
       - name: Install dependencies
         run: flutter pub get
