@@ -1,0 +1,207 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.29.0'
+  VERSION_NUMBER: ${{ github.run_number }}
+
+jobs:
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Linux
+        run: flutter build linux --release
+
+      - name: Package artifact
+        run: |
+          cd build/linux/x64/release/bundle
+          tar -cvJf role-linux-x64.tar.xz .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: role-linux-x64
+          path: build/linux/x64/release/bundle/role-linux-x64.tar.xz
+          retention-days: 30
+
+  build-windows:
+    name: Build Windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Package artifact
+        run: |
+          cd build/windows/x64/runner/Release
+          powershell Compress-Archive -Path * -DestinationPath role-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: role-windows-x64
+          path: build/windows/x64/runner/Release/role-windows-x64.zip
+          retention-days: 30
+
+  build-macos-intel:
+    name: Build macOS (Intel)
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS
+        run: flutter build macos --release --no-codesign
+
+      - name: Package artifact
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r role-macos-x64.zip relay.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: role-macos-x64
+          path: build/macos/Build/Products/Release/role-macos-x64.zip
+          retention-days: 30
+
+  build-macos-arm:
+    name: Build macOS (Apple Silicon)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS
+        run: flutter build macos --release --no-codesign
+
+      - name: Package artifact
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r role-macos-arm64.zip relay.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: role-macos-arm64
+          path: build/macos/Build/Products/Release/role-macos-arm64.zip
+          retention-days: 30
+
+  build-android-apk:
+    name: Build Android (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: role-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+  build-android-aab:
+    name: Build Android (AAB)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: role-android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Web
+        run: flutter build web --release
+
+      - name: Package artifact
+        run: |
+          cd build/web
+          tar -cvzf role-web.tar.gz .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: role-web
+          path: build/web/role-web.tar.gz
+          retention-days: 30

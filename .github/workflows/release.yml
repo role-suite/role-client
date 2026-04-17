@@ -1,0 +1,181 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.29.0'
+  VERSION_NUMBER: ${{ github.run_number }}
+
+jobs:
+  build-all:
+    name: Build All Platforms
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux, windows, android-apk, android-aab, web]
+        include:
+          - platform: macos-intel
+            runs-on: macos-12
+          - platform: macos-arm
+            runs-on: macos-14
+          - platform: linux
+            runs-on: ubuntu-latest
+          - platform: windows
+            runs-on: ubuntu-latest
+          - platform: android-apk
+            runs-on: ubuntu-latest
+          - platform: android-aab
+            runs-on: ubuntu-latest
+          - platform: web
+            runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        if: matrix.platform != 'macos-intel' && matrix.platform != 'macos-arm'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Set up Flutter (macOS)
+        if: matrix.platform == 'macos-intel' || matrix.platform == 'macos-arm'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-dependency-path: pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Linux
+        if: matrix.platform == 'linux'
+        run: |
+          flutter build linux --release
+          cd build/linux/x64/release/bundle
+          tar -cvJf role-linux-x64.tar.xz .
+
+      - name: Build Windows
+        if: matrix.platform == 'windows'
+        run: |
+          flutter build windows --release
+          cd build/windows/x64/runner/Release
+          powershell Compress-Archive -Path * -DestinationPath role-windows-x64.zip
+
+      - name: Build macOS Intel
+        if: matrix.platform == 'macos-intel'
+        run: |
+          flutter build macos --release --no-codesign
+          cd build/macos/Build/Products/Release
+          zip -r role-macos-x64.zip relay.app
+
+      - name: Build macOS ARM
+        if: matrix.platform == 'macos-arm'
+        run: |
+          flutter build macos --release --no-codesign
+          cd build/macos/Build/Products/Release
+          zip -r role-macos-arm64.zip relay.app
+
+      - name: Build Android APK
+        if: matrix.platform == 'android-apk'
+        run: flutter build apk --release
+
+      - name: Build Android AAB
+        if: matrix.platform == 'android-aab'
+        run: flutter build appbundle --release
+
+      - name: Build Web
+        if: matrix.platform == 'web'
+        run: |
+          flutter build web --release
+          cd build/web
+          tar -cvzf role-web.tar.gz .
+
+      - name: Upload Linux artifact
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: build/linux/x64/release/bundle/role-linux-x64.tar.xz
+
+      - name: Upload Windows artifact
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: build/windows/x64/runner/Release/role-windows-x64.zip
+
+      - name: Upload macOS Intel artifact
+        if: matrix.platform == 'macos-intel'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-x64
+          path: build/macos/Build/Products/Release/role-macos-x64.zip
+
+      - name: Upload macOS ARM artifact
+        if: matrix.platform == 'macos-arm'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-arm64
+          path: build/macos/Build/Products/Release/role-macos-arm64.zip
+
+      - name: Upload Android APK artifact
+        if: matrix.platform == 'android-apk'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload Android AAB artifact
+        if: matrix.platform == 'android-aab'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload Web artifact
+        if: matrix.platform == 'web'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-web
+          path: build/web/role-web.tar.gz
+
+  create-release:
+    name: Create Release
+    needs: build-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/release-linux/role-linux-x64.tar.xz
+            artifacts/release-windows/role-windows-x64.zip
+            artifacts/release-macos-x64/role-macos-x64.zip
+            artifacts/release-macos-arm64/role-macos-arm64.zip
+            artifacts/release-android-apk/app-release.apk
+            artifacts/release-android-aab/app-release.aab
+            artifacts/release-web/role-web.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
