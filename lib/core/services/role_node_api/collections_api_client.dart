@@ -25,7 +25,10 @@ class CollectionsApiClient {
 
   Future<Map<String, dynamic>> createCollection({required String name, String? description, String? workspaceId}) async {
     final wid = await _resolveWorkspaceId(workspaceId);
-    final payload = {'name': name, if (description != null) 'description': description};
+    final payload = {
+      'name': name,
+      ...?description != null ? {'description': description} : null,
+    };
     final data = await _http.post(RoleNodeEndpoints.workspaceCollections(wid), data: payload);
     return _asMap(data);
   }

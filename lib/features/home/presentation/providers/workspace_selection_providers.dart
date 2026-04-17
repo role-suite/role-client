@@ -3,11 +3,9 @@ import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/workspace_summary_model.dart';
 import 'package:relay/core/services/role_node_api/workspaces_api_client.dart';
 import 'package:relay/core/services/workspace_preferences_service.dart';
-import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
 import 'package:relay/features/home/environment/presentation/providers/environment_providers.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
 import 'package:relay/features/home/presentation/providers/home_ui_providers.dart';
-import 'package:relay/features/home/request/presentation/providers/request_providers.dart';
 
 final workspacesApiClientProvider = Provider<WorkspacesApiClient?>((ref) {
   final state = ref.watch(currentDataSourceStateProvider);

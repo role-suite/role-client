@@ -455,7 +455,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         final seenWorkspaceIds = <String>{};
                         final uniqueWorkspaces = <WorkspaceSummaryModel>[];
                         for (final workspace in workspaces) {
-                          if (workspace == null) continue;
                           final id = workspace.id;
                           if (seenWorkspaceIds.add(id)) {
                             uniqueWorkspaces.add(workspace);
