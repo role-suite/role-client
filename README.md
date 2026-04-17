@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/image/app_logo.png" alt="Röle Logo" width="120" height="120">
+  <img src="assets/image/app_logo.png" alt="Role Logo" width="120" height="120">
 </p>
 
 <h1 align="center">Röle</h1>
@@ -9,11 +9,14 @@
 </p>
 
 <p align="center">
+  <a href="#overview">Overview</a> •
   <a href="#features">Features</a> •
   <a href="#screenshots">Screenshots</a> •
   <a href="#installation">Installation</a> •
   <a href="#getting-started">Getting Started</a> •
+  <a href="#backend-integration">Backend Integration</a> •
   <a href="#architecture">Architecture</a> •
+  <a href="#technical-documentation">Docs</a> •
   <a href="#contributing">Contributing</a> •
   <a href="#license">License</a>
 </p>
@@ -22,71 +25,92 @@
 
 ## Overview
 
-**Röle** (Turkish for "Relay") is a lightweight, modern API client designed for developers who need a fast, cross-platform tool for testing REST APIs. Built with Flutter and following clean architecture principles, Röle offers a beautiful native experience on Windows, macOS, Linux, Android, and iOS.
+**Röle** is a lightweight API client for testing REST endpoints across desktop and mobile platforms.
 
-Whether you're debugging backend endpoints, testing microservices, or documenting API behavior, Röle provides an intuitive interface with powerful features like environment variable substitution, request collections, and Postman import support.
+The app supports both:
+
+- **Local mode**: store collections, requests, and environments on your device.
+- **API mode**: connect to a compatible backend (`role-server`) with account auth, workspace support, and team workflows.
+
+In addition to request editing and execution, Röle now includes collection running, request chaining, team workspace management, and request sharing/import flows.
 
 ## Features
 
-### Core Functionality
-- 🚀 **Full HTTP Method Support** - GET, POST, PUT, DELETE, PATCH, HEAD, and OPTIONS
-- 📝 **Request Editor** - Intuitive interface for composing requests with headers, query parameters, and body
-- 📊 **Response Viewer** - Formatted JSON/HTML response display with syntax highlighting
-- ⏱️ **Performance Metrics** - Track response times and status codes
-- 🔄 **Request History** - Review history entries
+### API Requesting
 
-### Organization
-- 📁 **Collections** - Organize requests into logical groups
-- 🌍 **Environments** - Define variables for different environments (development, staging, production)
-- 🔗 **Variable Substitution** - Use `{{variableName}}` syntax to dynamically inject environment values into URLs, headers, and bodies
+- HTTP methods: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `HEAD`, `OPTIONS`
+- Request editor with URL, headers, query params, and body
+- Response viewer with status, headers, body formatting, and timing
+- Per-request history snapshots
 
-### Import/Export
-- 📥 **Postman Import** - Seamlessly import Postman collections and environments
-- 📤 **Workspace Export** - Export your entire workspace (collections, requests, environments) as JSON
-- 🔀 **Conflict Resolution** - Smart handling of naming conflicts during import (skip, keep both, or overwrite)
+### Organization and Reuse
 
-### User Experience
-- 🎨 **Modern Design** - Clean, Material Design 3 interface with carefully crafted theming
-- 🌙 **Dark Mode** - Full dark theme support for comfortable late-night debugging
-- 📱 **Responsive Layout** - Adapts beautifully from mobile to desktop screen sizes
-- ⚡ **Fast & Native** - Compiled to native code for each platform
+- Collections to organize request sets
+- Environment variables with `{{variableName}}` substitution
+- Active collection and environment selectors
+- Request search/filter on home screen
 
-### Cross-Platform
-- 💻 Windows, macOS, Linux desktop support
-- 📱 Android and iOS mobile support
+### Import, Export, and Sync
+
+- Import workspace JSON (Röle and Postman-style exports)
+- Conflict handling during import (`Skip`, `Keep both`, `Overwrite`)
+- Export workspace JSON from the app
+- Sync local workspace data to a remote backend
+
+### Execution and Automation
+
+- **Collection Runner**: run all requests in a collection sequentially
+- **Run History**: inspect previous test runs with pass/fail summaries
+- **Request Chain (Flows)**: compose multi-step chained request execution with delays and previous-response passing
+
+### Team and Workspace Features (API mode)
+
+- Account registration and sign-in
+- Profile view and sign-out
+- Multiple workspaces with active workspace switching
+- Team workspace management:
+  - convert workspace to team
+  - invite members
+  - join via invitation token
+  - update member roles and remove members
+- Team exchange:
+  - share a request to another workspace
+  - import shared requests from inbox
+
+### UX and Platform
+
+- Material 3 UI with responsive desktop/mobile layout
+- Light, dark, and system theme modes
+- Update checks via GitHub releases
+- Supported platforms: Windows, macOS, Linux, Android, iOS
 
 ## Screenshots
 
 ### Home Screen
-The main interface showing your API request collections and recent requests.
 
 <p align="center">
   <img src="assets/screenshots/home-screen.png" alt="Röle Home Screen" width="800">
 </p>
 
 ### Request Editor
-Create and edit API requests with support for environment variables, headers, and request bodies.
 
 <p align="center">
   <img src="assets/screenshots/request-editor.png" alt="Röle Request Editor" width="800">
 </p>
 
 ### Request Body
-Compose JSON request bodies with a clean, intuitive editor.
 
 <p align="center">
   <img src="assets/screenshots/request-body.png" alt="Röle Request Body Editor" width="800">
 </p>
 
 ### Response Viewer
-View formatted JSON responses with status codes and response times.
 
 <p align="center">
   <img src="assets/screenshots/response-body.png" alt="Röle Response Body Viewer" width="800">
 </p>
 
 ### Response Headers
-Inspect detailed response headers for debugging and analysis.
 
 <p align="center">
   <img src="assets/screenshots/response-headers.png" alt="Röle Response Headers Viewer" width="800">
@@ -96,33 +120,36 @@ Inspect detailed response headers for debugging and analysis.
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (version 3.9.2 or higher)
-- For desktop: Platform-specific development tools
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.9.2` or newer
+- Platform development tooling:
   - **Windows**: Visual Studio 2022 with C++ workload
   - **macOS**: Xcode 14+
-  - **Linux**: Required packages (see [Flutter Linux docs](https://docs.flutter.dev/get-started/install/linux))
+  - **Linux**: required packages from Flutter Linux docs
 
 ### From Source
 
-1. **Clone the repository**
+1. Clone the repository:
+
    ```bash
-   git clone https://github.com/battletech45/relay.git
-   cd relay
+   git clone https://github.com/role-suite/role-client.git
+   cd role-client
    ```
 
-2. **Install dependencies**
+2. Install dependencies:
+
    ```bash
    flutter pub get
    ```
 
-3. **Run the application**
+3. Run the app:
+
    ```bash
-   # For desktop (macOS/Windows/Linux)
+   # Desktop
    flutter run -d macos
    flutter run -d windows
    flutter run -d linux
 
-   # For mobile
+   # Mobile
    flutter run -d android
    flutter run -d ios
    ```
@@ -148,189 +175,133 @@ flutter build ios --release
 
 ### Pre-built Releases
 
-Check the [Releases](https://github.com/battletech45/relay/releases) page for pre-built binaries for Windows.
+See [GitHub Releases](https://github.com/role-suite/role-client/releases).
 
 ## Getting Started
 
-### Creating Your First Request
+### 1) Create and Send a Request
 
-1. Launch Röle
-2. Click the **"New Request"** floating action button
-3. Enter a name for your request (e.g., "Get Users")
-4. Select the HTTP method (GET, POST, etc.)
-5. Enter the URL (e.g., `https://jsonplaceholder.typicode.com/users`)
-6. Click **"Send"** to execute the request
-7. View the response in the **Response Body** tab
+1. Launch Röle.
+2. Create a request from **New Request**.
+3. Choose method and URL.
+4. Add headers/body as needed.
+5. Click **Send** and inspect the response tabs.
 
-### Using Environment Variables
+### 2) Organize with Collections and Environments
 
-Environment variables let you switch between different API endpoints or authentication tokens without modifying your requests.
+1. Create a collection and attach requests to it.
+2. Create environments (for example: dev/staging/prod).
+3. Use variables in requests, such as `{{baseUrl}}/users`.
+4. Switch active collection/environment from the selectors.
 
-1. Open the **drawer menu** (hamburger icon)
-2. Click **"Create Environment"**
-3. Add variables like:
-   - `baseUrl` → `https://api.example.com`
-   - `apiKey` → `your-api-key-here`
-4. Select the environment from the **environment dropdown** in the app bar
-5. Use variables in your requests with the `{{variableName}}` syntax:
-   - URL: `{{baseUrl}}/users`
-   - Header: `Authorization: Bearer {{apiKey}}`
+### 3) Run Advanced Flows
 
-### Organizing with Collections
+- Open **Collection Runner** to execute a full collection and save run history.
+- Open **Flows / Request Chain** to configure sequential chained calls.
 
-1. Open the **drawer menu**
-2. Click **"Create Collection"**
-3. Name your collection (e.g., "User API")
-4. When creating new requests, select the collection from the dropdown
-5. Filter requests by collection using the **collection selector** in the app bar
+### 4) Team Workflows (API mode)
 
-### Importing from Postman
+- Sign in from **Profile** or while enabling API mode.
+- Manage team workspace membership in **Team workspace**.
+- Switch active workspace via **Switch workspace**.
+- Use **Team exchange** to share and import requests between workspaces.
 
-1. Export your Postman collection (Collection v2.1 format recommended)
-2. Open the **drawer menu** in Röle
-3. Click **"Import Workspace"**
-4. Select your `.json` file
-5. Handle any conflicts if prompted
-6. Your collections and environments are now imported!
+## Backend Integration
+
+Röle can work fully offline/local, or with a backend.
+
+- **Local mode**: data is stored on-device.
+- **API mode**: app connects to `role-server` using configured base URL.
+
+In API mode, you can authenticate with account login/registration. Access and refresh tokens are saved in data source preferences and used for authenticated API requests.
+
+For backend setup details, see:
+
+- [docs/03-CONNECTING-TO-BACKEND.md](docs/03-CONNECTING-TO-BACKEND.md)
+- [docs/04-AUTHENTICATION.md](docs/04-AUTHENTICATION.md)
 
 ## Technical Documentation
 
-Detailed technical documentation for developers and maintainers is in the **[docs/](docs/)** folder:
+Detailed technical docs live in [`docs/`](docs/):
 
-- [Documentation index](docs/README.md) — overview, architecture, connecting to backend, authentication, data model, configuration, deployment, development, and maintenance.
+- [Documentation index](docs/README.md)
+- [Architecture](docs/02-ARCHITECTURE.md)
+- [Development setup](docs/08-DEVELOPMENT.md)
+- [Maintenance guide](docs/09-MAINTENANCE.md)
 
 ## Architecture
 
-Röle follows **Clean Architecture** principles with a feature-based structure. For full technical detail see **[docs/](docs/)** (especially [01-OVERVIEW](docs/01-OVERVIEW.md) and [02-ARCHITECTURE](docs/02-ARCHITECTURE.md)).
+Röle follows a feature-oriented clean architecture with Riverpod providers and local/remote data sources.
 
-```
+```text
 lib/
-├── core/                    # Shared code across features
-│   ├── constants/           # ApiStyle, DataSourceMode, app constants
-│   ├── models/              # Data models (collections, requests, environments, workspace bundle)
-│   ├── services/            # Relay API clients, workspace API, sync, preferences, storage
-│   ├── theme/               # App theming (light/dark)
-│   ├── utils/               # Logger, UUID, request helpers
-│   └── presentation/       # Shared layout and widgets
+├── core/
+│   ├── constants/
+│   ├── models/
+│   ├── services/
+│   │   ├── relay_api/         # workspace REST client abstraction
+│   │   ├── role_node_api/     # auth/workspaces/shared requests/runs clients
+│   │   └── ...
+│   ├── theme/
+│   ├── utils/
+│   └── presentation/
 ├── features/
-│   ├── home/                # Collections, requests, environments, request runner, drawer
-│   ├── collection_runner/   # Run collections sequentially
-│   └── request_chain/       # Request chains and config
+│   ├── home/                  # requests, collections, environments, team/workspace UI
+│   ├── collection_runner/     # sequential collection execution + history
+│   └── request_chain/         # chained request execution
 └── main.dart
-```
-
-### Key Technologies
-
-| Technology | Purpose |
-|------------|---------|
-| [Flutter](https://flutter.dev) | Cross-platform UI framework |
-| [Riverpod](https://riverpod.dev) | State management |
-| [Dio](https://pub.dev/packages/dio) | HTTP client for requests and REST workspace |
-| [SharedPreferences](https://pub.dev/packages/shared_preferences) | Data source and theme preferences |
-| [PathProvider](https://pub.dev/packages/path_provider) | Local workspace file paths |
-| [FilePicker](https://pub.dev/packages/file_picker) | File selection dialogs |
-
-### Data Flow
-
-```mermaid
-graph LR
-    A[UI Widgets] --> B[Providers/ViewModels]
-    B --> C[Use Cases]
-    C --> D[Repositories]
-    D --> E[Data Sources]
-    E --> F[(Local Storage)]
 ```
 
 ## Configuration
 
-### App Constants
+Key values are in `lib/core/constants/app_constants.dart`:
 
-Key configuration values are defined in `lib/core/constant/app_constants.dart`:
-
-| Constant | Default Value | Description |
-|----------|---------------|-------------|
-| `appName` | Röle | Application display name |
-| `defaultConnectTimeout` | 15 seconds | HTTP connection timeout |
-| `defaultReceiveTimeout` | 30 seconds | HTTP receive timeout |
-| `maxHistoryEntriesPerRequest` | 20 | Maximum saved history per request |
-| `variableStart` / `variableEnd` | `{{` / `}}` | Environment variable syntax |
-
-### Supported HTTP Methods
-
-- `GET` - Retrieve resources
-- `POST` - Create resources
-- `PUT` - Update/replace resources
-- `DELETE` - Remove resources
-- `PATCH` - Partial update resources
-- `HEAD` - Retrieve headers only
-- `OPTIONS` - Discover allowed methods
+- `appName`: display name
+- `defaultConnectTimeout`: request connect timeout
+- `defaultReceiveTimeout`: response timeout
+- `maxHistoryEntriesPerRequest`: history limit per request
+- `variableStart` / `variableEnd`: variable delimiters (`{{` / `}}`)
 
 ## Development
 
-### Running Tests
-
-```bash
-flutter test
-```
-
-### Code Style
-
-This project uses Flutter's recommended lint rules. Check and fix issues with:
-
 ```bash
 flutter analyze
+flutter test
 ```
 
 ## Contributing
 
-Contributions are welcome! Here's how you can help:
+Contributions are welcome.
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+1. Fork the repository.
+2. Create a branch (`git checkout -b feature/my-change`).
+3. Commit your changes.
+4. Push and open a pull request.
 
-### Guidelines
+Additional guidelines:
 
-- Follow the existing code style and architecture patterns
-- Write meaningful commit messages
-- Add tests for new features when applicable
-- Update documentation as needed
-
-## Roadmap
-
-- [ ] Request history with response snapshots
-- [ ] Syntax highlighting for request/response bodies
-- [ ] GraphQL support
-- [ ] WebSocket testing
-- [ ] gRPC support
-- [ ] Request chaining and scripting
-- [ ] Team collaboration features
-- [ ] API documentation generation
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [SECURITY.md](SECURITY.md)
 
 ## FAQ
 
-### Why "Röle"?
+### What is Röle?
 
-"Röle" means "Relay" in Turkish. Just as a relay passes signals forward, Röle relays your API requests and brings back responses!
+"Röle" means "relay" in Turkish. The app relays API requests and responses between you and your services.
 
-### How is data stored?
+### Where is data stored?
 
-You can choose **Local** or **API** as the data source (drawer → Data source):
+- In **Local mode**, data is persisted on-device.
+- In **API mode**, data is loaded from and written to the backend workspace.
 
-- **Local**: Data is stored on your device (application documents directory). No server required.
-- **API**: Data is synced with a **role-server** backend over REST. Collections, requests, and environments are read from and written to the server. Optional API key applies when the server requires it.
+### Do I need a backend account?
 
-See [docs/03-CONNECTING-TO-BACKEND.md](docs/03-CONNECTING-TO-BACKEND.md) and [docs/04-AUTHENTICATION.md](docs/04-AUTHENTICATION.md) for configuration.
-
-### Can I use this for GraphQL APIs?
-
-Currently, Röle focuses on REST APIs. GraphQL support is on the roadmap for future releases.
+No for local-only usage. Yes for API mode features like team workspaces and request sharing.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
 
 ---
 
