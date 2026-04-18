@@ -67,6 +67,17 @@ jobs:
         if: matrix.platform == 'android-apk' || matrix.platform == 'android-aab'
         run: flutter config --no-enable-web
 
+      - name: Set up Java 17
+        if: matrix.platform == 'android-apk' || matrix.platform == 'android-aab'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configure Flutter JDK (Android)
+        if: matrix.platform == 'android-apk' || matrix.platform == 'android-aab'
+        run: flutter config --jdk-dir="$JAVA_HOME"
+
       - name: Install dependencies
         run: flutter pub get
 

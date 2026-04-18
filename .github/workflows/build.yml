@@ -155,8 +155,16 @@ jobs:
           cache-key: flutter-{{ .Os }}-{{ .Version }}
           cache-path: ${{ runner.temp }}/flutter
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Configure Flutter (Android, no Web)
-        run: flutter config --no-enable-web
+        run: |
+          flutter config --jdk-dir="$JAVA_HOME"
+          flutter config --no-enable-web
 
       - name: Install dependencies
         run: flutter pub get
@@ -182,8 +190,16 @@ jobs:
           cache-key: flutter-{{ .Os }}-{{ .Version }}
           cache-path: ${{ runner.temp }}/flutter
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Configure Flutter (Android, no Web)
-        run: flutter config --no-enable-web
+        run: |
+          flutter config --jdk-dir="$JAVA_HOME"
+          flutter config --no-enable-web
 
       - name: Install dependencies
         run: flutter pub get
