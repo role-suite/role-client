@@ -74,8 +74,7 @@ jobs:
         if: matrix.platform == 'linux'
         run: |
           flutter build linux --release
-          cd build/linux/x64/release/bundle
-          tar -cvJf role-linux-x64.tar.xz .
+          tar -cJf build/linux/x64/release/role-linux-x64.tar.xz -C build/linux/x64/release/bundle .
 
       - name: Build Windows
         if: matrix.platform == 'windows'
@@ -111,7 +110,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-linux
-          path: build/linux/x64/release/bundle/role-linux-x64.tar.xz
+          path: build/linux/x64/release/role-linux-x64.tar.xz
 
       - name: Upload Windows artifact
         if: matrix.platform == 'windows'

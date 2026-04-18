@@ -40,13 +40,12 @@ jobs:
 
       - name: Package artifact
         run: |
-          cd build/linux/x64/release/bundle
-          tar -cvJf role-linux-x64.tar.xz .
+          tar -cJf build/linux/x64/release/role-linux-x64.tar.xz -C build/linux/x64/release/bundle .
 
       - uses: actions/upload-artifact@v4
         with:
           name: role-linux-x64
-          path: build/linux/x64/release/bundle/role-linux-x64.tar.xz
+          path: build/linux/x64/release/role-linux-x64.tar.xz
           retention-days: 30
 
   build-windows:
