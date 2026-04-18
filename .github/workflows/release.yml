@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
@@ -14,20 +17,19 @@ env:
 jobs:
   build-all:
     name: Build All Platforms
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux, windows, android-apk, android-aab]
         include:
+          - platform: linux
+            runs-on: ubuntu-22.04
+          - platform: windows
+            runs-on: windows-2022
           - platform: macos-intel
             runs-on: macos-13
           - platform: macos-arm
             runs-on: macos-14
-          - platform: linux
-            runs-on: ubuntu-22.04
-          - platform: windows
-            runs-on: ubuntu-22.04
           - platform: android-apk
             runs-on: ubuntu-22.04
           - platform: android-aab
@@ -49,11 +51,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
 
-      - name: Install Windows dependencies
+      - name: Configure Flutter (Linux, no Web)
+        if: matrix.platform == 'linux'
+        run: flutter config --enable-linux-desktop --no-enable-web
+
+      - name: Configure Flutter (Windows, no Web)
         if: matrix.platform == 'windows'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mingw-w64
+        run: flutter config --enable-windows-desktop --no-enable-web
+
+      - name: Configure Flutter (macOS, no Web)
+        if: matrix.platform == 'macos-intel' || matrix.platform == 'macos-arm'
+        run: flutter config --enable-macos-desktop --no-enable-web
+
+      - name: Configure Flutter (Android, no Web)
+        if: matrix.platform == 'android-apk' || matrix.platform == 'android-aab'
+        run: flutter config --no-enable-web
 
       - name: Install dependencies
         run: flutter pub get
@@ -67,10 +79,10 @@ jobs:
 
       - name: Build Windows
         if: matrix.platform == 'windows'
+        shell: pwsh
         run: |
           flutter build windows --release
-          cd build/windows/x64/runner/Release
-          powershell Compress-Archive -Path * -DestinationPath role-windows-x64.zip
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows/x64/runner/Release/role-windows-x64.zip
 
       - name: Build macOS Intel
         if: matrix.platform == 'macos-intel'

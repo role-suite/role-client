@@ -23,6 +23,9 @@ jobs:
           cache-key: flutter-{{ .Os }}-{{ .Version }}
           cache-path: ${{ runner.temp }}/flutter
 
+      - name: Configure Flutter (no Web)
+        run: flutter config --no-enable-web
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -40,6 +43,9 @@ jobs:
           channel: 'stable'
           cache-key: flutter-{{ .Os }}-{{ .Version }}
           cache-path: ${{ runner.temp }}/flutter
+
+      - name: Configure Flutter (no Web)
+        run: flutter config --no-enable-web
 
       - name: Install dependencies
         run: flutter pub get
