@@ -86,14 +86,14 @@ jobs:
       - name: Build macOS Intel
         if: matrix.platform == 'macos-intel'
         run: |
-          flutter build macos --release --no-codesign
+          flutter build macos --release
           cd build/macos/Build/Products/Release
           zip -r role-macos-x64.zip relay.app
 
       - name: Build macOS ARM
         if: matrix.platform == 'macos-arm'
         run: |
-          flutter build macos --release --no-codesign
+          flutter build macos --release
           cd build/macos/Build/Products/Release
           zip -r role-macos-arm64.zip relay.app
 
