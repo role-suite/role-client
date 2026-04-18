@@ -26,8 +26,6 @@ jobs:
             runs-on: ubuntu-22.04
           - platform: windows
             runs-on: windows-2022
-          - platform: macos-intel
-            runs-on: macos-13
           - platform: macos-arm
             runs-on: macos-14
           - platform: android-apk
@@ -60,7 +58,7 @@ jobs:
         run: flutter config --enable-windows-desktop --no-enable-web
 
       - name: Configure Flutter (macOS, no Web)
-        if: matrix.platform == 'macos-intel' || matrix.platform == 'macos-arm'
+        if: matrix.platform == 'macos-arm'
         run: flutter config --enable-macos-desktop --no-enable-web
 
       - name: Configure Flutter (Android, no Web)
@@ -94,13 +92,6 @@ jobs:
           flutter build windows --release
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows/x64/runner/Release/role-windows-x64.zip
 
-      - name: Build macOS Intel
-        if: matrix.platform == 'macos-intel'
-        run: |
-          flutter build macos --release
-          cd build/macos/Build/Products/Release
-          zip -r role-macos-x64.zip relay.app
-
       - name: Build macOS ARM
         if: matrix.platform == 'macos-arm'
         run: |
@@ -129,13 +120,6 @@ jobs:
         with:
           name: release-windows
           path: build/windows/x64/runner/Release/role-windows-x64.zip
-
-      - name: Upload macOS Intel artifact
-        if: matrix.platform == 'macos-intel'
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-macos-x64
-          path: build/macos/Build/Products/Release/role-macos-x64.zip
 
       - name: Upload macOS ARM artifact
         if: matrix.platform == 'macos-arm'
@@ -180,7 +164,6 @@ jobs:
           files: |
             artifacts/release-linux/role-linux-x64.tar.xz
             artifacts/release-windows/role-windows-x64.zip
-            artifacts/release-macos-x64/role-macos-x64.zip
             artifacts/release-macos-arm64/role-macos-arm64.zip
             artifacts/release-android-apk/app-release.apk
             artifacts/release-android-aab/app-release.aab

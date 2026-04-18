@@ -79,38 +79,6 @@ jobs:
           path: build/windows/x64/runner/Release/role-windows-x64.zip
           retention-days: 30
 
-  build-macos-intel:
-    name: Build macOS (Intel)
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache-key: flutter-{{ .Os }}-{{ .Version }}
-          cache-path: ${{ runner.temp }}/flutter
-
-      - name: Configure Flutter (macOS, no Web)
-        run: flutter config --enable-macos-desktop --no-enable-web
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build macOS
-        run: flutter build macos --release
-
-      - name: Package artifact
-        run: |
-          cd build/macos/Build/Products/Release
-          zip -r role-macos-x64.zip relay.app
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: role-macos-x64
-          path: build/macos/Build/Products/Release/role-macos-x64.zip
-          retention-days: 30
-
   build-macos-arm:
     name: Build macOS (Apple Silicon)
     runs-on: macos-14
