@@ -158,6 +158,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ env.VERSION_NUMBER }}
+          target_commitish: ${{ github.sha }}
+          name: Release v${{ env.VERSION_NUMBER }}
           draft: true
           prerelease: false
           generate_release_notes: true
