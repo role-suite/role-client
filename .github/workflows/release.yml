@@ -12,11 +12,93 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  VERSION_NUMBER: ${{ github.run_number }}
+  FLUTTER_CHANNEL: stable
 
 jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
+
+      - name: Configure Flutter (no Web)
+        run: flutter config --no-enable-web
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze code
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+  test:
+    name: Test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
+
+      - name: Configure Flutter (no Web)
+        run: flutter config --no-enable-web
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test --reporter=expanded
+
+  prepare-version:
+    name: Prepare Version
+    needs:
+      - analyze
+      - test
+    runs-on: ubuntu-22.04
+    outputs:
+      app_version: ${{ steps.version.outputs.app_version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      tag: ${{ steps.version.outputs.tag }}
+      release_name: ${{ steps.version.outputs.release_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute release version
+        id: version
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib
+          import re
+
+          pubspec = pathlib.Path("pubspec.yaml").read_text(encoding="utf-8")
+          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)(?:\+(\d+))?\s*$", pubspec, re.MULTILINE)
+          if not match:
+            raise SystemExit("Could not parse version from pubspec.yaml")
+
+          major, minor, _patch, _build = match.groups()
+          run_number = "${{ github.run_number }}"
+
+          app_version = f"{major}.{minor}.{run_number}"
+          build_number = run_number
+
+          print(f"app_version={app_version}")
+          print(f"build_number={build_number}")
+          print(f"tag=v{app_version}")
+          print(f"release_name=Release v{app_version}")
+          PY
+
   build-all:
     name: Build All Platforms
+    needs: prepare-version
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -39,7 +121,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: ${{ env.FLUTTER_CHANNEL }}
           cache-key: flutter-{{ .Os }}-{{ .Version }}
           cache-path: ${{ runner.temp }}/flutter
 
@@ -82,30 +164,30 @@ jobs:
       - name: Build Linux
         if: matrix.platform == 'linux'
         run: |
-          flutter build linux --release
+          flutter build linux --release --build-name="${{ needs.prepare-version.outputs.app_version }}" --build-number="${{ needs.prepare-version.outputs.build_number }}"
           tar -cJf build/linux/x64/release/role-linux-x64.tar.xz -C build/linux/x64/release/bundle .
 
       - name: Build Windows
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          flutter build windows --release
+          flutter build windows --release --build-name="${{ needs.prepare-version.outputs.app_version }}" --build-number="${{ needs.prepare-version.outputs.build_number }}"
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows/x64/runner/Release/role-windows-x64.zip
 
       - name: Build macOS ARM
         if: matrix.platform == 'macos-arm'
         run: |
-          flutter build macos --release
+          flutter build macos --release --build-name="${{ needs.prepare-version.outputs.app_version }}" --build-number="${{ needs.prepare-version.outputs.build_number }}"
           cd build/macos/Build/Products/Release
           zip -r role-macos-arm64.zip relay.app
 
       - name: Build Android APK
         if: matrix.platform == 'android-apk'
-        run: flutter build apk --release
+        run: flutter build apk --release --build-name="${{ needs.prepare-version.outputs.app_version }}" --build-number="${{ needs.prepare-version.outputs.build_number }}"
 
       - name: Build Android AAB
         if: matrix.platform == 'android-aab'
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --build-name="${{ needs.prepare-version.outputs.app_version }}" --build-number="${{ needs.prepare-version.outputs.build_number }}"
 
       - name: Upload Linux artifact
         if: matrix.platform == 'linux'
@@ -144,7 +226,9 @@ jobs:
 
   create-release:
     name: Create Release
-    needs: build-all
+    needs:
+      - prepare-version
+      - build-all
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -158,10 +242,10 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION_NUMBER }}
+          tag_name: ${{ needs.prepare-version.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: Release v${{ env.VERSION_NUMBER }}
-          draft: true
+          name: ${{ needs.prepare-version.outputs.release_name }}
+          draft: false
           prerelease: false
           generate_release_notes: true
           files: |
