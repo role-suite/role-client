@@ -1,11 +1,11 @@
-name: CI
+name: CI Analyze
 
 on:
   pull_request:
     branches: [main]
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-analyze-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache-key: flutter-{{ .Os }}-{{ .Version }}
           cache-path: ${{ runner.temp }}/flutter
 
@@ -29,24 +29,3 @@ jobs:
 
       - name: Analyze code
         run: flutter analyze --fatal-infos --fatal-warnings
-
-  test:
-    name: Test
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache-key: flutter-{{ .Os }}-{{ .Version }}
-          cache-path: ${{ runner.temp }}/flutter
-
-      - name: Configure Flutter (no Web)
-        run: flutter config --no-enable-web
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Run tests
-        run: flutter test --reporter=expanded

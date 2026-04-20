@@ -1,0 +1,31 @@
+name: CI Test
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache-key: flutter-{{ .Os }}-{{ .Version }}
+          cache-path: ${{ runner.temp }}/flutter
+
+      - name: Configure Flutter (no Web)
+        run: flutter config --no-enable-web
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test --reporter=expanded
