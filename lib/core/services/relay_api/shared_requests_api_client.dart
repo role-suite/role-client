@@ -1,5 +1,5 @@
 import 'package:relay/core/services/relay_api/relay_api_http.dart';
-import 'package:role_sdk/role_sdk_endpoints.dart';
+import 'package:relay/core/services/relay_api/role_sdk_endpoints.dart';
 
 class SharedRequestsApiClient {
   SharedRequestsApiClient({required String baseUrl, required String accessToken, String? workspaceId})
@@ -40,8 +40,18 @@ class SharedRequestsApiClient {
   }
 
   static List<Map<String, dynamic>> _asList(dynamic value) {
-    if (value is! List) return const [];
-    return value.whereType<Map<String, dynamic>>().toList();
+    if (value is List) {
+      return value.whereType<Map<String, dynamic>>().toList();
+    }
+
+    if (value is Map<String, dynamic>) {
+      final items = value['items'] ?? value['data'];
+      if (items is List) {
+        return items.whereType<Map<String, dynamic>>().toList();
+      }
+    }
+
+    return const [];
   }
 
   static Map<String, dynamic> _asMap(dynamic value) {

@@ -3,7 +3,7 @@ import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
-import 'package:role_sdk/role_sdk_endpoints.dart';
+import 'package:relay/core/services/relay_api/role_sdk_endpoints.dart';
 import 'package:relay/core/services/relay_api/relay_api_http.dart';
 import 'package:relay/core/utils/extension.dart';
 
@@ -426,8 +426,18 @@ class RestRelayApiClient implements RelayApiClient {
   }
 
   static List<Map<String, dynamic>> _asList(dynamic value) {
-    if (value is! List) return const [];
-    return value.whereType<Map<String, dynamic>>().toList();
+    if (value is List) {
+      return value.whereType<Map<String, dynamic>>().toList();
+    }
+
+    if (value is Map<String, dynamic>) {
+      final items = value['items'] ?? value['data'];
+      if (items is List) {
+        return items.whereType<Map<String, dynamic>>().toList();
+      }
+    }
+
+    return const [];
   }
 
   static String? _readString(Map<String, dynamic> json, List<String> keys) {
