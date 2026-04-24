@@ -1,4 +1,4 @@
-import 'package:role_sdk/role_sdk_endpoints.dart';
+import 'package:relay/core/services/relay_api/role_sdk_endpoints.dart';
 import 'package:relay/core/services/relay_api/relay_api_http.dart';
 
 class AuthApiClient {
