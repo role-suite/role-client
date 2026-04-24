@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
 import 'package:relay/core/presentation/widgets/app_text_field.dart';
-import 'package:relay/core/services/role_node_api/auth_api_client.dart';
+import 'package:relay/core/services/relay_api/auth_api_client.dart';
 import 'package:relay/core/utils/error_utils.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 
@@ -36,7 +37,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   void initState() {
     super.initState();
-    _baseUrlController = TextEditingController(text: widget.initialConfig?.baseUrl ?? '');
+    _baseUrlController = TextEditingController(text: widget.initialConfig?.baseUrl ?? AppConstants.defaultBackendBaseUrl);
     _nameController = TextEditingController();
     _teamNameController = TextEditingController();
     _emailController = TextEditingController();
@@ -193,7 +194,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       AppTextField(
                         controller: _baseUrlController,
                         label: 'Backend base URL',
-                        hint: 'http://localhost:3000',
+                        hint: AppConstants.defaultBackendBaseUrl,
                         keyboardType: TextInputType.url,
                         onChanged: (_) => setState(() => _error = null),
                       ),

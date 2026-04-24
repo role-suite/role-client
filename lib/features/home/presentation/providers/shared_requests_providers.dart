@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/shared_request_model.dart';
-import 'package:relay/core/services/role_node_api/shared_requests_api_client.dart';
+import 'package:relay/core/services/relay_api/shared_requests_api_client.dart';
 import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
 import 'package:relay/features/home/environment/presentation/providers/environment_providers.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';

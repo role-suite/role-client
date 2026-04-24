@@ -1,7 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,8 +25,8 @@ class RequestRunnerPage extends ConsumerStatefulWidget {
 
 class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
   bool _isSending = false;
-  Response<dynamic>? _response;
-  DioException? _error;
+  ApiResponse<dynamic>? _response;
+  ApiServiceException? _error;
   Duration? _duration;
   bool _isPermissionError = false;
 
@@ -61,13 +59,12 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     debugPrint('Resolved URL: $resolvedUrl');
     debugPrint('Resolved headers: ${built.headers}');
 
-    final dio = ApiService.instance.dio;
-
     final stopwatch = Stopwatch()..start();
     try {
-      final response = await dio.request<dynamic>(
-        resolvedUrl,
-        options: Options(method: widget.request.method.name, headers: built.headers.isEmpty ? null : built.headers),
+      final response = await ApiService.instance.send<dynamic>(
+        method: widget.request.method.name,
+        url: resolvedUrl,
+        headers: built.headers.isEmpty ? null : built.headers,
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
         data: built.body,
       );
@@ -76,41 +73,23 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
         _response = response;
         _duration = stopwatch.elapsed;
       });
-    } on DioException catch (e) {
+    } on ApiServiceException catch (e) {
       stopwatch.stop();
-      debugPrint('DioException while sending request:');
-      debugPrint('  type: ${e.type}');
+      debugPrint('ApiServiceException while sending request:');
       debugPrint('  message: ${e.message}');
-      debugPrint('  error: ${e.error}');
-      debugPrint('  status code: ${e.response?.statusCode}');
-      debugPrint('  status message: ${e.response?.statusMessage}');
-
-      // Detect macOS-style permission errors (Operation not permitted / errno = 1)
-      bool permissionError = false;
-      final underlying = e.error;
-      if (underlying is SocketException) {
-        final osError = underlying.osError;
-        final code = osError?.errorCode;
-        final message = osError?.message.toLowerCase() ?? '';
-        if (code == 1 || message.contains('operation not permitted')) {
-          permissionError = true;
-        }
-      }
+      debugPrint('  status code: ${e.statusCode}');
+      debugPrint('  status message: ${e.statusMessage}');
 
       setState(() {
         _error = e;
-        _response = e.response;
         _duration = stopwatch.elapsed;
-        _isPermissionError = permissionError;
+        _isPermissionError = e.isPermissionError;
       });
     } catch (e) {
       stopwatch.stop();
       debugPrint('Unexpected error while sending request: $e');
       setState(() {
-        _error = DioException(
-          requestOptions: RequestOptions(path: resolvedUrl),
-          error: e,
-        );
+        _error = ApiServiceException(message: e.toString(), cause: e);
         _duration = stopwatch.elapsed;
       });
     } finally {
@@ -254,7 +233,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     }
 
     if (_error != null && _response == null) {
-      final baseError = _error!.message ?? _error!.error?.toString() ?? _error.toString();
+      final baseError = _error!.message;
       if (_isPermissionError) {
         return _buildPermissionErrorPanel(context, baseError);
       }
@@ -282,7 +261,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
     }
 
     if (_error != null && _response == null) {
-      final baseError = _error!.message ?? _error!.error?.toString() ?? _error.toString();
+      final baseError = _error!.message;
       if (_isPermissionError) {
         return _buildPermissionErrorPanel(context, baseError);
       }
@@ -293,7 +272,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       return _buildStatusPanel(context, 'Send the request to see the response headers.', color: Theme.of(context).colorScheme.onSurfaceVariant);
     }
 
-    final headers = _response!.headers.map.map((key, values) => MapEntry(key, values.join(', ')));
+    final headers = _response!.headers.map((key, values) => MapEntry(key, values.join(', ')));
     final content = headers.isEmpty ? 'No response headers' : _prettifyMap(headers);
     return _buildMonospacePanel(context, content, selectable: true);
   }
@@ -397,7 +376,7 @@ class _RequestRunnerPageState extends ConsumerState<RequestRunnerPage> {
       return false;
     }
 
-    final contentType = _response!.headers.value('content-type')?.toLowerCase() ?? '';
+    final contentType = _response!.headerValue('content-type')?.toLowerCase() ?? '';
     if (contentType.contains('text/html') || contentType.contains('application/xhtml')) {
       return true;
     }

@@ -1,22 +1,22 @@
-import 'package:dio/dio.dart';
-
 import 'package:relay/core/models/workspace_bundle.dart';
 import 'package:relay/core/utils/logger.dart';
 import 'package:relay/core/services/workspace_api/workspace_api_client.dart';
+import 'package:role_sdk/role_sdk_http.dart';
 
 /// REST implementation: GET/PUT [baseUrl]/workspace with WorkspaceBundle JSON.
 class RestWorkspaceClient implements WorkspaceApiClient {
   RestWorkspaceClient({required String baseUrl, String? apiKey}) {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
-    _baseUrl = normalizedBase.isEmpty ? '' : normalizedBase;
-    _dio = Dio(BaseOptions(
+    _baseUrl = normalizedBase.isEmpty ? RoleSdkHttpClient.defaultBackendBaseUrl : normalizedBase;
+    _sdkHttp = RoleSdkHttpClient(
+      baseUrl: _baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
-      headers: _buildHeaders(apiKey),
-    ));
+      defaultHeaders: _buildHeaders(apiKey),
+    );
   }
 
-  late final Dio _dio;
+  late final RoleSdkHttpClient _sdkHttp;
   late final String _baseUrl;
 
   Map<String, String>? _buildHeaders(String? apiKey) {
@@ -31,22 +31,19 @@ class RestWorkspaceClient implements WorkspaceApiClient {
 
   @override
   Future<WorkspaceBundle> getWorkspace() async {
-    if (_baseUrl.isEmpty) {
-      throw ArgumentError('Remote workspace base URL is not set');
-    }
     try {
       AppLogger.debug('REST: Fetching workspace from: $_workspaceUrl');
-      final response = await _dio.get<Map<String, dynamic>>(_workspaceUrl);
+      final response = await _sdkHttp.get<Map<String, dynamic>>('/workspace');
       final data = response.data;
       if (data == null) {
         throw const FormatException('Empty response from workspace API');
       }
       return WorkspaceBundle.fromJson(data);
-    } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      final statusMessage = e.response?.statusMessage;
-      final responseData = e.response?.data;
-      final url = e.requestOptions.uri.toString();
+    } on RoleSdkHttpException catch (e) {
+      final statusCode = e.statusCode;
+      final statusMessage = e.statusMessage;
+      final responseData = e.responseData;
+      final url = _workspaceUrl;
 
       AppLogger.error('RestWorkspaceClient.getWorkspace failed');
       AppLogger.error('  URL: $url');
@@ -71,15 +68,12 @@ class RestWorkspaceClient implements WorkspaceApiClient {
 
   @override
   Future<void> putWorkspace(WorkspaceBundle bundle) async {
-    if (_baseUrl.isEmpty) {
-      throw ArgumentError('Remote workspace base URL is not set');
-    }
     try {
       AppLogger.debug('REST: Pushing workspace to: $_workspaceUrl');
-      await _dio.put(_workspaceUrl, data: bundle.toJson());
-    } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      final url = e.requestOptions.uri.toString();
+      await _sdkHttp.request<void>(method: 'PUT', path: '/workspace', data: bundle.toJson());
+    } on RoleSdkHttpException catch (e) {
+      final statusCode = e.statusCode;
+      final url = _workspaceUrl;
       AppLogger.error('RestWorkspaceClient.putWorkspace failed: $url ($statusCode)');
       if (statusCode == 400) {
         throw Exception('Server returned 400 for PUT $url.');

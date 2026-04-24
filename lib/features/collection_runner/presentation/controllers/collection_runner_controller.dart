@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
@@ -159,13 +158,13 @@ class CollectionRunnerController extends Notifier<CollectionRunnerState> {
     final resolvedQueryParams = <String, String>{for (final entry in request.queryParams.entries) entry.key: resolve(entry.value)};
     final built = RequestBuildHelper.buildForSend(request, resolve, rawBody: request.body);
 
-    final dio = ApiService.instance.dio;
     final stopwatch = Stopwatch()..start();
 
     try {
-      final response = await dio.request<dynamic>(
-        resolvedUrl,
-        options: Options(method: request.method.name, headers: built.headers.isEmpty ? null : built.headers),
+      final response = await ApiService.instance.send<dynamic>(
+        method: request.method.name,
+        url: resolvedUrl,
+        headers: built.headers.isEmpty ? null : built.headers,
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
         data: built.body,
       );
@@ -178,15 +177,15 @@ class CollectionRunnerController extends Notifier<CollectionRunnerState> {
         statusMessage: response.statusMessage,
         duration: stopwatch.elapsed,
       );
-    } on DioException catch (e) {
+    } on ApiServiceException catch (e) {
       stopwatch.stop();
       return CollectionRunResult(
         request: request,
         status: CollectionRunStatus.failed,
-        statusCode: e.response?.statusCode,
-        statusMessage: e.response?.statusMessage ?? e.message,
+        statusCode: e.statusCode,
+        statusMessage: e.statusMessage ?? e.message,
         duration: stopwatch.elapsed,
-        errorMessage: e.message ?? e.error?.toString(),
+        errorMessage: e.message,
       );
     } catch (e) {
       stopwatch.stop();

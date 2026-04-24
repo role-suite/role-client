@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants/app_constants.dart';
 import '../constants/api_style.dart';
 import '../constants/data_source_mode.dart';
 import '../models/data_source_config.dart';
@@ -30,7 +31,7 @@ class DataSourcePreferencesService {
 
   static Future<DataSourceConfig> loadConfig() async {
     final prefs = await SharedPreferences.getInstance();
-    final baseUrl = prefs.getString(_baseUrlKey) ?? '';
+    final baseUrl = prefs.getString(_baseUrlKey) ?? AppConstants.defaultBackendBaseUrl;
     final apiKey = prefs.getString(_apiKeyKey);
     final refreshToken = prefs.getString(_refreshTokenKey);
     return DataSourceConfig(baseUrl: baseUrl, apiKey: apiKey, refreshToken: refreshToken, apiStyle: ApiStyle.rest);

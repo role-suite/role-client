@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
@@ -11,7 +10,8 @@ import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
-import 'package:relay/core/services/role_node_api/workspace_updates_api_client.dart';
+import 'package:relay/core/services/relay_api/relay_api_http.dart';
+import 'package:relay/core/services/relay_api/workspace_updates_api_client.dart';
 import 'package:relay/core/utils/extension.dart';
 
 import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
@@ -230,11 +230,10 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
       _offline = false;
       _clearPollingError();
       _scheduleNextPoll(_pollInterval);
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      if (code == 401 || code == 403) {
+    } on RelayApiException catch (e) {
+      if (e.isAuthError) {
         await _handleAuthInvalid();
-      } else if (_isOfflineError(e)) {
+      } else if (e.isOffline) {
         _handleOffline();
       } else {
         _recordFailure('Workspace updates paused after repeated errors.');
@@ -250,10 +249,6 @@ class _WorkspaceUpdatesPoller with WidgetsBindingObserver {
     } finally {
       _pollInFlight = false;
     }
-  }
-
-  bool _isOfflineError(DioException e) {
-    return e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout;
   }
 
   void _handleOffline() {

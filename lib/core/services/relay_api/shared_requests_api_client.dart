@@ -1,10 +1,11 @@
-import 'package:relay/core/services/role_node_api/role_node_http.dart';
+import 'package:relay/core/services/relay_api/relay_api_http.dart';
+import 'package:role_sdk/role_sdk_endpoints.dart';
 
 class SharedRequestsApiClient {
   SharedRequestsApiClient({required String baseUrl, required String accessToken, String? workspaceId})
-    : _http = RoleNodeHttp(baseUrl: baseUrl, accessToken: accessToken, workspaceId: workspaceId);
+    : _http = RelayApiHttp(baseUrl: baseUrl, accessToken: accessToken, workspaceId: workspaceId);
 
-  final RoleNodeHttp _http;
+  final RelayApiHttp _http;
 
   String get baseUrl => _http.baseUrl;
 
@@ -13,7 +14,7 @@ class SharedRequestsApiClient {
   }
 
   Future<List<Map<String, dynamic>>> listSharedRequests(String workspaceId) async {
-    final data = await _http.get('/api/workspaces/$workspaceId/requests/shared');
+    final data = await _http.get(RoleSdkEndpoints.workspaceSharedRequests(workspaceId));
     return _asList(data);
   }
 
@@ -28,13 +29,13 @@ class SharedRequestsApiClient {
       'request': request,
       if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
     };
-    final data = await _http.post('/api/workspaces/$workspaceId/requests/share', data: payload);
+    final data = await _http.post(RoleSdkEndpoints.workspaceShareRequest(workspaceId), data: payload);
     return _asMap(data);
   }
 
   Future<Map<String, dynamic>> importSharedRequest({required String workspaceId, required String sharedRequestId, String? collectionId}) async {
     final payload = <String, dynamic>{if (collectionId != null && collectionId.trim().isNotEmpty) 'collectionId': collectionId.trim()};
-    final data = await _http.post('/api/workspaces/$workspaceId/requests/shared/$sharedRequestId/import', data: payload);
+    final data = await _http.post(RoleSdkEndpoints.workspaceImportSharedRequest(workspaceId, sharedRequestId), data: payload);
     return _asMap(data);
   }
 

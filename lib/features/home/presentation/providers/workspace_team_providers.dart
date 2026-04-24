@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/workspace_invitation_model.dart';
 import 'package:relay/core/models/workspace_member_model.dart';
-import 'package:relay/core/services/role_node_api/workspaces_api_client.dart';
+import 'package:relay/core/services/relay_api/workspaces_api_client.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
 import 'package:relay/features/home/presentation/providers/home_ui_providers.dart';
 import 'package:relay/features/home/presentation/providers/workspace_selection_providers.dart';

@@ -1,23 +1,16 @@
-import 'package:dio/dio.dart';
 import 'package:relay/core/models/api_request_model.dart';
+import 'package:relay/core/services/api_service.dart';
 
 /// Result of executing a single request in a chain
 class RequestChainItemResult {
   final ApiRequestModel request;
-  final Response<dynamic>? response;
-  final DioException? error;
+  final ApiResponse<dynamic>? response;
+  final ApiServiceException? error;
   final Duration duration;
   final int index; // Position in the chain
   final bool success;
 
-  RequestChainItemResult({
-    required this.request,
-    this.response,
-    this.error,
-    required this.duration,
-    required this.index,
-    required this.success,
-  });
+  RequestChainItemResult({required this.request, this.response, this.error, required this.duration, required this.index, required this.success});
 }
 
 /// Result of executing an entire request chain

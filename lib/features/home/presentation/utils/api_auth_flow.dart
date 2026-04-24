@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/models/data_source_config.dart';
-import 'package:relay/core/services/role_node_api/auth_api_client.dart';
+import 'package:relay/core/services/relay_api/auth_api_client.dart';
 import 'package:relay/features/home/presentation/auth_screen.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 

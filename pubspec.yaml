@@ -11,7 +11,6 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  dio: ^5.9.0
   path: ^1.9.1
   path_provider: ^2.1.5
   file_picker: ^10.3.7
@@ -21,6 +20,8 @@ dependencies:
   shared_preferences: ^2.3.3
   url_launcher: ^6.2.5
   package_info_plus: ^8.0.0
+  role_sdk:
+    path: ../role-sdk/generated/dart/role_sdk
 
 dev_dependencies:
   flutter_test:

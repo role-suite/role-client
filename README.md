@@ -239,8 +239,7 @@ lib/
 │   ├── constants/
 │   ├── models/
 │   ├── services/
-│   │   ├── relay_api/         # workspace REST client abstraction
-│   │   ├── role_node_api/     # auth/workspaces/shared requests/runs clients
+│   │   ├── relay_api/         # auth/workspaces/shared requests/runs clients via SDK
 │   │   └── ...
 │   ├── theme/
 │   ├── utils/
