@@ -21,6 +21,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout role-sdk
+        uses: actions/checkout@v4
+        with:
+          repository: role-suite/role-sdk
+          path: role-sdk
+          token: ${{ secrets.ROLE_SDK_REPO_TOKEN || github.token }}
+
+      - name: Create role_sdk override
+        run: |
+          cat > pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            role_sdk:
+              path: role-sdk/generated/dart/role_sdk
+          EOF
+
       - uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
@@ -41,6 +56,21 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Checkout role-sdk
+        uses: actions/checkout@v4
+        with:
+          repository: role-suite/role-sdk
+          path: role-sdk
+          token: ${{ secrets.ROLE_SDK_REPO_TOKEN || github.token }}
+
+      - name: Create role_sdk override
+        run: |
+          cat > pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            role_sdk:
+              path: role-sdk/generated/dart/role_sdk
+          EOF
 
       - uses: subosito/flutter-action@v2
         with:
@@ -117,6 +147,32 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Checkout role-sdk
+        uses: actions/checkout@v4
+        with:
+          repository: role-suite/role-sdk
+          path: role-sdk
+          token: ${{ secrets.ROLE_SDK_REPO_TOKEN || github.token }}
+
+      - name: Create role_sdk override (non-Windows)
+        if: runner.os != 'Windows'
+        run: |
+          cat > pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            role_sdk:
+              path: role-sdk/generated/dart/role_sdk
+          EOF
+
+      - name: Create role_sdk override (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          @"
+          dependency_overrides:
+            role_sdk:
+              path: role-sdk/generated/dart/role_sdk
+          "@ | Set-Content pubspec_overrides.yaml
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
