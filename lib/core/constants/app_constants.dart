@@ -14,6 +14,7 @@ class AppConstants {
 
   static const Duration defaultConnectTimeout = Duration(seconds: 15);
   static const Duration defaultReceiveTimeout = Duration(seconds: 30);
+  static const String defaultBackendBaseUrl = 'http://172.16.27.182:3000';
 
   static const int maxHistoryEntriesPerRequest = 20;
 

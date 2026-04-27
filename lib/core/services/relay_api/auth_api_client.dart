@@ -1,10 +1,10 @@
-import 'package:relay/core/services/role_node_api/role_node_endpoints.dart';
-import 'package:relay/core/services/role_node_api/role_node_http.dart';
+import 'package:relay/core/services/relay_api/role_sdk_endpoints.dart';
+import 'package:relay/core/services/relay_api/relay_api_http.dart';
 
 class AuthApiClient {
-  AuthApiClient({required String baseUrl}) : _http = RoleNodeHttp(baseUrl: baseUrl);
+  AuthApiClient({required String baseUrl}) : _http = RelayApiHttp(baseUrl: baseUrl);
 
-  final RoleNodeHttp _http;
+  final RelayApiHttp _http;
 
   Future<Map<String, dynamic>> register({
     required String name,
@@ -14,7 +14,7 @@ class AuthApiClient {
     String? teamName,
   }) async {
     final data = await _http.post(
-      RoleNodeEndpoints.authRegister,
+      RoleSdkEndpoints.authRegister,
       data: {
         'name': name,
         'email': email,
@@ -27,23 +27,23 @@ class AuthApiClient {
   }
 
   Future<Map<String, dynamic>> login({required String email, required String password}) async {
-    final data = await _http.post(RoleNodeEndpoints.authLogin, data: {'email': email, 'password': password});
+    final data = await _http.post(RoleSdkEndpoints.authLogin, data: {'email': email, 'password': password});
     return _asMap(data);
   }
 
   Future<Map<String, dynamic>> refresh(String refreshToken) async {
-    final data = await _http.post(RoleNodeEndpoints.authRefresh, data: {'refreshToken': refreshToken});
+    final data = await _http.post(RoleSdkEndpoints.authRefresh, data: {'refreshToken': refreshToken});
     return _asMap(data);
   }
 
   Future<Map<String, dynamic>> logout(String refreshToken) async {
-    final data = await _http.post(RoleNodeEndpoints.authLogout, data: {'refreshToken': refreshToken});
+    final data = await _http.post(RoleSdkEndpoints.authLogout, data: {'refreshToken': refreshToken});
     return _asMap(data);
   }
 
   Future<Map<String, dynamic>> me(String accessToken) async {
-    final http = RoleNodeHttp(baseUrl: _http.baseUrl, accessToken: accessToken);
-    final data = await http.get(RoleNodeEndpoints.authMe);
+    final http = RelayApiHttp(baseUrl: _http.baseUrl, accessToken: accessToken);
+    final data = await http.get(RoleSdkEndpoints.authMe);
     return _asMap(data);
   }
 

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/services/api_service.dart';
@@ -29,7 +28,7 @@ class RequestChainService {
 
     for (int i = 0; i < chainItems.length; i++) {
       final chainItem = chainItems[i];
-      
+
       // Find the request model
       final request = requests.firstWhere(
         (r) => r.id == chainItem.requestId,
@@ -51,7 +50,7 @@ class RequestChainService {
         // If the saved environment doesn't exist anymore, fall back to chain environment
         requestEnvironment ??= environment;
       }
-      
+
       // Prepare request with previous response body if needed
       // First request (index 0) can never use previous response
       final canUsePreviousResponse = i > 0 && chainItem.usePreviousResponse;
@@ -63,12 +62,7 @@ class RequestChainService {
       );
 
       // Execute the request
-      final result = await _executeRequest(
-        request: request,
-        body: requestBody,
-        environment: requestEnvironment,
-        index: i,
-      );
+      final result = await _executeRequest(request: request, body: requestBody, environment: requestEnvironment, index: i);
 
       results.add(result);
 
@@ -113,9 +107,7 @@ class RequestChainService {
     // If we should use previous response and it exists, inject it
     if (usePreviousResponse && previousResponseBody != null) {
       // Create a variable map with the previous response
-      final variables = <String, String>{
-        'previousResponse': previousResponseBody,
-      };
+      final variables = <String, String>{'previousResponse': previousResponseBody};
 
       // Merge with environment variables if available
       if (environment != null) {
@@ -140,51 +132,30 @@ class RequestChainService {
   }) async {
     String resolve(String s) => _environmentRepository.resolveTemplate(s, environment);
     final resolvedUrl = resolve(request.urlTemplate);
-    final resolvedQueryParams = <String, String>{
-      for (final entry in request.queryParams.entries) entry.key: resolve(entry.value),
-    };
+    final resolvedQueryParams = <String, String>{for (final entry in request.queryParams.entries) entry.key: resolve(entry.value)};
     final built = RequestBuildHelper.buildForSend(request, resolve, rawBody: body);
 
-    final dio = ApiService.instance.dio;
     final stopwatch = Stopwatch()..start();
 
     try {
-      final response = await dio.request<dynamic>(
-        resolvedUrl,
-        options: Options(
-          method: request.method.name,
-          headers: built.headers.isEmpty ? null : built.headers,
-        ),
+      final response = await ApiService.instance.send<dynamic>(
+        method: request.method.name,
+        url: resolvedUrl,
+        headers: built.headers.isEmpty ? null : built.headers,
         queryParameters: resolvedQueryParams.isEmpty ? null : resolvedQueryParams,
         data: built.body,
       );
       stopwatch.stop();
 
-      return RequestChainItemResult(
-        request: request,
-        response: response,
-        duration: stopwatch.elapsed,
-        index: index,
-        success: true,
-      );
-    } on DioException catch (e) {
+      return RequestChainItemResult(request: request, response: response, duration: stopwatch.elapsed, index: index, success: true);
+    } on ApiServiceException catch (e) {
       stopwatch.stop();
-      return RequestChainItemResult(
-        request: request,
-        error: e,
-        response: e.response,
-        duration: stopwatch.elapsed,
-        index: index,
-        success: false,
-      );
+      return RequestChainItemResult(request: request, error: e, response: null, duration: stopwatch.elapsed, index: index, success: false);
     } catch (e) {
       stopwatch.stop();
       return RequestChainItemResult(
         request: request,
-        error: DioException(
-          requestOptions: RequestOptions(path: resolvedUrl),
-          error: e,
-        ),
+        error: ApiServiceException(message: e.toString(), cause: e),
         duration: stopwatch.elapsed,
         index: index,
         success: false,
@@ -192,9 +163,9 @@ class RequestChainService {
     }
   }
 
-  String _extractResponseBody(Response<dynamic> response) {
+  String _extractResponseBody(ApiResponse<dynamic> response) {
     if (response.data == null) return '';
-    
+
     if (response.data is String) {
       return response.data as String;
     } else if (response.data is Map || response.data is List) {

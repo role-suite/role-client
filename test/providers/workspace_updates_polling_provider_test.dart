@@ -1,14 +1,14 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
-import 'package:relay/core/services/role_node_api/workspace_updates_api_client.dart';
+import 'package:relay/core/services/relay_api/workspace_updates_api_client.dart';
 import 'package:relay/core/services/relay_api/relay_api_client.dart';
+import 'package:relay/core/services/relay_api/relay_api_http.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
 import 'package:relay/features/home/presentation/providers/repository_providers.dart';
 import 'package:relay/features/home/presentation/providers/workspace_updates_polling_provider.dart';
@@ -154,11 +154,7 @@ class _FakeWorkspaceUpdatesHttp implements WorkspaceUpdatesApi {
   Future<Map<String, dynamic>> getUpdates({required String workspaceId, required int since, required int limit}) async {
     updatesCalls += 1;
     if (failUnauthorized) {
-      throw DioException(
-        requestOptions: RequestOptions(path: '/api/workspaces/$workspaceId/updates'),
-        response: Response(requestOptions: RequestOptions(path: '/api/workspaces/$workspaceId/updates'), statusCode: 401),
-        type: DioExceptionType.badResponse,
-      );
+      throw RelayApiException('Unauthorized', statusCode: 401);
     }
     sinceHistory.add(since);
     return updatesBySince[since] ??

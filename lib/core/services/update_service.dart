@@ -1,17 +1,19 @@
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/models/app_release_model.dart';
 import 'package:relay/core/services/version_service.dart';
 import 'package:relay/core/utils/logger.dart';
+import 'package:role_sdk/role_sdk_http.dart';
 
 /// Service for checking GitHub releases and managing app updates.
 class UpdateService {
-  UpdateService({Dio? dio, VersionService? versionService}) : _dio = dio ?? Dio(), _versionService = versionService;
+  UpdateService({RoleSdkHttpClient? httpClient, VersionService? versionService})
+    : _httpClient = httpClient ?? RoleSdkHttpClient(baseUrl: _baseUrl),
+      _versionService = versionService;
 
-  final Dio _dio;
+  final RoleSdkHttpClient _httpClient;
   final VersionService? _versionService;
 
   static const String _baseUrl = 'https://api.github.com';
@@ -20,17 +22,17 @@ class UpdateService {
   /// Returns null if the request fails or no releases are found.
   Future<AppReleaseModel?> getLatestRelease() async {
     try {
-      final response = await _dio.get(
-        '$_baseUrl/repos/${AppConstants.githubRepoOwner}/${AppConstants.githubRepoName}/releases/latest',
-        options: Options(headers: {'Accept': 'application/vnd.github.v3+json'}),
+      final response = await _httpClient.get<Map<String, dynamic>>(
+        '/repos/${AppConstants.githubRepoOwner}/${AppConstants.githubRepoName}/releases/latest',
+        headers: {'Accept': 'application/vnd.github.v3+json'},
       );
 
       if (response.statusCode == 200 && response.data != null) {
         return AppReleaseModel.fromJson(response.data as Map<String, dynamic>);
       }
-    } on DioException catch (e) {
+    } on RoleSdkHttpException catch (e) {
       // 404 means no releases yet, which is not an error
-      if (e.response?.statusCode == 404) {
+      if (e.statusCode == 404) {
         AppLogger.debug('No releases found on GitHub');
         return null;
       }

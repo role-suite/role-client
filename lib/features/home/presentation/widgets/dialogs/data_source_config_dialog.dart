@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:relay/core/constants/app_constants.dart';
 import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
@@ -26,7 +27,7 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
   void initState() {
     super.initState();
     final c = widget.initialConfig;
-    _baseUrlController = TextEditingController(text: c?.baseUrl ?? '');
+    _baseUrlController = TextEditingController(text: c?.baseUrl ?? AppConstants.defaultBackendBaseUrl);
     _apiKeyController = TextEditingController(text: c?.apiKey ?? '');
   }
 
@@ -104,7 +105,7 @@ class _DataSourceConfigDialogState extends ConsumerState<DataSourceConfigDialog>
             AppTextField(
               controller: _baseUrlController,
               label: 'Base URL',
-              hint: 'https://api.example.com',
+              hint: AppConstants.defaultBackendBaseUrl,
               keyboardType: TextInputType.url,
               onChanged: (_) => setState(() => _error = null),
             ),
