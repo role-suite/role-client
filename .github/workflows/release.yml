@@ -49,7 +49,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze code
-        run: flutter analyze --fatal-infos --fatal-warnings
+        run: flutter analyze --fatal-infos --fatal-warnings lib test
 
   test:
     name: Test
