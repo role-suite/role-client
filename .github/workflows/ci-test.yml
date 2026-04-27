@@ -15,6 +15,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout role-sdk
+        uses: actions/checkout@v4
+        with:
+          repository: role-suite/role-sdk
+          path: role-sdk
+          token: ${{ secrets.ROLE_SDK_REPO_TOKEN || github.token }}
+
+      - name: Create role_sdk override
+        run: |
+          cat > pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            role_sdk:
+              path: role-sdk/generated/dart/role_sdk
+          EOF
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
