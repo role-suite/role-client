@@ -12,17 +12,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeWorkspacesApiClient extends WorkspacesApiClient {
   _FakeWorkspacesApiClient({
-    this.resolvedWorkspaceId = 'ws-resolved',
     this.joinResponse = const <String, dynamic>{},
     this.membersResponse = const <Map<String, dynamic>>[],
   }) : super(baseUrl: 'https://example.com', accessToken: 'token');
 
-  final String resolvedWorkspaceId;
   final Map<String, dynamic> joinResponse;
   final List<Map<String, dynamic>> membersResponse;
 
   @override
-  Future<String> resolveWorkspaceId() async => resolvedWorkspaceId;
+  Future<String> resolveWorkspaceId() async => 'ws-resolved';
 
   @override
   Future<Map<String, dynamic>> joinWorkspace({required String token}) async => joinResponse;

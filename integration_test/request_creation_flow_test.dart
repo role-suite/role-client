@@ -10,7 +10,6 @@ import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
 import 'package:relay/features/home/environment/presentation/providers/environment_providers.dart';
 import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
-import 'package:relay/features/home/presentation/providers/home_ui_providers.dart';
 import 'package:relay/features/home/presentation/viewmodels/home_dialog_view_models.dart';
 import 'package:relay/features/home/request/presentation/widgets/dialogs/create_request_dialog.dart';
 

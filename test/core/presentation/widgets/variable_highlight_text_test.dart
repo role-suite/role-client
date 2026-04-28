@@ -3,12 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:relay/core/presentation/widgets/variable_highlight_text.dart';
 
 void main() {
-  Widget _app(Widget child) {
+  Widget app(Widget child) {
     return MaterialApp(home: Scaffold(body: child));
   }
 
   testWidgets('renders plain Text when there are no placeholders', (tester) async {
-    await tester.pumpWidget(_app(const VariableHighlightText(text: 'Hello world')));
+    await tester.pumpWidget(app(const VariableHighlightText(text: 'Hello world')));
 
     expect(find.byType(Text), findsOneWidget);
     expect(find.byType(SelectableText), findsNothing);
@@ -16,14 +16,14 @@ void main() {
   });
 
   testWidgets('renders SelectableText when selectable is true and no placeholders', (tester) async {
-    await tester.pumpWidget(_app(const VariableHighlightText(text: 'Copy me', selectable: true)));
+    await tester.pumpWidget(app(const VariableHighlightText(text: 'Copy me', selectable: true)));
 
     expect(find.byType(SelectableText), findsOneWidget);
     expect(find.text('Copy me'), findsOneWidget);
   });
 
   testWidgets('renders highlighted spans for placeholders', (tester) async {
-    await tester.pumpWidget(_app(const VariableHighlightText(text: 'GET {{baseUrl}}/users/{{id}}')));
+    await tester.pumpWidget(app(const VariableHighlightText(text: 'GET {{baseUrl}}/users/{{id}}')));
 
     final richText = tester.widget<RichText>(find.byType(RichText));
     final rootSpan = richText.text as TextSpan;
