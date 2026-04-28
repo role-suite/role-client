@@ -235,6 +235,7 @@ class _WorkspaceTeamScreenState extends ConsumerState<WorkspaceTeamScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final workspaceIdAsync = ref.watch(currentWorkspaceIdProvider);
     final membersAsync = ref.watch(workspaceMembersProvider);
 
@@ -254,39 +255,49 @@ class _WorkspaceTeamScreenState extends ConsumerState<WorkspaceTeamScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Workspace details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    workspaceIdAsync.when(
-                      data: (workspaceId) => Text(
-                        workspaceId == null ? 'Connect to API to load workspace.' : 'Workspace ID: $workspaceId',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      loading: () => const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                      error: (error, _) => Text(_humanizeError(error), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
-                    ),
-                  ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [colorScheme.surfaceContainerHighest.withValues(alpha: 0.35), colorScheme.surface],
+          ),
+        ),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            children: [
+              _PageHero(
+                title: 'Team Workspace',
+                subtitle: 'Invite teammates, manage roles, and keep access under control.',
+                status: workspaceIdAsync.when(
+                  data: (workspaceId) => workspaceId == null ? 'Not connected' : 'Connected',
+                  loading: () => 'Loading',
+                  error: (_, _) => 'Connection issue',
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              const SizedBox(height: 14),
+              _SectionCard(
+                icon: Icons.badge_outlined,
+                title: 'Workspace details',
+                subtitle: 'Current team workspace state',
+                child: workspaceIdAsync.when(
+                  data: (workspaceId) => Text(
+                    workspaceId == null ? 'Connect to API to load workspace.' : 'Workspace ID: $workspaceId',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  loading: () => const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  error: (error, _) => Text(_humanizeError(error), style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.error)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _SectionCard(
+                icon: Icons.group_add_outlined,
+                title: 'Join a team',
+                subtitle: 'Use an invitation token to join',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Join a team', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
                     AppTextField(controller: _joinTokenController, label: 'Invitation token', hint: 'Paste token'),
                     const SizedBox(height: 12),
                     AppButton(
@@ -298,16 +309,14 @@ class _WorkspaceTeamScreenState extends ConsumerState<WorkspaceTeamScreen> {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              const SizedBox(height: 12),
+              _SectionCard(
+                icon: Icons.outgoing_mail,
+                title: 'Invite members',
+                subtitle: 'Send role-based invitations',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Invite members', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
                     AppTextField(
                       controller: _inviteEmailController,
                       label: 'Email address',
@@ -340,16 +349,14 @@ class _WorkspaceTeamScreenState extends ConsumerState<WorkspaceTeamScreen> {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              const SizedBox(height: 12),
+              _SectionCard(
+                icon: Icons.upgrade_outlined,
+                title: 'Convert to team',
+                subtitle: 'Enable collaboration for this workspace',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Convert to team', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
                     AppTextField(controller: _teamNameController, label: 'Team name (optional)', hint: 'Platform Team'),
                     const SizedBox(height: 12),
                     AppButton(
@@ -361,70 +368,50 @@ class _WorkspaceTeamScreenState extends ConsumerState<WorkspaceTeamScreen> {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Members', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    membersAsync.when(
-                      data: (members) {
-                        if (members.isEmpty) {
-                          return Text('No members yet.', style: theme.textTheme.bodySmall);
-                        }
-                        return Column(
-                          children: members
-                              .map(
-                                (member) => ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: const Icon(Icons.person_outline),
-                                  title: Text(member.displayName),
-                                  subtitle: Text('${member.email.isEmpty ? member.userId : member.email} • ${member.role}'),
-                                  trailing: member.userId.isEmpty
-                                      ? null
-                                      : PopupMenuButton<String>(
-                                          onSelected: (value) {
-                                            if (value == 'remove') {
-                                              _removeMember(member);
-                                            } else if (value == 'admin' || value == 'member') {
-                                              _updateMemberRole(member, value);
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            if (member.role != 'admin') const PopupMenuItem(value: 'admin', child: Text('Make admin')),
-                                            if (member.role != 'member') const PopupMenuItem(value: 'member', child: Text('Make member')),
-                                            const PopupMenuItem(value: 'remove', child: Text('Remove')),
-                                          ],
-                                        ),
-                                ),
-                              )
-                              .toList(),
-                        );
-                      },
-                      loading: () => const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-                      ),
-                      error: (error, _) => Text(_humanizeError(error), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
-                    ),
-                  ],
+              const SizedBox(height: 12),
+              _SectionCard(
+                icon: Icons.people_outline,
+                title: 'Members',
+                subtitle: 'Manage access and workspace roles',
+                child: membersAsync.when(
+                  data: (members) {
+                    if (members.isEmpty) {
+                      return Text('No members yet.', style: theme.textTheme.bodyMedium);
+                    }
+                    return Column(
+                      children: members
+                          .map(
+                            (member) => _MemberTile(
+                              member: member,
+                              onSelected: (value) {
+                                if (value == 'remove') {
+                                  _removeMember(member);
+                                } else if (value == 'admin' || value == 'member') {
+                                  _updateMemberRole(member, value);
+                                }
+                              },
+                            ),
+                          )
+                          .toList(),
+                    );
+                  },
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                  error: (error, _) => Text(_humanizeError(error), style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.error)),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              const SizedBox(height: 12),
+              _SectionCard(
+                icon: Icons.exit_to_app,
+                title: 'Leave workspace',
+                subtitle: 'Return to your personal workspace',
+                isDanger: true,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Leave workspace', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    Text('Leave the current team workspace and return to your personal workspace.', style: theme.textTheme.bodySmall),
+                    Text('Leave the current team workspace and return to your personal workspace.', style: theme.textTheme.bodyMedium),
                     const SizedBox(height: 12),
                     AppButton(
                       label: _isBusy ? 'Leaving...' : 'Leave team',
@@ -436,9 +423,156 @@ class _WorkspaceTeamScreenState extends ConsumerState<WorkspaceTeamScreen> {
                   ],
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PageHero extends StatelessWidget {
+  const _PageHero({required this.title, required this.subtitle, required this.status});
+
+  final String title;
+  final String subtitle;
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(colors: [colorScheme.primary.withValues(alpha: 0.16), colorScheme.tertiary.withValues(alpha: 0.18)]),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.workspaces_outline, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(subtitle, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 12),
+          Chip(avatar: const Icon(Icons.circle, size: 10), label: Text(status), visualDensity: VisualDensity.compact),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.icon, required this.title, required this.subtitle, required this.child, this.isDanger = false});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final bool isDanger;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accent = isDanger ? colorScheme.error : colorScheme.primary;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: accent.withValues(alpha: 0.14)),
+                  child: Icon(icon, size: 18, color: accent),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 14),
+            child,
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MemberTile extends StatelessWidget {
+  const _MemberTile({required this.member, required this.onSelected});
+
+  final WorkspaceMemberModel member;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final role = member.role.toLowerCase();
+    final roleColor = role == 'admin' ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(radius: 15, child: Icon(Icons.person_outline, size: 16)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(member.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(
+                  member.email.isEmpty ? member.userId : member.email,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Chip(
+            label: Text(role),
+            labelStyle: TextStyle(color: roleColor, fontWeight: FontWeight.w600),
+            side: BorderSide(color: roleColor.withValues(alpha: 0.35)),
+            visualDensity: VisualDensity.compact,
+          ),
+          if (member.userId.isNotEmpty)
+            PopupMenuButton<String>(
+              onSelected: onSelected,
+              itemBuilder: (context) => [
+                if (member.role != 'admin') const PopupMenuItem(value: 'admin', child: Text('Make admin')),
+                if (member.role != 'member') const PopupMenuItem(value: 'member', child: Text('Make member')),
+                const PopupMenuItem(value: 'remove', child: Text('Remove')),
+              ],
+            ),
+        ],
       ),
     );
   }

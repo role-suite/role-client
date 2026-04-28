@@ -111,6 +111,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final dataSourceAsync = ref.watch(dataSourceStateNotifierProvider);
     final profileAsync = ref.watch(userProfileProvider);
 
@@ -129,34 +130,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: dataSourceAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text(_humanizeError(error))),
-          data: (state) {
-            final config = state.config;
-            final isApiConfigured = config.isValid;
-            final hasToken = config.apiKey?.trim().isNotEmpty ?? false;
-            final isApiMode = state.mode == DataSourceMode.api;
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [colorScheme.secondaryContainer.withValues(alpha: 0.25), colorScheme.surface],
+          ),
+        ),
+        child: SafeArea(
+          child: dataSourceAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(child: Text(_humanizeError(error))),
+            data: (state) {
+              final config = state.config;
+              final isApiConfigured = config.isValid;
+              final hasToken = config.apiKey?.trim().isNotEmpty ?? false;
+              final isApiMode = state.mode == DataSourceMode.api;
 
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                children: [
+                  _ProfileHero(hasToken: hasToken, isApiMode: isApiMode),
+                  const SizedBox(height: 14),
+                  _ProfileSectionCard(
+                    icon: Icons.hub_outlined,
+                    title: 'Connection',
+                    subtitle: 'Data source configuration and auth state',
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Connection', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 8),
-                        Text(isApiConfigured ? 'Base URL: ${config.baseUrl}' : 'API base URL is not configured.', style: theme.textTheme.bodySmall),
-                        const SizedBox(height: 8),
-                        Row(
+                        Text(isApiConfigured ? 'Base URL: ${config.baseUrl}' : 'API base URL is not configured.', style: theme.textTheme.bodyMedium),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
-                            Chip(label: Text(isApiMode ? 'API mode' : 'Local mode')),
-                            const SizedBox(width: 8),
-                            Chip(label: Text(hasToken ? 'Authenticated' : 'Signed out')),
+                            Chip(
+                              avatar: Icon(isApiMode ? Icons.cloud_done_outlined : Icons.phone_android_outlined, size: 16),
+                              label: Text(isApiMode ? 'API mode' : 'Local mode'),
+                            ),
+                            Chip(
+                              avatar: Icon(hasToken ? Icons.verified_user_outlined : Icons.lock_outline, size: 16),
+                              label: Text(hasToken ? 'Authenticated' : 'Signed out'),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -169,49 +186,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Account', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 8),
-                        if (!hasToken) ...[
-                          Text('Sign in to view your profile details.', style: theme.textTheme.bodySmall),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            label: _isBusy ? 'Signing in...' : 'Sign in',
-                            icon: Icons.login,
-                            isFullWidth: true,
-                            onPressed: _isBusy ? null : _signIn,
-                          ),
-                        ] else
-                          profileAsync.when(
+                  const SizedBox(height: 12),
+                  _ProfileSectionCard(
+                    icon: Icons.person_outline,
+                    title: 'Account',
+                    subtitle: 'Your profile details and identity',
+                    child: !hasToken
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Sign in to view your profile details.', style: theme.textTheme.bodyMedium),
+                              const SizedBox(height: 12),
+                              AppButton(
+                                label: _isBusy ? 'Signing in...' : 'Sign in',
+                                icon: Icons.login,
+                                isFullWidth: true,
+                                onPressed: _isBusy ? null : _signIn,
+                              ),
+                            ],
+                          )
+                        : profileAsync.when(
                             data: (profile) => _ProfileDetails(profile: profile),
                             loading: () => const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
                             ),
                             error: (error, _) =>
-                                Text(_humanizeError(error), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+                                Text(_humanizeError(error), style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error)),
                           ),
-                      ],
-                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                  const SizedBox(height: 12),
+                  _ProfileSectionCard(
+                    icon: Icons.shield_outlined,
+                    title: 'Security',
+                    subtitle: 'Session controls for this device',
+                    isDanger: true,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Security', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 8),
-                        Text('Sign out of the current account and switch to local mode.', style: theme.textTheme.bodySmall),
+                        Text('Sign out of the current account and switch to local mode.', style: theme.textTheme.bodyMedium),
                         const SizedBox(height: 12),
                         AppButton(
                           label: _isBusy ? 'Signing out...' : 'Sign out',
@@ -223,10 +236,108 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                     ),
                   ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileHero extends StatelessWidget {
+  const _ProfileHero({required this.hasToken, required this.isApiMode});
+
+  final bool hasToken;
+  final bool isApiMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(colors: [colorScheme.secondary.withValues(alpha: 0.18), colorScheme.primary.withValues(alpha: 0.12)]),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: colorScheme.surface,
+                child: Icon(Icons.manage_accounts_outlined, color: colorScheme.primary),
+              ),
+              const SizedBox(width: 10),
+              Text('Your Profile', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text('Keep your account, connection, and workspace identity organized in one place.', style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Chip(label: Text(isApiMode ? 'Connected mode' : 'Offline mode')),
+              Chip(label: Text(hasToken ? 'Session active' : 'Session required')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileSectionCard extends StatelessWidget {
+  const _ProfileSectionCard({required this.icon, required this.title, required this.subtitle, required this.child, this.isDanger = false});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final bool isDanger;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accent = isDanger ? colorScheme.error : colorScheme.secondary;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: accent.withValues(alpha: 0.16)),
+                  child: Icon(icon, size: 18, color: accent),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: theme.textTheme.bodySmall),
+                    ],
+                  ),
                 ),
               ],
-            );
-          },
+            ),
+            const SizedBox(height: 14),
+            child,
+          ],
         ),
       ),
     );
@@ -272,14 +383,19 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 110,
-            child: Text(label, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(label, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 8),
           Expanded(child: Text(value, style: theme.textTheme.bodySmall)),
