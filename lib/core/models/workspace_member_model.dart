@@ -8,11 +8,13 @@ class WorkspaceMemberModel {
   WorkspaceMemberModel({required this.userId, required this.name, required this.email, required this.role, required this.status});
 
   factory WorkspaceMemberModel.fromJson(Map<String, dynamic> json) {
-    final userId = (json['userId'] ?? json['memberUserId'] ?? json['id'] ?? '').toString();
+    final user = json['user'];
+    final userMap = user is Map<String, dynamic> ? user : null;
+    final userId = (json['userId'] ?? json['memberUserId'] ?? userMap?['id'] ?? json['id'] ?? '').toString();
     return WorkspaceMemberModel(
       userId: userId,
-      name: (json['name'] ?? json['fullName'] ?? json['displayName'] ?? '').toString(),
-      email: (json['email'] ?? '').toString(),
+      name: (json['name'] ?? json['fullName'] ?? json['displayName'] ?? userMap?['name'] ?? userMap?['displayName'] ?? '').toString(),
+      email: (json['email'] ?? userMap?['email'] ?? '').toString(),
       role: (json['role'] ?? 'member').toString(),
       status: (json['status'] ?? json['state'] ?? 'active').toString(),
     );

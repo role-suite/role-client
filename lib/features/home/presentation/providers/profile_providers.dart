@@ -25,11 +25,30 @@ class UserProfileNotifier extends AsyncNotifier<UserProfileModel?> {
     final accessToken = state.config.apiKey?.trim();
     if (accessToken == null || accessToken.isEmpty) return null;
     final data = await api.me(accessToken);
-    final nested = data['user'];
-    if (nested is Map<String, dynamic>) {
-      return UserProfileModel.fromJson(nested);
+    final payload = _extractProfilePayload(data);
+    if (payload == null) return null;
+    return UserProfileModel.fromJson(payload);
+  }
+
+  Map<String, dynamic>? _extractProfilePayload(Map<String, dynamic> data) {
+    final directUser = data['user'];
+    if (directUser is Map<String, dynamic>) return directUser;
+
+    final dataNode = data['data'];
+    if (dataNode is Map<String, dynamic>) {
+      final nestedUser = dataNode['user'];
+      if (nestedUser is Map<String, dynamic>) return nestedUser;
+      if (dataNode.isNotEmpty) return dataNode;
     }
-    return UserProfileModel.fromJson(data);
+
+    final resultNode = data['result'];
+    if (resultNode is Map<String, dynamic>) {
+      final nestedUser = resultNode['user'];
+      if (nestedUser is Map<String, dynamic>) return nestedUser;
+      if (resultNode.isNotEmpty) return resultNode;
+    }
+
+    return data.isEmpty ? null : data;
   }
 }
 

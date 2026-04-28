@@ -85,7 +85,11 @@ class WorkspaceTeamActions {
   Future<void> joinWorkspace({required String token}) async {
     final api = _requireApiClient();
     final response = await api.joinWorkspace(token: token);
-    final workspaceId = response['workspaceId'] ?? response['id'];
+    final workspaceId =
+        response['workspaceId'] ??
+        response['workspace_id'] ??
+        response['id'] ??
+        (response['workspace'] is Map<String, dynamic> ? (response['workspace']['id'] ?? response['workspace']['workspaceId']) : null);
     if (workspaceId != null) {
       await ref.read(activeWorkspaceIdProvider.notifier).setActiveWorkspaceId(workspaceId.toString());
     } else {

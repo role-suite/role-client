@@ -73,9 +73,16 @@ class WorkspacesApiClient {
     }
 
     if (value is Map<String, dynamic>) {
-      final items = value['items'] ?? value['data'];
+      final items = value['items'] ?? value['data'] ?? value['results'] ?? value['members'] ?? value['workspaces'] ?? value['invitations'];
       if (items is List) {
         return items.whereType<Map<String, dynamic>>().toList();
+      }
+
+      if (items is Map<String, dynamic>) {
+        final nestedItems = items['items'] ?? items['data'] ?? items['results'];
+        if (nestedItems is List) {
+          return nestedItems.whereType<Map<String, dynamic>>().toList();
+        }
       }
     }
 
