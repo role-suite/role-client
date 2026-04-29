@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/request_enums.dart';
+import 'package:relay/core/services/role_sdk_http_compat.dart';
 import 'package:relay/core/utils/extension.dart';
 import 'package:relay/core/utils/request_build_helper.dart';
-import 'package:role_sdk/role_sdk_http.dart';
 
 ApiRequestModel _baseRequest({
   BodyType bodyType = BodyType.raw,
