@@ -1,7 +1,7 @@
 import 'package:relay/core/models/workspace_bundle.dart';
+import 'package:relay/core/services/role_sdk_http_compat.dart';
 import 'package:relay/core/utils/logger.dart';
 import 'package:relay/core/services/workspace_api/workspace_api_client.dart';
-import 'package:role_sdk/role_sdk_http.dart';
 
 /// REST implementation: GET/PUT [baseUrl]/workspace with WorkspaceBundle JSON.
 class RestWorkspaceClient implements WorkspaceApiClient {

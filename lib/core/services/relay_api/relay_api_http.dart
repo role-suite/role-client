@@ -1,5 +1,5 @@
-import 'package:role_sdk/role_sdk_http.dart';
 import 'package:relay/core/constants/app_constants.dart';
+import 'package:relay/core/services/role_sdk_http_compat.dart';
 import 'package:relay/core/services/relay_api/role_sdk_endpoints.dart';
 
 class RelayApiException implements Exception {

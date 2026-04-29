@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:relay/core/constants/app_constants.dart';
-import 'package:role_sdk/role_sdk_http.dart';
+import 'package:relay/core/services/role_sdk_http_compat.dart';
 
 typedef ApiResponse<T> = RoleSdkResponse<T>;
 

@@ -20,8 +20,9 @@ dependencies:
   shared_preferences: ^2.3.3
   url_launcher: ^6.2.5
   package_info_plus: ^8.0.0
-  role_sdk:
-    path: ../role-sdk/generated/dart/role_sdk
+  dio: ^5.9.0
+  role_rest_sdk:
+    path: ../role-sdk/generated/dart/role_rest_sdk
 
 dev_dependencies:
   flutter_test:

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/request_enums.dart';
-import 'package:role_sdk/role_sdk_http.dart';
+import 'package:relay/core/services/role_sdk_http_compat.dart';
 
 /// Builds effective headers (request headers + auth-derived) and body for sending a request.
 class RequestBuildHelper {
