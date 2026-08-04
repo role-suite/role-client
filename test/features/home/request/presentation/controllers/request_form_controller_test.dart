@@ -75,6 +75,22 @@ void main() {
     expect(request.body, isNull);
   });
 
+  test('buildUpdatedRequest preserves id and createdAt while refreshing updatedAt', () {
+    final controller = RequestFormController(initialCollectionId: 'default');
+    addTearDown(controller.dispose);
+
+    controller.nameController.text = 'List users';
+    controller.urlController.text = 'https://example.com/users';
+
+    final createdAt = DateTime.utc(2024, 1, 1);
+    final updated = controller.buildUpdatedRequest(id: 'req-123', createdAt: createdAt);
+
+    expect(updated.id, 'req-123');
+    expect(updated.createdAt, createdAt);
+    expect(updated.updatedAt.isAfter(createdAt), isTrue);
+    expect(updated.name, 'List users');
+  });
+
   test('findEnvironmentByName finds matching environment', () {
     final controller = RequestFormController(initialCollectionId: 'default');
     addTearDown(controller.dispose);

@@ -14,9 +14,10 @@ class HomeRequestsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
+    final theme = Theme.of(context);
+    return ListView.separated(
       itemCount: requests.length,
+      separatorBuilder: (_, _) => Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6)),
       itemBuilder: (context, index) {
         final request = requests[index];
         final label = '${request.method.name} request ${request.name} ${request.urlTemplate}';
@@ -40,21 +41,34 @@ class HomeRequestsView extends ConsumerWidget {
                   ),
                 },
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
                   onTap: () => onTapRequest(request),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.7)),
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _RequestCardContent(request: request)),
-                        const SizedBox(width: 8),
+                        MethodBadge(method: request.method, size: MethodBadgeSize.small),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                request.name,
+                                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (request.urlTemplate.isNotEmpty)
+                                Text(
+                                  request.urlTemplate,
+                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontFamily: 'monospace'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.play_arrow),
                           onPressed: () => onTapRequest(request),
@@ -78,79 +92,5 @@ class HomeRequestsView extends ConsumerWidget {
         );
       },
     );
-  }
-}
-
-class _RequestCardContent extends StatelessWidget {
-  const _RequestCardContent({required this.request});
-
-  final ApiRequestModel request;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            MethodBadge(method: request.method),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(request.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-        if (request.urlTemplate.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            request.urlTemplate,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontFamily: 'monospace'),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-        if (request.description != null && request.description!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            request.description!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            const SizedBox(width: 4),
-            Text(
-              _formatDate(request.updatedAt),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      if (difference.inHours == 0) {
-        if (difference.inMinutes == 0) {
-          return 'Just now';
-        }
-        return '${difference.inMinutes}m ago';
-      }
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
   }
 }

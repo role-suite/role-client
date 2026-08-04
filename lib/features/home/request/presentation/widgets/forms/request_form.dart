@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/constants/data_source_mode.dart';
-import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/request_enums.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
@@ -9,6 +7,7 @@ import 'package:relay/core/presentation/widgets/app_dropdown.dart';
 import 'package:relay/core/presentation/widgets/app_text_field.dart';
 import 'package:relay/core/utils/extension.dart';
 import '../../controllers/request_form_controller.dart';
+import '../key_value_editor.dart';
 
 class RequestForm extends ConsumerWidget {
   const RequestForm({super.key, required this.controller, required this.isSubmitting});
@@ -20,23 +19,12 @@ class RequestForm extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final collectionsAsync = ref.watch(collectionsNotifierProvider);
     final environmentsAsync = ref.watch(environmentsNotifierProvider);
-    final dataSourceState = ref.watch(currentDataSourceStateProvider);
-    final isApiMode = dataSourceState?.mode == DataSourceMode.api;
     final environments = environmentsAsync.asData?.value;
     final isCompact = MediaQuery.of(context).size.width < 600;
 
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        final headerKeyControllers = controller.headerKeyControllers;
-        final headerValueControllers = controller.headerValueControllers;
-        final paramKeyControllers = controller.paramKeyControllers;
-        final paramValueControllers = controller.paramValueControllers;
-        final formDataKeyControllers = controller.formDataKeyControllers;
-        final formDataValueControllers = controller.formDataValueControllers;
-        final bodyType = controller.selectedBodyType;
-        final authType = controller.selectedAuthType;
-
         Widget buildMethodAndUrlFields() {
           final methodDropdown = AppDropdown<HttpMethod>(
             label: 'Method',
@@ -50,7 +38,7 @@ class RequestForm extends ConsumerWidget {
             },
           );
 
-          final urlField = _EnvAwareTextField(
+          final urlField = EnvAwareTextField(
             controller: controller,
             environments: environments,
             targetController: controller.urlController,
@@ -74,104 +62,8 @@ class RequestForm extends ConsumerWidget {
           );
         }
 
-        Widget buildSectionHeader(String title, VoidCallback? onAdd, {String addLabel = 'Add'}) {
-          final headerText = Text(title, style: Theme.of(context).textTheme.titleSmall, softWrap: true);
-          final addButton = onAdd == null
-              ? null
-              : TextButton.icon(onPressed: isSubmitting ? null : onAdd, icon: const Icon(Icons.add, size: 18), label: Text(addLabel));
-          if (isCompact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                headerText,
-                if (addButton != null) ...[const SizedBox(height: 8), addButton],
-              ],
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: headerText),
-              if (addButton != null) ...[const SizedBox(width: 8), addButton],
-            ],
-          );
-        }
-
-        Widget buildKeyValueRow({
-          required List<TextEditingController> keyControllers,
-          required List<TextEditingController> valueControllers,
-          required int index,
-          required VoidCallback onRemove,
-          required String keyHint,
-          required String valueHint,
-          bool valueEnvAware = true,
-        }) {
-          final keyField = AppTextField(controller: keyControllers[index], label: 'Key', hint: keyHint, enabled: !isSubmitting);
-          final valueField = valueEnvAware
-              ? _EnvAwareTextField(
-                  controller: controller,
-                  environments: environments,
-                  targetController: valueControllers[index],
-                  label: 'Value',
-                  hint: valueHint,
-                  isSubmitting: isSubmitting,
-                )
-              : AppTextField(controller: valueControllers[index], label: 'Value', hint: valueHint, enabled: !isSubmitting);
-          final removeButton = IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Remove', onPressed: isSubmitting ? null : onRemove);
-          if (isCompact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                keyField,
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: valueField),
-                    const SizedBox(width: 8),
-                    removeButton,
-                  ],
-                ),
-              ],
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: keyField),
-              const SizedBox(width: 8),
-              Expanded(child: valueField),
-              const SizedBox(width: 8),
-              removeButton,
-            ],
-          );
-        }
-
-        Widget buildHeadersSection() {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              buildSectionHeader('Headers (optional)', controller.addHeaderRow, addLabel: 'Add Header'),
-              const SizedBox(height: 8),
-              ...List.generate(
-                headerKeyControllers.length,
-                (i) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: buildKeyValueRow(
-                    keyControllers: headerKeyControllers,
-                    valueControllers: headerValueControllers,
-                    index: i,
-                    onRemove: () => controller.removeHeaderRow(i),
-                    keyHint: 'Content-Type',
-                    valueHint: 'application/json',
-                    valueEnvAware: true,
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
-
         Widget buildBodySection() {
+          final bodyType = controller.selectedBodyType;
           final bodyTypeDropdown = AppDropdown<BodyType>(
             label: 'Body type',
             value: bodyType,
@@ -191,7 +83,7 @@ class RequestForm extends ConsumerWidget {
               bodyTypeDropdown,
               if (showRaw) ...[
                 const SizedBox(height: 12),
-                _EnvAwareTextField(
+                EnvAwareTextField(
                   controller: controller,
                   environments: environments,
                   targetController: controller.bodyController,
@@ -203,26 +95,18 @@ class RequestForm extends ConsumerWidget {
               ],
               if (showForm) ...[
                 const SizedBox(height: 12),
-                buildSectionHeader(
-                  bodyType == BodyType.formData ? 'Form Data' : 'URL-encoded fields',
-                  controller.addFormDataRow,
+                KeyValueRowsSection(
+                  title: bodyType == BodyType.formData ? 'Form Data' : 'URL-encoded fields',
                   addLabel: 'Add field',
-                ),
-                const SizedBox(height: 8),
-                ...List.generate(
-                  formDataKeyControllers.length,
-                  (i) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: buildKeyValueRow(
-                      keyControllers: formDataKeyControllers,
-                      valueControllers: formDataValueControllers,
-                      index: i,
-                      onRemove: () => controller.removeFormDataRow(i),
-                      keyHint: 'fieldName',
-                      valueHint: 'value',
-                      valueEnvAware: true,
-                    ),
-                  ),
+                  keyControllers: controller.formDataKeyControllers,
+                  valueControllers: controller.formDataValueControllers,
+                  keyHint: 'fieldName',
+                  valueHint: 'value',
+                  onAdd: controller.addFormDataRow,
+                  onRemove: controller.removeFormDataRow,
+                  controller: controller,
+                  environments: environments,
+                  isSubmitting: isSubmitting,
                 ),
               ],
               if (bodyType == BodyType.binary) ...[
@@ -237,6 +121,7 @@ class RequestForm extends ConsumerWidget {
         }
 
         Widget buildAuthSection() {
+          final authType = controller.selectedAuthType;
           final authDropdown = AppDropdown<AuthType>(
             label: 'Auth',
             value: authType,
@@ -251,7 +136,7 @@ class RequestForm extends ConsumerWidget {
           Widget? authFields;
           switch (authType) {
             case AuthType.bearer:
-              authFields = _EnvAwareTextField(
+              authFields = EnvAwareTextField(
                 controller: controller,
                 environments: environments,
                 targetController: controller.authTokenController,
@@ -264,7 +149,7 @@ class RequestForm extends ConsumerWidget {
               authFields = Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _EnvAwareTextField(
+                  EnvAwareTextField(
                     controller: controller,
                     environments: environments,
                     targetController: controller.authUsernameController,
@@ -273,7 +158,7 @@ class RequestForm extends ConsumerWidget {
                     isSubmitting: isSubmitting,
                   ),
                   const SizedBox(height: 12),
-                  _EnvAwareTextField(
+                  EnvAwareTextField(
                     controller: controller,
                     environments: environments,
                     targetController: controller.authPasswordController,
@@ -290,7 +175,7 @@ class RequestForm extends ConsumerWidget {
                 children: [
                   AppTextField(controller: controller.authApiKeyHeaderController, label: 'Header name', hint: 'X-Api-Key', enabled: !isSubmitting),
                   const SizedBox(height: 12),
-                  _EnvAwareTextField(
+                  EnvAwareTextField(
                     controller: controller,
                     environments: environments,
                     targetController: controller.authApiKeyValueController,
@@ -313,22 +198,6 @@ class RequestForm extends ConsumerWidget {
           );
         }
 
-        Widget buildParamHeader() {
-          return buildSectionHeader('Query / Path Parameters (optional)', controller.addParamRow, addLabel: 'Add Param');
-        }
-
-        Widget buildParamRow(int index) {
-          return buildKeyValueRow(
-            keyControllers: paramKeyControllers,
-            valueControllers: paramValueControllers,
-            index: index,
-            onRemove: () => controller.removeParamRow(index),
-            keyHint: 'userId',
-            valueHint: '123',
-            valueEnvAware: true,
-          );
-        }
-
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -338,10 +207,6 @@ class RequestForm extends ConsumerWidget {
             collectionsAsync.when(
               data: (collections) {
                 final allCollections = [...collections];
-                if (!isApiMode && !allCollections.any((c) => c.id == 'default')) {
-                  allCollections.insert(0, CollectionModel(id: 'default', name: 'Default', createdAt: DateTime.now(), updatedAt: DateTime.now()));
-                }
-
                 if (allCollections.isEmpty) {
                   return const SizedBox.shrink();
                 }
@@ -383,15 +248,37 @@ class RequestForm extends ConsumerWidget {
             const SizedBox(height: 16),
             buildMethodAndUrlFields(),
             const SizedBox(height: 16),
-            buildHeadersSection(),
+            KeyValueRowsSection(
+              title: 'Headers (optional)',
+              addLabel: 'Add Header',
+              keyControllers: controller.headerKeyControllers,
+              valueControllers: controller.headerValueControllers,
+              keyHint: 'Content-Type',
+              valueHint: 'application/json',
+              onAdd: controller.addHeaderRow,
+              onRemove: controller.removeHeaderRow,
+              controller: controller,
+              environments: environments,
+              isSubmitting: isSubmitting,
+            ),
             const SizedBox(height: 16),
             buildBodySection(),
             const SizedBox(height: 16),
             buildAuthSection(),
             const SizedBox(height: 16),
-            buildParamHeader(),
-            const SizedBox(height: 8),
-            ...List.generate(paramKeyControllers.length, (index) => Padding(padding: const EdgeInsets.only(bottom: 8), child: buildParamRow(index))),
+            KeyValueRowsSection(
+              title: 'Query / Path Parameters (optional)',
+              addLabel: 'Add Param',
+              keyControllers: controller.paramKeyControllers,
+              valueControllers: controller.paramValueControllers,
+              keyHint: 'userId',
+              valueHint: '123',
+              onAdd: controller.addParamRow,
+              onRemove: controller.removeParamRow,
+              controller: controller,
+              environments: environments,
+              isSubmitting: isSubmitting,
+            ),
           ],
         );
       },
@@ -461,47 +348,6 @@ class _EnvironmentSection extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _EnvAwareTextField extends StatelessWidget {
-  const _EnvAwareTextField({
-    required this.controller,
-    required this.environments,
-    required this.targetController,
-    required this.label,
-    this.hint,
-    this.maxLines = 1,
-    this.keyboardType,
-    required this.isSubmitting,
-  });
-
-  final RequestFormController controller;
-  final List<EnvironmentModel>? environments;
-  final TextEditingController targetController;
-  final String label;
-  final String? hint;
-  final int maxLines;
-  final TextInputType? keyboardType;
-  final bool isSubmitting;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppTextField(
-      controller: targetController,
-      label: label,
-      hint: hint,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      enabled: !isSubmitting,
-      suffixIcon: environments == null
-          ? null
-          : IconButton(
-              icon: const Icon(Icons.data_object),
-              tooltip: 'Insert environment variable',
-              onPressed: isSubmitting ? null : () => controller.insertVariableIntoController(context, environments!, targetController),
-            ),
     );
   }
 }
