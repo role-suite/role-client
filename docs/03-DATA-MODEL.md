@@ -1,6 +1,6 @@
-# 5. Data Model
+# 3. Data Model
 
-The app works with **collections** (groups of requests), **requests** (API request definitions), and **environments** (named sets of variables). These are stored either **locally** (files + in-memory) or on the **backend** (role-server). The in-app models are defined in `lib/core/models/` and align with the server protocol where the backend is used.
+The app works with **collections** (groups of requests), **requests** (API request definitions), and **environments** (named sets of variables). All are stored locally on-device. The in-app models are defined in `lib/core/models/`.
 
 ## Core Models
 
@@ -35,7 +35,7 @@ Defined in `lib/core/models/environment_model.dart`.
 
 ### WorkspaceBundle
 
-Full workspace snapshot for import/export and REST sync.
+Full workspace snapshot used for import/export.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -47,23 +47,9 @@ Full workspace snapshot for import/export and REST sync.
 
 **CollectionBundle**: One collection plus its list of `ApiRequestModel`. Used inside `WorkspaceBundle.collections`.
 
-Defined in `lib/core/models/workspace_bundle.dart`. JSON shape matches what role-server expects for GET/PUT `/workspace` and is used for local export/import (e.g. Postman import, sync to remote).
-
-## Data Source Config
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `baseUrl` | String | API base URL. |
-| `apiKey` | String? | Optional Bearer key (REST). |
-| `apiStyle` | ApiStyle | `rest`. |
-
-Defined in `lib/core/models/data_source_config.dart`. `isValid` is true when `baseUrl.trim().isNotEmpty`.
+Defined in `lib/core/models/workspace_bundle.dart`. Used for local export/import (Röle and Postman-style JSON).
 
 ## Local Storage
 
-- **Preferences**: `SharedPreferences` stores data source mode, base URL, API key, API style (see [06-CONFIGURATION.md](06-CONFIGURATION.md)).
-- **Workspace (local)**: Collections, requests, and environments are persisted under the app documents directory via `FileStorageService` and `WorkspaceService`. Exact layout is implementation-defined (e.g. one file per collection or a single workspace file). See `lib/features/home/data/datasources/request_local_data_source.dart` and `collection_local_data_source.dart` for how the app reads/writes.
-
-## Alignment with Backend
-
-When using the API, the app uses the same logical model as role-server over REST. App models in `lib/core/models` are serialized to JSON and exchanged through the workspace REST endpoints.
+- **Preferences**: `SharedPreferences` stores app-level preferences such as theme mode (see [04-CONFIGURATION.md](04-CONFIGURATION.md)).
+- **Workspace**: Collections, requests, and environments are persisted under the app documents directory via `FileStorageService` and `WorkspaceService`. See `lib/features/home/request/data/datasources/request_local_data_source.dart` and `collection_local_data_source.dart` for how the app reads/writes.

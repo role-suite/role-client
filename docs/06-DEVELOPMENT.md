@@ -1,10 +1,9 @@
-# 8. Development
+# 6. Development
 
 ## Prerequisites
 
 - Flutter SDK 3.9+ ([flutter.dev](https://flutter.dev))
 - Dart 3.9+ (included with Flutter)
-- role-server is optional unless you want to test API mode locally
 
 ## Local Setup
 
@@ -32,14 +31,14 @@
 |------|---------|
 | `lib/main.dart` | Entrypoint, `ProviderScope`, `MaterialApp`, theme wiring |
 | `lib/core/` | Constants, models, services, theme, utils, shared widgets/layout |
-| `lib/features/home/` | Main UI and data-source workflows |
+| `lib/features/home/` | Main UI and local collection/request/environment workflows |
 | `lib/features/collection_runner/` | Collection runner feature |
 | `lib/features/request_chain/` | Request chain feature |
 
 ## Key Packages
 
 - `flutter_riverpod`: state and dependency injection
-- `dio`: HTTP for request execution and workspace REST sync
+- `dio`: HTTP for request execution
 - `shared_preferences`: persistent app preferences
 - `path_provider`: local storage paths
 
@@ -59,10 +58,3 @@ flutter test
 ```
 
 Fix analyzer warnings before committing. Add or update tests when behavior changes.
-
-## Connecting to a Local Backend
-
-1. Start role-server.
-2. In app drawer, switch to `API` mode.
-3. Configure base URL (for example `http://localhost:8082`) and optional API key.
-4. Collections, requests, and environments are then loaded from and saved to role-server over REST.

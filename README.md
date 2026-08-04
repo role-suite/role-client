@@ -5,7 +5,7 @@
 <h1 align="center">Röle</h1>
 
 <p align="center">
-  <strong>A modern, cross-platform API testing client built with Flutter</strong>
+  <strong>A modern, cross-platform, local-only API testing client built with Flutter</strong>
 </p>
 
 <p align="center">
@@ -14,7 +14,6 @@
   <a href="#screenshots">Screenshots</a> •
   <a href="#installation">Installation</a> •
   <a href="#getting-started">Getting Started</a> •
-  <a href="#backend-integration">Backend Integration</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#technical-documentation">Docs</a> •
   <a href="#contributing">Contributing</a> •
@@ -25,14 +24,9 @@
 
 ## Overview
 
-**Röle** is a lightweight API client for testing REST endpoints across desktop and mobile platforms.
+**Röle** is a lightweight, local-only API client for testing REST endpoints across desktop and mobile platforms.
 
-The app supports both:
-
-- **Local mode**: store collections, requests, and environments on your device.
-- **API mode**: connect to a compatible backend (`role-server`) with account auth, workspace support, and team workflows.
-
-In addition to request editing and execution, Röle now includes collection running, request chaining, team workspace management, and request sharing/import flows.
+All collections, requests, and environments are stored on your device. There is no account, no sign-in, and no backend server — Röle never talks to anything except the endpoints you point it at.
 
 ## Features
 
@@ -50,12 +44,11 @@ In addition to request editing and execution, Röle now includes collection runn
 - Active collection and environment selectors
 - Request search/filter on home screen
 
-### Import, Export, and Sync
+### Import and Export
 
 - Import workspace JSON (Röle and Postman-style exports)
 - Conflict handling during import (`Skip`, `Keep both`, `Overwrite`)
 - Export workspace JSON from the app
-- Sync local workspace data to a remote backend
 
 ### Execution and Automation
 
@@ -63,25 +56,10 @@ In addition to request editing and execution, Röle now includes collection runn
 - **Run History**: inspect previous test runs with pass/fail summaries
 - **Request Chain (Flows)**: compose multi-step chained request execution with delays and previous-response passing
 
-### Team and Workspace Features (API mode)
-
-- Account registration and sign-in
-- Profile view and sign-out
-- Multiple workspaces with active workspace switching
-- Team workspace management:
-  - convert workspace to team
-  - invite members
-  - join via invitation token
-  - update member roles and remove members
-- Team exchange:
-  - share a request to another workspace
-  - import shared requests from inbox
-
 ### UX and Platform
 
 - Material 3 UI with responsive desktop/mobile layout
 - Light, dark, and system theme modes
-- Update checks via GitHub releases
 - Supported platforms: Windows, macOS, Linux, Android, iOS
 
 ## Screenshots
@@ -199,26 +177,10 @@ See [GitHub Releases](https://github.com/role-suite/role-client/releases).
 - Open **Collection Runner** to execute a full collection and save run history.
 - Open **Flows / Request Chain** to configure sequential chained calls.
 
-### 4) Team Workflows (API mode)
+### 4) Import and Export
 
-- Sign in from **Profile** or while enabling API mode.
-- Manage team workspace membership in **Team workspace**.
-- Switch active workspace via **Switch workspace**.
-- Use **Team exchange** to share and import requests between workspaces.
-
-## Backend Integration
-
-Röle can work fully offline/local, or with a backend.
-
-- **Local mode**: data is stored on-device.
-- **API mode**: app connects to `role-server` using configured base URL.
-
-In API mode, you can authenticate with account login/registration. Access and refresh tokens are saved in data source preferences and used for authenticated API requests.
-
-For backend setup details, see:
-
-- [docs/03-CONNECTING-TO-BACKEND.md](docs/03-CONNECTING-TO-BACKEND.md)
-- [docs/04-AUTHENTICATION.md](docs/04-AUTHENTICATION.md)
+- Import a Postman or Röle workspace JSON file from the drawer.
+- Export your workspace as JSON to back it up or move it to another device.
 
 ## Technical Documentation
 
@@ -226,12 +188,12 @@ Detailed technical docs live in [`docs/`](docs/):
 
 - [Documentation index](docs/README.md)
 - [Architecture](docs/02-ARCHITECTURE.md)
-- [Development setup](docs/08-DEVELOPMENT.md)
-- [Maintenance guide](docs/09-MAINTENANCE.md)
+- [Development setup](docs/06-DEVELOPMENT.md)
+- [Maintenance guide](docs/07-MAINTENANCE.md)
 
 ## Architecture
 
-Röle follows a feature-oriented clean architecture with Riverpod providers and local/remote data sources.
+Röle follows a feature-oriented clean architecture with Riverpod providers and local data sources.
 
 ```text
 lib/
@@ -239,13 +201,11 @@ lib/
 │   ├── constants/
 │   ├── models/
 │   ├── services/
-│   │   ├── relay_api/         # auth/workspaces/shared requests/runs clients via SDK
-│   │   └── ...
 │   ├── theme/
 │   ├── utils/
 │   └── presentation/
 ├── features/
-│   ├── home/                  # requests, collections, environments, team/workspace UI
+│   ├── home/                  # requests, collections, environments
 │   ├── collection_runner/     # sequential collection execution + history
 │   └── request_chain/         # chained request execution
 └── main.dart
@@ -291,12 +251,11 @@ Additional guidelines:
 
 ### Where is data stored?
 
-- In **Local mode**, data is persisted on-device.
-- In **API mode**, data is loaded from and written to the backend workspace.
+Locally, on-device. Röle does not connect to any backend service.
 
-### Do I need a backend account?
+### Do I need an account?
 
-No for local-only usage. Yes for API mode features like team workspaces and request sharing.
+No. Röle has no accounts, sign-in, or sync — everything you create stays on your device.
 
 ## License
 

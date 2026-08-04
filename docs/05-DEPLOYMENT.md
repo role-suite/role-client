@@ -1,6 +1,6 @@
-# 7. Deployment
+# 5. Deployment
 
-This document covers building and distributing the Röle (role-client) app. The app is a standard Flutter application; there is no separate backend deployed with it (the backend is role-server).
+This document covers building and distributing the Röle (role-client) app. The app is a standard, fully local Flutter application; there is no backend to deploy.
 
 ## Prerequisites
 
@@ -37,10 +37,6 @@ Replace `<platform>` with one of:
 - **macOS**: Sign and notarize the app for distribution outside the App Store; use Xcode or `codesign`/`notarytool`. For App Store, use Xcode archive and submit.
 - **Android**: Configure signing in `android/app/build.gradle` (keystore, key alias). For Play Store use the App Bundle and the Play Console.
 - **iOS**: Configure signing in Xcode (team, provisioning profile). Archive and upload to App Store Connect or distribute via TestFlight/Ad Hoc.
-
-## Environment and Backend URL
-
-The app does not bake in a default backend URL. Users set the base URL (and optional API key) in the app after install. For enterprise or controlled environments, you could ship a build that pre-fills a base URL (e.g. by changing default in `DataSourcePreferencesService` or a config screen); that would be a custom fork or build variant.
 
 ## Versioning
 
