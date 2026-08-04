@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:relay/core/constants/app_constants.dart';
 
-class RoleSdkResponse<T> {
-  RoleSdkResponse({required this.statusCode, this.statusMessage, this.data, Map<String, List<String>>? headers}) : headers = headers ?? const {};
+class RelayHttpResponse<T> {
+  RelayHttpResponse({required this.statusCode, this.statusMessage, this.data, Map<String, List<String>>? headers}) : headers = headers ?? const {};
 
   final int? statusCode;
   final String? statusMessage;
@@ -18,14 +18,14 @@ class RoleSdkResponse<T> {
   }
 }
 
-class RoleSdkFormData {
-  RoleSdkFormData({required this.fields});
+class RelayFormData {
+  RelayFormData({required this.fields});
 
   final Map<String, String> fields;
 }
 
-class RoleSdkHttpException implements Exception {
-  RoleSdkHttpException({
+class RelayHttpException implements Exception {
+  RelayHttpException({
     required this.message,
     this.statusCode,
     this.statusMessage,
@@ -42,10 +42,9 @@ class RoleSdkHttpException implements Exception {
   final bool isOffline;
 }
 
-class RoleSdkHttpClient {
-  RoleSdkHttpClient({
+class RelayHttpClient {
+  RelayHttpClient({
     required String baseUrl,
-    String? accessToken,
     Duration? connectTimeout,
     Duration? receiveTimeout,
     Map<String, String>? defaultHeaders,
@@ -54,42 +53,29 @@ class RoleSdkHttpClient {
            baseUrl: baseUrl.trim().replaceAll(RegExp(r'/+$'), ''),
            connectTimeout: connectTimeout ?? AppConstants.defaultConnectTimeout,
            receiveTimeout: receiveTimeout ?? AppConstants.defaultReceiveTimeout,
-           headers: {
-             ...?defaultHeaders,
-             if (accessToken != null && accessToken.trim().isNotEmpty) 'Authorization': 'Bearer ${accessToken.trim()}',
-           },
+           headers: {...?defaultHeaders},
          ),
        );
 
-  factory RoleSdkHttpClient.localBackend({Duration? connectTimeout, Duration? receiveTimeout}) {
-    return RoleSdkHttpClient(
-      baseUrl: defaultBackendBaseUrl,
-      connectTimeout: connectTimeout,
-      receiveTimeout: receiveTimeout,
-    );
-  }
-
-  static String get defaultBackendBaseUrl => AppConstants.defaultBackendBaseUrl;
-
   final Dio _dio;
 
-  Future<RoleSdkResponse<T>> get<T>(String path, {Map<String, dynamic>? queryParameters, Map<String, dynamic>? headers}) {
+  Future<RelayHttpResponse<T>> get<T>(String path, {Map<String, dynamic>? queryParameters, Map<String, dynamic>? headers}) {
     return request<T>(method: 'GET', path: path, queryParameters: queryParameters, headers: headers);
   }
 
-  Future<RoleSdkResponse<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Map<String, dynamic>? headers}) {
+  Future<RelayHttpResponse<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Map<String, dynamic>? headers}) {
     return request<T>(method: 'POST', path: path, data: data, queryParameters: queryParameters, headers: headers);
   }
 
-  Future<RoleSdkResponse<T>> patch<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Map<String, dynamic>? headers}) {
+  Future<RelayHttpResponse<T>> patch<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Map<String, dynamic>? headers}) {
     return request<T>(method: 'PATCH', path: path, data: data, queryParameters: queryParameters, headers: headers);
   }
 
-  Future<RoleSdkResponse<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Map<String, dynamic>? headers}) {
+  Future<RelayHttpResponse<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Map<String, dynamic>? headers}) {
     return request<T>(method: 'DELETE', path: path, data: data, queryParameters: queryParameters, headers: headers);
   }
 
-  Future<RoleSdkResponse<T>> request<T>({
+  Future<RelayHttpResponse<T>> request<T>({
     required String method,
     required String path,
     dynamic data,
@@ -98,7 +84,7 @@ class RoleSdkHttpClient {
   }) async {
     try {
       final payload = switch (data) {
-        RoleSdkFormData _ => FormData.fromMap(data.fields),
+        RelayFormData _ => FormData.fromMap(data.fields),
         _ => data,
       };
 
@@ -109,14 +95,14 @@ class RoleSdkHttpClient {
         options: Options(method: method.toUpperCase(), headers: headers),
       );
 
-      return RoleSdkResponse<T>(
+      return RelayHttpResponse<T>(
         statusCode: response.statusCode,
         statusMessage: response.statusMessage,
         data: response.data,
         headers: response.headers.map,
       );
     } on DioException catch (error) {
-      throw RoleSdkHttpException(
+      throw RelayHttpException(
         message: _messageFrom(error),
         statusCode: error.response?.statusCode,
         statusMessage: error.response?.statusMessage,
@@ -125,7 +111,7 @@ class RoleSdkHttpClient {
         isOffline: _isOffline(error),
       );
     } catch (error) {
-      throw RoleSdkHttpException(message: error.toString(), cause: error, isOffline: error is SocketException);
+      throw RelayHttpException(message: error.toString(), cause: error, isOffline: error is SocketException);
     }
   }
 

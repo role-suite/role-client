@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/request_enums.dart';
-import 'package:relay/core/services/role_sdk_http_compat.dart';
+import 'package:relay/core/services/relay_http_client.dart';
 import 'package:relay/core/utils/extension.dart';
 import 'package:relay/core/utils/request_build_helper.dart';
 
@@ -80,7 +80,7 @@ void main() {
       expect(built.body, {'page': '1', 'q': 'flutter'});
     });
 
-    test('returns RoleSdkFormData for form-data body', () {
+    test('returns RelayFormData for form-data body', () {
       final request = _baseRequest(
         bodyType: BodyType.formData,
         formDataFields: {
@@ -94,7 +94,7 @@ void main() {
         (value) => value.replaceAll('{{name}}', 'invoice.pdf'),
       );
 
-      expect(built.body, isA<RoleSdkFormData>());
+      expect(built.body, isA<RelayFormData>());
       expect(built.headers.containsKey('Content-Type'), isFalse);
     });
   });

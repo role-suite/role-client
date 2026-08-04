@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/features/home/presentation/providers/collection_selection_utils.dart';
 
@@ -11,11 +10,7 @@ CollectionModel _collection(String id) {
 void main() {
   group('resolvePreferredCollectionId', () {
     test('returns null when no collections are loaded', () {
-      final selected = resolvePreferredCollectionId(
-        loadedCollections: const [],
-        selectedCollectionId: 'any',
-        mode: DataSourceMode.local,
-      );
+      final selected = resolvePreferredCollectionId(loadedCollections: const [], selectedCollectionId: 'any');
 
       expect(selected, isNull);
     });
@@ -24,30 +19,27 @@ void main() {
       final selected = resolvePreferredCollectionId(
         loadedCollections: [_collection('default'), _collection('team')],
         selectedCollectionId: 'team',
-        mode: DataSourceMode.local,
       );
 
       expect(selected, 'team');
     });
 
-    test('uses first collection in api mode when selection is missing', () {
+    test('uses default collection first when available', () {
       final selected = resolvePreferredCollectionId(
         loadedCollections: [_collection('c2'), _collection('default')],
         selectedCollectionId: 'unknown',
-        mode: DataSourceMode.api,
-      );
-
-      expect(selected, 'c2');
-    });
-
-    test('uses default collection first in local mode when available', () {
-      final selected = resolvePreferredCollectionId(
-        loadedCollections: [_collection('c2'), _collection('default')],
-        selectedCollectionId: 'unknown',
-        mode: DataSourceMode.local,
       );
 
       expect(selected, 'default');
+    });
+
+    test('falls back to first collection when no default exists', () {
+      final selected = resolvePreferredCollectionId(
+        loadedCollections: [_collection('c2'), _collection('c3')],
+        selectedCollectionId: 'unknown',
+      );
+
+      expect(selected, 'c2');
     });
   });
 }
