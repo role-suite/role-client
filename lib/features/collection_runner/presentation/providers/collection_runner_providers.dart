@@ -7,7 +7,7 @@ final collectionRunHistoryServiceProvider = Provider<CollectionRunHistoryService
   return CollectionRunHistoryService.instance;
 });
 
-final collectionRunHistoriesProvider = FutureProvider<List<CollectionRunHistory>>((ref) async {
+final collectionRunHistoriesProvider = FutureProvider.autoDispose<List<CollectionRunHistory>>((ref) async {
   final service = ref.watch(collectionRunHistoryServiceProvider);
   return service.getAllHistories();
 });
