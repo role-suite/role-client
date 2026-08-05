@@ -19,10 +19,10 @@ import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/models/workspace_bundle.dart';
 import 'package:relay/core/presentation/widgets/widgets.dart';
+import 'package:relay/core/services/export_directory_service.dart';
 import 'package:relay/core/utils/logger.dart';
 import 'package:relay/core/utils/uuid.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:relay/features/home/presentation/providers/providers.dart';
 import 'package:relay/features/home/presentation/providers/collection_selection_utils.dart';
 import 'package:relay/features/home/collection/presentation/widgets/collection_selector.dart';
@@ -75,10 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final loadedCollections = collectionsAsync.asData?.value;
     if (loadedCollections != null && loadedCollections.isNotEmpty) {
-      final preferredId = resolvePreferredCollectionId(
-        loadedCollections: loadedCollections,
-        selectedCollectionId: selectedCollectionId,
-      );
+      final preferredId = resolvePreferredCollectionId(loadedCollections: loadedCollections, selectedCollectionId: selectedCollectionId);
       if (preferredId != selectedCollectionId) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -161,10 +158,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Column(
               children: [
                 _buildTopToolbar(context, isMobileLayout, collectionsAsync, environmentsAsync, selectedCollectionId, activeEnvName),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
-                  child: _buildSearchField(context),
-                ),
+                Padding(padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0), child: _buildSearchField(context)),
                 Expanded(child: SafeArea(top: false, child: requestBody)),
               ],
             ),
@@ -196,20 +190,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         selectedCollectionId,
         activeEnvName,
       ),
-      workbench: _buildDesktopWorkbench(
-        context,
-        activeSection,
-        allRequestsAsync,
-        selectedCollectionId,
-      ),
-      inspector: _buildDesktopInspector(
-        context,
-        activeSection,
-        selectedCollectionId,
-        activeEnvName,
-        collectionsAsync,
-        filteredRequestsAsync,
-      ),
+      workbench: _buildDesktopWorkbench(context, activeSection, allRequestsAsync, selectedCollectionId),
+      inspector: _buildDesktopInspector(context, activeSection, selectedCollectionId, activeEnvName, collectionsAsync, filteredRequestsAsync),
       statusBar: _buildDesktopStatusBar(activeSection, activeEnvName, filteredRequestsAsync),
     );
   }
@@ -247,16 +229,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onPressed: () => _handleImportWorkspace(context, ref),
           icon: const Icon(Icons.file_download_outlined),
         ),
-        IconButton(
-          tooltip: 'Export workspace',
-          onPressed: () => _handleExportWorkspace(context, ref),
-          icon: const Icon(Icons.file_upload_outlined),
-        ),
-        IconButton(
-          tooltip: 'Theme settings',
-          onPressed: () => _showThemeMenu(context),
-          icon: const Icon(Icons.palette_outlined),
-        ),
+        IconButton(tooltip: 'Export workspace', onPressed: () => _handleExportWorkspace(context, ref), icon: const Icon(Icons.file_upload_outlined)),
+        IconButton(tooltip: 'Theme settings', onPressed: () => _showThemeMenu(context), icon: const Icon(Icons.palette_outlined)),
       ],
     );
   }
@@ -289,41 +263,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       subtitle: _sidebarSubtitle(activeSection),
       child: switch (activeSection) {
         WorkspaceSection.requests => _buildRequestsSidebarContent(
-            context,
-            collectionsAsync,
-            filteredRequestsAsync,
-            environmentsAsync,
-            selectedCollectionId,
-            activeEnvName,
-          ),
+          context,
+          collectionsAsync,
+          filteredRequestsAsync,
+          environmentsAsync,
+          selectedCollectionId,
+          activeEnvName,
+        ),
         WorkspaceSection.history => _buildShortcutSidebarContent(
-            context,
-            title: 'Run History',
-            message: 'Open run history inside the workbench or use the standalone history screen when needed.',
-            actions: [
-              _SidebarAction(label: 'Open In Workbench', icon: Icons.history, onPressed: _openRunHistoryTab),
-              _SidebarAction(label: 'Open Standalone', icon: Icons.open_in_new, onPressed: () => _openRunHistory(context)),
-            ],
-          ),
+          context,
+          title: 'Run History',
+          message: 'Open run history inside the workbench or use the standalone history screen when needed.',
+          actions: [
+            _SidebarAction(label: 'Open In Workbench', icon: Icons.history, onPressed: _openRunHistoryTab),
+            _SidebarAction(label: 'Open Standalone', icon: Icons.open_in_new, onPressed: () => _openRunHistory(context)),
+          ],
+        ),
         WorkspaceSection.runs => _buildShortcutSidebarContent(
-            context,
-            title: 'Run Tools',
-            message: 'Collection Runner and run history now open directly inside the desktop workbench.',
-            actions: [
-              _SidebarAction(label: 'Open Runner Tab', icon: Icons.play_circle_outline, onPressed: _openRunSetupTab),
-              _SidebarAction(label: 'Open History Tab', icon: Icons.history, onPressed: _openRunHistoryTab),
-              _SidebarAction(label: 'Open Standalone Runner', icon: Icons.open_in_new, onPressed: () => _openCollectionRunner(context)),
-            ],
-          ),
+          context,
+          title: 'Run Tools',
+          message: 'Collection Runner and run history now open directly inside the desktop workbench.',
+          actions: [
+            _SidebarAction(label: 'Open Runner Tab', icon: Icons.play_circle_outline, onPressed: _openRunSetupTab),
+            _SidebarAction(label: 'Open History Tab', icon: Icons.history, onPressed: _openRunHistoryTab),
+            _SidebarAction(label: 'Open Standalone Runner', icon: Icons.open_in_new, onPressed: () => _openCollectionRunner(context)),
+          ],
+        ),
         WorkspaceSection.flows => _buildShortcutSidebarContent(
-            context,
-            title: 'Flow Tools',
-            message: 'Request chains now open inside the desktop workbench.',
-            actions: [
-              _SidebarAction(label: 'Open Flow Tab', icon: Icons.account_tree_outlined, onPressed: _openFlowTab),
-              _SidebarAction(label: 'Open Standalone Flow', icon: Icons.open_in_new, onPressed: () => _openRequestChain(context)),
-            ],
-          ),
+          context,
+          title: 'Flow Tools',
+          message: 'Request chains now open inside the desktop workbench.',
+          actions: [
+            _SidebarAction(label: 'Open Flow Tab', icon: Icons.account_tree_outlined, onPressed: _openFlowTab),
+            _SidebarAction(label: 'Open Standalone Flow', icon: Icons.open_in_new, onPressed: () => _openRequestChain(context)),
+          ],
+        ),
         WorkspaceSection.environments => _buildEnvironmentsSidebarContent(context, environmentsAsync, activeEnvName),
       },
     );
@@ -338,23 +312,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final workspaceLayout = ref.watch(workspaceLayoutProvider);
     final allRequests = allRequestsAsync.asData?.value ?? const <ApiRequestModel>[];
     final requestTabs = workspaceLayout.tabs.where((tab) => tab.type == WorkbenchTabType.request).toList(growable: false);
-    final runTabs = workspaceLayout.tabs.where((tab) => tab.type == WorkbenchTabType.runSetup || tab.type == WorkbenchTabType.runReport).toList(growable: false);
+    final runTabs = workspaceLayout.tabs
+        .where((tab) => tab.type == WorkbenchTabType.runSetup || tab.type == WorkbenchTabType.runReport)
+        .toList(growable: false);
     final flowTabs = workspaceLayout.tabs.where((tab) => tab.type == WorkbenchTabType.flow).toList(growable: false);
-    final activeRequestTab = _resolveActiveTabForTypes(
-      workspaceLayout.tabs,
-      workspaceLayout.activeTabId,
-      {WorkbenchTabType.request},
-    );
-    final activeRunTab = _resolveActiveTabForTypes(
-      workspaceLayout.tabs,
-      workspaceLayout.activeTabId,
-      {WorkbenchTabType.runSetup, WorkbenchTabType.runReport},
-    );
-    final activeFlowTab = _resolveActiveTabForTypes(
-      workspaceLayout.tabs,
-      workspaceLayout.activeTabId,
-      {WorkbenchTabType.flow},
-    );
+    final activeRequestTab = _resolveActiveTabForTypes(workspaceLayout.tabs, workspaceLayout.activeTabId, {WorkbenchTabType.request});
+    final activeRunTab = _resolveActiveTabForTypes(workspaceLayout.tabs, workspaceLayout.activeTabId, {
+      WorkbenchTabType.runSetup,
+      WorkbenchTabType.runReport,
+    });
+    final activeFlowTab = _resolveActiveTabForTypes(workspaceLayout.tabs, workspaceLayout.activeTabId, {WorkbenchTabType.flow});
     final activeRequest = _resolveRequestById(allRequests, activeRequestTab?.subtitle);
 
     return RoleWorkbench(
@@ -362,111 +329,108 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       subtitle: _workbenchSubtitle(activeSection),
       child: switch (activeSection) {
         WorkspaceSection.requests => Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6)),
-              ),
-              child: requestTabs.isNotEmpty && activeRequestTab != null && activeRequest != null
-                  ? Column(
-                      children: [
-                        _buildRequestTabStrip(context, requestTabs, activeRequestTab.id, allRequests),
-                        const Divider(height: 1),
-                        Expanded(
-                          child: RequestWorkbenchTab(
-                            request: activeRequest,
-                            onDelete: () => _onDeleteRequest(context, activeRequest),
-                            onRequestSaved: (updatedRequest) => ref.read(workspaceLayoutProvider.notifier).updateRequestTab(
-                                  requestId: updatedRequest.id,
-                                  title: updatedRequest.name,
-                                ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : _buildRequestWorkbenchEmptyState(context, selectedCollectionId),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6)),
             ),
+            child: requestTabs.isNotEmpty && activeRequestTab != null && activeRequest != null
+                ? Column(
+                    children: [
+                      _buildRequestTabStrip(context, requestTabs, activeRequestTab.id, allRequests),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: RequestWorkbenchTab(
+                          request: activeRequest,
+                          onDelete: () => _onDeleteRequest(context, activeRequest),
+                          onRequestSaved: (updatedRequest) =>
+                              ref.read(workspaceLayoutProvider.notifier).updateRequestTab(requestId: updatedRequest.id, title: updatedRequest.name),
+                        ),
+                      ),
+                    ],
+                  )
+                : _buildRequestWorkbenchEmptyState(context, selectedCollectionId),
           ),
+        ),
         WorkspaceSection.history => Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6)),
-              ),
-              child: const CollectionRunHistoryWorkbenchTab(),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6)),
             ),
+            child: const CollectionRunHistoryWorkbenchTab(),
           ),
+        ),
         WorkspaceSection.runs => Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6)),
-              ),
-              child: activeRunTab != null
-                  ? Column(
-                      children: [
-                        _buildRunTabStrip(context, runTabs, activeRunTab.id),
-                        const Divider(height: 1),
-                        Expanded(
-                          child: switch (activeRunTab.type) {
-                            WorkbenchTabType.runSetup => const CollectionRunnerWorkbenchTab(),
-                            WorkbenchTabType.runReport => const CollectionRunHistoryWorkbenchTab(),
-                            _ => const SizedBox.shrink(),
-                          },
-                        ),
-                      ],
-                    )
-                  : _buildWorkbenchPlaceholder(
-                      context,
-                      title: 'Collection Runner',
-                      message: 'Open the collection runner or run history into the workbench from the left panel.',
-                      actions: [
-                        _SidebarAction(label: 'Open Runner Tab', icon: Icons.play_arrow, onPressed: _openRunSetupTab),
-                        _SidebarAction(label: 'Open History Tab', icon: Icons.history, onPressed: _openRunHistoryTab),
-                      ],
-                    ),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6)),
             ),
+            child: activeRunTab != null
+                ? Column(
+                    children: [
+                      _buildRunTabStrip(context, runTabs, activeRunTab.id),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: switch (activeRunTab.type) {
+                          WorkbenchTabType.runSetup => const CollectionRunnerWorkbenchTab(),
+                          WorkbenchTabType.runReport => const CollectionRunHistoryWorkbenchTab(),
+                          _ => const SizedBox.shrink(),
+                        },
+                      ),
+                    ],
+                  )
+                : _buildWorkbenchPlaceholder(
+                    context,
+                    title: 'Collection Runner',
+                    message: 'Open the collection runner or run history into the workbench from the left panel.',
+                    actions: [
+                      _SidebarAction(label: 'Open Runner Tab', icon: Icons.play_arrow, onPressed: _openRunSetupTab),
+                      _SidebarAction(label: 'Open History Tab', icon: Icons.history, onPressed: _openRunHistoryTab),
+                    ],
+                  ),
           ),
+        ),
         WorkspaceSection.flows => Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6)),
-              ),
-              child: activeFlowTab != null
-                  ? Column(
-                      children: [
-                        _buildFlowTabStrip(context, flowTabs, activeFlowTab.id),
-                        const Divider(height: 1),
-                        const Expanded(child: RequestChainWorkbenchTab()),
-                      ],
-                    )
-                  : _buildWorkbenchPlaceholder(
-                      context,
-                      title: 'Request Chains',
-                      message: 'Open the request chain tool into the workbench from the left panel.',
-                      actions: [
-                        _SidebarAction(label: 'Open Flow Tab', icon: Icons.account_tree_outlined, onPressed: _openFlowTab),
-                      ],
-                    ),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6)),
             ),
+            child: activeFlowTab != null
+                ? Column(
+                    children: [
+                      _buildFlowTabStrip(context, flowTabs, activeFlowTab.id),
+                      const Divider(height: 1),
+                      const Expanded(child: RequestChainWorkbenchTab()),
+                    ],
+                  )
+                : _buildWorkbenchPlaceholder(
+                    context,
+                    title: 'Request Chains',
+                    message: 'Open the request chain tool into the workbench from the left panel.',
+                    actions: [_SidebarAction(label: 'Open Flow Tab', icon: Icons.account_tree_outlined, onPressed: _openFlowTab)],
+                  ),
           ),
+        ),
         WorkspaceSection.environments => _buildWorkbenchPlaceholder(
-            context,
-            title: 'Environment Workbench',
-            message: 'Environment editing will become a first-class workbench surface in a later phase. Selection and management remain available from the shell today.',
-            actions: [
-              _SidebarAction(label: 'Create Environment', icon: Icons.add_circle_outline, onPressed: () => _openCreateEnvironmentDialog(context)),
-            ],
-          ),
+          context,
+          title: 'Environment Workbench',
+          message:
+              'Environment editing will become a first-class workbench surface in a later phase. Selection and management remain available from the shell today.',
+          actions: [
+            _SidebarAction(label: 'Create Environment', icon: Icons.add_circle_outline, onPressed: () => _openCreateEnvironmentDialog(context)),
+          ],
+        ),
       },
     );
   }
@@ -518,11 +482,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildDesktopStatusBar(
-    WorkspaceSection activeSection,
-    String? activeEnvName,
-    AsyncValue<List<ApiRequestModel>> filteredRequestsAsync,
-  ) {
+  Widget _buildDesktopStatusBar(WorkspaceSection activeSection, String? activeEnvName, AsyncValue<List<ApiRequestModel>> filteredRequestsAsync) {
     return RoleStatusBar(
       items: [
         const RoleStatusItem(label: 'Mode', value: 'Local-only'),
@@ -559,7 +519,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
-              AppButton(label: 'New Request', icon: Icons.add, isFullWidth: true, onPressed: () => _openCreateRequestDialog(context, selectedCollectionId)),
+              AppButton(
+                label: 'New Request',
+                icon: Icons.add,
+                isFullWidth: true,
+                onPressed: () => _openCreateRequestDialog(context, selectedCollectionId),
+              ),
               const SizedBox(height: AppSpacing.md),
               sectionCard(
                 title: 'Collection',
@@ -677,11 +642,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildEnvironmentsSidebarContent(
-    BuildContext context,
-    AsyncValue<List<EnvironmentModel>> environmentsAsync,
-    String? activeEnvName,
-  ) {
+  Widget _buildEnvironmentsSidebarContent(BuildContext context, AsyncValue<List<EnvironmentModel>> environmentsAsync, String? activeEnvName) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -709,12 +670,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildShortcutSidebarContent(
-    BuildContext context, {
-    required String title,
-    required String message,
-    required List<_SidebarAction> actions,
-  }) {
+  Widget _buildShortcutSidebarContent(BuildContext context, {required String title, required String message, required List<_SidebarAction> actions}) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: AppCard(
@@ -737,12 +693,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildWorkbenchPlaceholder(
-    BuildContext context, {
-    required String title,
-    required String message,
-    required List<_SidebarAction> actions,
-  }) {
+  Widget _buildWorkbenchPlaceholder(BuildContext context, {required String title, required String message, required List<_SidebarAction> actions}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.lg, AppSpacing.lg),
       child: Center(
@@ -762,10 +713,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Wrap(
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,
-                  children: [
-                    for (final action in actions)
-                      AppButton(label: action.label, icon: action.icon, onPressed: action.onPressed),
-                  ],
+                  children: [for (final action in actions) AppButton(label: action.label, icon: action.icon, onPressed: action.onPressed)],
                 ),
               ],
             ),
@@ -783,12 +731,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildRequestTabStrip(
-    BuildContext context,
-    List<WorkbenchTabModel> tabs,
-    String? activeTabId,
-    List<ApiRequestModel> allRequests,
-  ) {
+  Widget _buildRequestTabStrip(BuildContext context, List<WorkbenchTabModel> tabs, String? activeTabId, List<ApiRequestModel> allRequests) {
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
@@ -799,24 +742,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           for (final tab in tabs)
             Padding(
               padding: const EdgeInsets.only(right: AppSpacing.sm),
-              child: _buildRequestTabChip(
-                context,
-                tab,
-                activeTabId == tab.id,
-                _resolveTabRequest(allRequests, tab),
-                theme,
-              ),
+              child: _buildRequestTabChip(context, tab, activeTabId == tab.id, _resolveTabRequest(allRequests, tab), theme),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildRunTabStrip(
-    BuildContext context,
-    List<WorkbenchTabModel> tabs,
-    String? activeTabId,
-  ) {
+  Widget _buildRunTabStrip(BuildContext context, List<WorkbenchTabModel> tabs, String? activeTabId) {
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
@@ -868,7 +801,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Icon(
                               Icons.close,
                               size: 16,
-                              color: (activeTabId == tab.id ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface).withValues(alpha: 0.8),
+                              color: (activeTabId == tab.id ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface).withValues(
+                                alpha: 0.8,
+                              ),
                             ),
                           ),
                         ),
@@ -883,11 +818,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildFlowTabStrip(
-    BuildContext context,
-    List<WorkbenchTabModel> tabs,
-    String? activeTabId,
-  ) {
+  Widget _buildFlowTabStrip(BuildContext context, List<WorkbenchTabModel> tabs, String? activeTabId) {
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
@@ -914,7 +845,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.account_tree_outlined, size: 16, color: activeTabId == tab.id ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface),
+                        Icon(
+                          Icons.account_tree_outlined,
+                          size: 16,
+                          color: activeTabId == tab.id ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
                         Flexible(
                           child: Text(
@@ -935,7 +870,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Icon(
                               Icons.close,
                               size: 16,
-                              color: (activeTabId == tab.id ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface).withValues(alpha: 0.8),
+                              color: (activeTabId == tab.id ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface).withValues(
+                                alpha: 0.8,
+                              ),
                             ),
                           ),
                         ),
@@ -950,13 +887,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildRequestTabChip(
-    BuildContext context,
-    WorkbenchTabModel tab,
-    bool isActive,
-    ApiRequestModel? request,
-    ThemeData theme,
-  ) {
+  Widget _buildRequestTabChip(BuildContext context, WorkbenchTabModel tab, bool isActive, ApiRequestModel? request, ThemeData theme) {
     final backgroundColor = isActive ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerLowest;
     final foregroundColor = isActive ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface;
 
@@ -976,10 +907,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (request != null) ...[
-                MethodBadge(method: request.method, size: MethodBadgeSize.small),
-                const SizedBox(width: AppSpacing.sm),
-              ],
+              if (request != null) ...[MethodBadge(method: request.method, size: MethodBadgeSize.small), const SizedBox(width: AppSpacing.sm)],
               Flexible(
                 child: Text(
                   request?.name ?? tab.title,
@@ -1010,7 +938,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 96, child: Text(label, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
+          SizedBox(
+            width: 96,
+            child: Text(label, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          ),
           Expanded(child: Text(value, style: theme.textTheme.bodySmall)),
         ],
       ),
@@ -1018,36 +949,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _sidebarTitle(WorkspaceSection section) => switch (section) {
-        WorkspaceSection.requests => 'Requests',
-        WorkspaceSection.history => 'History',
-        WorkspaceSection.runs => 'Runs',
-        WorkspaceSection.flows => 'Flows',
-        WorkspaceSection.environments => 'Environments',
-      };
+    WorkspaceSection.requests => 'Requests',
+    WorkspaceSection.history => 'History',
+    WorkspaceSection.runs => 'Runs',
+    WorkspaceSection.flows => 'Flows',
+    WorkspaceSection.environments => 'Environments',
+  };
 
   String _sidebarSubtitle(WorkspaceSection section) => switch (section) {
-        WorkspaceSection.requests => 'Collections, environment, and creation tools',
-        WorkspaceSection.history => 'History shortcuts during the shell migration',
-        WorkspaceSection.runs => 'Runner shortcuts during the shell migration',
-        WorkspaceSection.flows => 'Request chain shortcuts during the shell migration',
-        WorkspaceSection.environments => 'Active environment and management tools',
-      };
+    WorkspaceSection.requests => 'Collections, environment, and creation tools',
+    WorkspaceSection.history => 'History shortcuts during the shell migration',
+    WorkspaceSection.runs => 'Runner shortcuts during the shell migration',
+    WorkspaceSection.flows => 'Request chain shortcuts during the shell migration',
+    WorkspaceSection.environments => 'Active environment and management tools',
+  };
 
   String _workbenchTitle(WorkspaceSection section) => switch (section) {
-        WorkspaceSection.requests => 'Request Workbench',
-        WorkspaceSection.history => 'History',
-        WorkspaceSection.runs => 'Runs',
-        WorkspaceSection.flows => 'Flows',
-        WorkspaceSection.environments => 'Environments',
-      };
+    WorkspaceSection.requests => 'Request Workbench',
+    WorkspaceSection.history => 'History',
+    WorkspaceSection.runs => 'Runs',
+    WorkspaceSection.flows => 'Flows',
+    WorkspaceSection.environments => 'Environments',
+  };
 
   String _workbenchSubtitle(WorkspaceSection section) => switch (section) {
-        WorkspaceSection.requests => 'Requests stay inline while the new shell architecture lands.',
-        WorkspaceSection.history => 'A dedicated history workbench will replace route-based navigation next.',
-        WorkspaceSection.runs => 'Collection Runner will move into the central workbench in the next phase.',
-        WorkspaceSection.flows => 'Request chains remain available while the shell is established.',
-        WorkspaceSection.environments => 'Environment editing will become a first-class workbench surface later.',
-      };
+    WorkspaceSection.requests => 'Requests stay inline while the new shell architecture lands.',
+    WorkspaceSection.history => 'A dedicated history workbench will replace route-based navigation next.',
+    WorkspaceSection.runs => 'Collection Runner will move into the central workbench in the next phase.',
+    WorkspaceSection.flows => 'Request chains remain available while the shell is established.',
+    WorkspaceSection.environments => 'Environment editing will become a first-class workbench surface later.',
+  };
 
   String? _resolveCollectionName(List<CollectionModel>? collections, String? selectedCollectionId) {
     if (collections == null || selectedCollectionId == null) {
@@ -1063,11 +994,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return null;
   }
 
-  WorkbenchTabModel? _resolveActiveTabForTypes(
-    List<WorkbenchTabModel> tabs,
-    String? activeTabId,
-    Set<WorkbenchTabType> types,
-  ) {
+  WorkbenchTabModel? _resolveActiveTabForTypes(List<WorkbenchTabModel> tabs, String? activeTabId, Set<WorkbenchTabType> types) {
     WorkbenchTabModel? fallback;
 
     for (final tab in tabs) {
@@ -1188,7 +1115,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Container(
           height: kToolbarHeight,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6)))),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6))),
+          ),
           child: Row(
             children: [
               if (isMobileLayout)
@@ -1367,13 +1296,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final bundle = await service.buildBundle();
       final json = const JsonEncoder.withIndent('  ').convert(bundle.toJson());
       final defaultFileName = 'relay_workspace_${DateTime.now().millisecondsSinceEpoch}.json';
-      Directory? targetDir;
-      try {
-        targetDir = await getDownloadsDirectory();
-      } catch (_) {
-        targetDir = null;
-      }
-      targetDir ??= await getApplicationDocumentsDirectory();
+      final targetDir = await ExportDirectoryService.resolveDownloadsDirectory();
       final filePath = p.join(targetDir.path, defaultFileName);
       await File(filePath).writeAsString(json);
       messenger.showSnackBar(SnackBar(content: Text('Workspace exported to $filePath'), duration: const Duration(seconds: 4)));

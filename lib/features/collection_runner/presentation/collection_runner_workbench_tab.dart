@@ -5,12 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:relay/core/models/collection_model.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/core/presentation/widgets/app_button.dart';
 import 'package:relay/core/presentation/widgets/app_card.dart';
 import 'package:relay/core/presentation/widgets/app_dropdown.dart';
+import 'package:relay/core/services/export_directory_service.dart';
 import 'package:relay/features/collection_runner/domain/models/collection_run_result.dart';
 import 'package:relay/features/collection_runner/presentation/controllers/collection_runner_controller.dart';
 import 'package:relay/features/collection_runner/presentation/providers/collection_runner_providers.dart';
@@ -234,7 +234,9 @@ class _CollectionRunnerWorkbenchTabState extends ConsumerState<CollectionRunnerW
               children: [
                 Icon(Icons.cloud, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
-                Expanded(child: Text(label, style: theme.textTheme.bodyMedium, overflow: TextOverflow.ellipsis)),
+                Expanded(
+                  child: Text(label, style: theme.textTheme.bodyMedium, overflow: TextOverflow.ellipsis),
+                ),
               ],
             ),
           ),
@@ -274,7 +276,10 @@ class _CollectionRunnerWorkbenchTabState extends ConsumerState<CollectionRunnerW
       itemBuilder: (_, index) {
         final result = state.results[index];
         final isActive = result.status == CollectionRunStatus.running;
-        return Container(key: _itemKeys[index], child: CollectionRunResultCard(result: result, isActive: isActive));
+        return Container(
+          key: _itemKeys[index],
+          child: CollectionRunResultCard(result: result, isActive: isActive),
+        );
       },
       separatorBuilder: (_, _) => const SizedBox(height: 12),
     );
@@ -305,7 +310,9 @@ class _CollectionRunnerWorkbenchTabState extends ConsumerState<CollectionRunnerW
         children: [
           Icon(Icons.error_outline, color: theme.colorScheme.onErrorContainer),
           const SizedBox(width: 8),
-          Expanded(child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onErrorContainer))),
+          Expanded(
+            child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onErrorContainer)),
+          ),
         ],
       ),
     );
@@ -387,13 +394,7 @@ class _CollectionRunnerWorkbenchTabState extends ConsumerState<CollectionRunnerW
 
       final json = const JsonEncoder.withIndent('  ').convert(exportData);
       final defaultFileName = 'collection_run_${collection.name.replaceAll(RegExp(r'[^\w\s-]'), '_')}_${DateTime.now().millisecondsSinceEpoch}.json';
-      Directory? targetDir;
-      try {
-        targetDir = await getDownloadsDirectory();
-      } catch (_) {
-        targetDir = null;
-      }
-      targetDir ??= await getApplicationDocumentsDirectory();
+      final targetDir = await ExportDirectoryService.resolveDownloadsDirectory();
       final filePath = p.join(targetDir.path, defaultFileName);
       await File(filePath).writeAsString(json);
       messenger.showSnackBar(SnackBar(content: Text('Results exported to $filePath'), duration: const Duration(seconds: 4)));
