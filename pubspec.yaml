@@ -19,6 +19,7 @@ dependencies:
   flutter_widget_from_html_core: ^0.17.0
   shared_preferences: ^2.3.3
   dio: ^5.9.0
+  flutter_native_splash: ^2.4.8
 
 dev_dependencies:
   flutter_test:
@@ -32,10 +33,12 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
 
 flutter_launcher_icons:
-  image_path: "assets/image/app_logo.png"
-  adaptive_icon_background: "#FFFFFF"
   android: true
   ios: true
+  image_path_android: "assets/image/app_logo_rounded.png"
+  image_path_ios: "assets/image/app_logo_rounded.png"
+  adaptive_icon_foreground: "assets/image/app_logo_rounded.png"
+  adaptive_icon_background: "#FFFFFF"
   remove_alpha_ios: true
   windows:
     generate: true
