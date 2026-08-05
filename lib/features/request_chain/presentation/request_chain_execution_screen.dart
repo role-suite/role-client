@@ -16,11 +16,7 @@ import 'package:relay/features/request_chain/domain/models/saved_request_chain.d
 import 'package:relay/features/request_chain/presentation/providers/request_chain_providers.dart';
 
 class RequestChainExecutionScreen extends ConsumerStatefulWidget {
-  const RequestChainExecutionScreen({
-    super.key,
-    required this.chainItems,
-    required this.requests,
-  });
+  const RequestChainExecutionScreen({super.key, required this.chainItems, required this.requests});
 
   final List<RequestChainItem> chainItems;
   final List<ApiRequestModel> requests;
@@ -81,9 +77,7 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
           _isExecuting = false;
           _currentRequestIndex = -1;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error executing chain: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error executing chain: $e')));
       }
     }
   }
@@ -104,26 +98,33 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Chain Summary',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        if (!_isExecuting && _result == null)
-                          AppButton(
-                            label: 'Start Execution',
-                            icon: Icons.play_arrow,
-                            onPressed: _executeChain,
-                          )
-                        else if (!_isExecuting && _result != null)
-                          AppButton(
-                            label: 'Save Chain',
-                            icon: Icons.save,
-                            onPressed: _showSaveChainDialog,
-                          ),
-                      ],
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final actionButton = !_isExecuting && _result == null
+                            ? AppButton(label: 'Start Execution', icon: Icons.play_arrow, onPressed: _executeChain)
+                            : !_isExecuting && _result != null
+                            ? AppButton(label: 'Save Chain', icon: Icons.save, onPressed: _showSaveChainDialog)
+                            : null;
+
+                        if (constraints.maxWidth < 420 && actionButton != null) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Chain Summary', style: Theme.of(context).textTheme.titleLarge),
+                              const SizedBox(height: 12),
+                              actionButton,
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text('Chain Summary', style: Theme.of(context).textTheme.titleLarge)),
+                            if (actionButton != null) ...[const SizedBox(width: 12), actionButton],
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 8),
                     Text('Total requests: ${widget.chainItems.length}'),
@@ -157,9 +158,7 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    color: isCurrent && _isExecuting
-                        ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-                        : null,
+                    color: isCurrent && _isExecuting ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3) : null,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -175,8 +174,8 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                                   color: isCompleted
                                       ? (result.success ? Colors.green : Colors.red)
                                       : isCurrent
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Colors.grey,
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.grey,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
@@ -186,17 +185,13 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                                           height: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              Theme.of(context).colorScheme.onPrimary,
-                                            ),
+                                            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                                           ),
                                         )
                                       : Text(
                                           '${index + 1}',
                                           style: TextStyle(
-                                            color: isCompleted || isCurrent
-                                                ? Colors.white
-                                                : Colors.black,
+                                            color: isCompleted || isCurrent ? Colors.white : Colors.black,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -212,12 +207,7 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                                       children: [
                                         MethodBadge(method: request.method),
                                         const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            request.name,
-                                            style: Theme.of(context).textTheme.titleMedium,
-                                          ),
-                                        ),
+                                        Expanded(child: Text(request.name, style: Theme.of(context).textTheme.titleMedium)),
                                         if (isCompleted) StatusBadge(statusCode: result.response?.statusCode),
                                       ],
                                     ),
@@ -241,15 +231,9 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                               spacing: 8,
                               children: [
                                 if (chainItem.delayMs > 0)
-                                  Chip(
-                                    label: Text('Delay: ${chainItem.delayMs}ms'),
-                                    avatar: const Icon(Icons.timer, size: 16),
-                                  ),
+                                  Chip(label: Text('Delay: ${chainItem.delayMs}ms'), avatar: const Icon(Icons.timer, size: 16)),
                                 if (canUsePreviousResponse)
-                                  Chip(
-                                    label: const Text('Uses previous response'),
-                                    avatar: const Icon(Icons.link, size: 16),
-                                  ),
+                                  Chip(label: const Text('Uses previous response'), avatar: const Icon(Icons.link, size: 16)),
                               ],
                             ),
                           ],
@@ -261,28 +245,19 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Text(
-                                  'Duration: ${_formatDuration(result.duration)}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
+                                Text('Duration: ${_formatDuration(result.duration)}', style: Theme.of(context).textTheme.bodySmall),
                                 const SizedBox(width: 16),
                                 Text(
                                   result.success ? '✓ Success' : '✗ Failed',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: result.success ? Colors.green : Colors.red,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.copyWith(color: result.success ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
                             if (result.error != null) ...[
                               const SizedBox(height: 8),
-                              Text(
-                                'Error: ${result.error!.message}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.red,
-                                    ),
-                              ),
+                              Text('Error: ${result.error!.message}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red)),
                             ],
                             if (result.response != null) ...[
                               const SizedBox(height: 8),
@@ -299,9 +274,7 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                                     child: SingleChildScrollView(
                                       child: SelectableText(
                                         _formatResponseBody(result.response!.data),
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              fontFamily: 'monospace',
-                                            ),
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
                                       ),
                                     ),
                                   ),
@@ -368,21 +341,13 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
                   },
                 ),
                 const SizedBox(height: 16),
-                AppTextField(
-                  controller: descriptionController,
-                  label: 'Description (optional)',
-                  hint: 'Describe what this chain does',
-                  maxLines: 3,
-                ),
+                AppTextField(controller: descriptionController, label: 'Description (optional)', hint: 'Describe what this chain does', maxLines: 3),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
@@ -398,9 +363,7 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
     if (saved == true && mounted) {
       await _saveChain(
         name: nameController.text.trim(),
-        description: descriptionController.text.trim().isEmpty
-            ? null
-            : descriptionController.text.trim(),
+        description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
       );
     }
 
@@ -422,23 +385,19 @@ class _RequestChainExecutionScreenState extends ConsumerState<RequestChainExecut
       );
 
       await repository.saveChain(chain);
+      ref.invalidate(savedChainsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Chain "$name" saved successfully'),
-            action: SnackBarAction(
-              label: 'OK',
-              onPressed: () {},
-            ),
+            action: SnackBarAction(label: 'OK', onPressed: () {}),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving chain: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving chain: $e')));
       }
     }
   }

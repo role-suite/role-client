@@ -11,11 +11,31 @@ import 'package:relay/features/home/request/presentation/providers/request_provi
 import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
 import 'package:relay/features/request_chain/domain/models/request_chain_item.dart';
 import 'package:relay/features/request_chain/domain/models/saved_request_chain.dart';
-import 'package:relay/features/request_chain/presentation/providers/request_chain_providers.dart';
 import 'package:relay/features/request_chain/presentation/request_chain_execution_screen.dart';
+import 'package:relay/features/request_chain/presentation/saved_request_chains_screen.dart';
+
+class RequestChainWorkbenchController {
+  _RequestChainWorkbenchTabState? _state;
+
+  void _attach(_RequestChainWorkbenchTabState state) {
+    _state = state;
+  }
+
+  void _detach(_RequestChainWorkbenchTabState state) {
+    if (_state == state) {
+      _state = null;
+    }
+  }
+
+  Future<void> openSavedChains() async {
+    await _state?._loadSavedChain();
+  }
+}
 
 class RequestChainWorkbenchTab extends ConsumerStatefulWidget {
-  const RequestChainWorkbenchTab({super.key});
+  const RequestChainWorkbenchTab({super.key, this.controller});
+
+  final RequestChainWorkbenchController? controller;
 
   @override
   ConsumerState<RequestChainWorkbenchTab> createState() => _RequestChainWorkbenchTabState();
@@ -27,7 +47,23 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
   String? _selectedCollectionId;
 
   @override
+  void initState() {
+    super.initState();
+    widget.controller?._attach(this);
+  }
+
+  @override
+  void didUpdateWidget(covariant RequestChainWorkbenchTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
+    }
+  }
+
+  @override
   void dispose() {
+    widget.controller?._detach(this);
     for (final controller in _delayControllers.values) {
       controller.dispose();
     }
@@ -36,12 +72,7 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
 
   void _addRequestToChain(ApiRequestModel request) {
     setState(() {
-      final item = RequestChainItem(
-        requestId: request.id,
-        requestName: request.name,
-        delayMs: 0,
-        usePreviousResponse: _chainItems.isNotEmpty,
-      );
+      final item = RequestChainItem(requestId: request.id, requestName: request.name, delayMs: 0, usePreviousResponse: _chainItems.isNotEmpty);
       _chainItems.add(item);
       _delayControllers[request.id] = TextEditingController(text: '0');
       _ensureFirstItemNoPreviousResponse();
@@ -118,10 +149,7 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
     if (mounted) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => RequestChainExecutionScreen(
-            chainItems: _chainItems,
-            requests: chainRequests,
-          ),
+          builder: (context) => RequestChainExecutionScreen(chainItems: _chainItems, requests: chainRequests),
         ),
       );
     }
@@ -197,7 +225,6 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
                                 ],
                               ),
                             ),
-                            IconButton(icon: const Icon(Icons.folder_open), tooltip: 'Load saved chain', onPressed: _loadSavedChain),
                           ],
                         ),
                       ],
@@ -218,7 +245,9 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
                       ? Center(
                           child: Text(
                             'No requests available. Create requests first.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                           ),
                         )
                       : ListView.builder(
@@ -235,7 +264,11 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
                                 subtitle: Text(request.urlTemplate, maxLines: 1, overflow: TextOverflow.ellipsis),
                                 trailing: isInChain
                                     ? const Icon(Icons.check_circle, color: Colors.green)
-                                    : IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () => _addRequestToChain(request), tooltip: 'Add to chain'),
+                                    : IconButton(
+                                        icon: const Icon(Icons.add_circle_outline),
+                                        onPressed: () => _addRequestToChain(request),
+                                        tooltip: 'Add to chain',
+                                      ),
                                 enabled: !isInChain,
                                 onTap: isInChain ? null : () => _addRequestToChain(request),
                               ),
@@ -263,7 +296,9 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
                           child: Text(
                             'No requests selected.\nSelect requests from the list to build your chain.',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                           ),
                         )
                       : _buildVerticalBreadcrumb(context, requests),
@@ -331,7 +366,9 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
                           child: Text(
                             'No requests available. Create requests first.',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                           ),
                         ),
                       )
@@ -351,7 +388,11 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
                               subtitle: Text(request.urlTemplate, maxLines: 1, overflow: TextOverflow.ellipsis),
                               trailing: isInChain
                                   ? const Icon(Icons.check_circle, color: Colors.green)
-                                  : IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () => _addRequestToChain(request), tooltip: 'Add to chain'),
+                                  : IconButton(
+                                      icon: const Icon(Icons.add_circle_outline),
+                                      onPressed: () => _addRequestToChain(request),
+                                      tooltip: 'Add to chain',
+                                    ),
                               enabled: !isInChain,
                               onTap: isInChain ? null : () => _addRequestToChain(request),
                             ),
@@ -371,7 +412,12 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
           ),
           child: SafeArea(
             top: false,
-            child: AppButton(label: 'Execute Chain', icon: Icons.play_arrow, onPressed: _chainItems.isEmpty ? null : _startExecution, isFullWidth: true),
+            child: AppButton(
+              label: 'Execute Chain',
+              icon: Icons.play_arrow,
+              onPressed: _chainItems.isEmpty ? null : _startExecution,
+              isFullWidth: true,
+            ),
           ),
         ),
       ],
@@ -400,7 +446,12 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
             icon: Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
             items: [
               DropdownMenuItem<String?>(value: null, child: Text('All Collections', style: Theme.of(context).textTheme.bodyMedium)),
-              ...collections.map((collection) => DropdownMenuItem<String?>(value: collection.id, child: Text(collection.name, style: Theme.of(context).textTheme.bodyMedium))),
+              ...collections.map(
+                (collection) => DropdownMenuItem<String?>(
+                  value: collection.id,
+                  child: Text(collection.name, style: Theme.of(context).textTheme.bodyMedium),
+                ),
+              ),
             ],
             onChanged: (value) {
               setState(() {
@@ -429,62 +480,8 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
     final requests = requestsAsync.value ?? [];
 
     try {
-      final repository = ref.read(savedChainRepositoryProvider);
-      final savedChains = await repository.getAllSavedChains();
-
-      if (savedChains.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No saved chains found')));
-        }
-        return;
-      }
-
       if (!mounted) return;
-      final selectedChain = await showModalBottomSheet<SavedRequestChain>(
-        context: context,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-        builder: (sheetContext) {
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Load Saved Chain', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Text('Select a saved chain to load', style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 16),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 400),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: savedChains.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (_, index) {
-                        final chain = savedChains[index];
-                        return ListTile(
-                          title: Text(chain.name),
-                          subtitle: chain.description != null && chain.description!.isNotEmpty ? Text(chain.description!) : Text('${chain.chainItems.length} requests'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('${chain.chainItems.length}', style: Theme.of(context).textTheme.bodySmall),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.arrow_forward_ios, size: 16),
-                            ],
-                          ),
-                          onTap: () => Navigator.of(sheetContext).pop(chain),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
+      final selectedChain = await Navigator.of(context).push<SavedRequestChain>(MaterialPageRoute(builder: (_) => const SavedRequestChainsScreen()));
 
       if (selectedChain != null && mounted) {
         await _applySavedChain(selectedChain, requests);
@@ -498,20 +495,45 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
 
   Future<void> _applySavedChain(SavedRequestChain savedChain, List<ApiRequestModel> allRequests) async {
     final missingRequests = <String>[];
+    final ambiguousRequests = <String>[];
+    final requestsById = {for (final request in allRequests) request.id: request};
+    final requestsByName = <String, List<ApiRequestModel>>{};
+
+    for (final request in allRequests) {
+      requestsByName.putIfAbsent(request.name, () => []).add(request);
+    }
+
     for (final chainItem in savedChain.chainItems) {
-      if (!allRequests.any((r) => r.id == chainItem.requestId)) {
+      final matchingById = requestsById[chainItem.requestId];
+      if (matchingById != null) {
+        continue;
+      }
+
+      final matchingByName = requestsByName[chainItem.requestName] ?? const <ApiRequestModel>[];
+      if (matchingByName.length > 1) {
+        ambiguousRequests.add(chainItem.requestName);
+        continue;
+      }
+
+      if (matchingByName.isEmpty) {
         missingRequests.add(chainItem.requestName);
       }
     }
 
-    if (missingRequests.isNotEmpty) {
+    if (missingRequests.isNotEmpty || ambiguousRequests.isNotEmpty) {
+      final issues = <String>[];
+      if (missingRequests.isNotEmpty) {
+        issues.add('The following requests from the saved chain are no longer available:\n\n${missingRequests.join('\n')}');
+      }
+      if (ambiguousRequests.isNotEmpty) {
+        issues.add('The following requests have multiple matches by name and could not be restored safely:\n\n${ambiguousRequests.join('\n')}');
+      }
+
       final shouldContinue = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Some requests not found'),
-          content: Text(
-            'The following requests from the saved chain are no longer available:\n\n${missingRequests.join('\n')}\n\nDo you want to load the chain anyway? Missing requests will be skipped.',
-          ),
+          title: const Text('Some requests could not be restored'),
+          content: Text('${issues.join('\n\n')}\n\nDo you want to load the rest of the chain? Unresolved requests will be skipped.'),
           actions: [
             TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
             TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Load Anyway')),
@@ -530,10 +552,15 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
       _delayControllers.clear();
 
       for (final chainItem in savedChain.chainItems) {
-        if (allRequests.any((r) => r.id == chainItem.requestId)) {
-          _chainItems.add(chainItem);
-          _delayControllers[chainItem.requestId] = TextEditingController(text: chainItem.delayMs.toString());
-        }
+        final matchingById = requestsById[chainItem.requestId];
+        final matchingByName = requestsByName[chainItem.requestName] ?? const <ApiRequestModel>[];
+        final matchedRequest = matchingById ?? (matchingByName.length == 1 ? matchingByName.first : null);
+
+        if (matchedRequest == null) continue;
+
+        final restoredItem = chainItem.copyWith(requestId: matchedRequest.id, requestName: matchedRequest.name);
+        _chainItems.add(restoredItem);
+        _delayControllers[restoredItem.requestId] = TextEditingController(text: restoredItem.delayMs.toString());
       }
 
       _ensureFirstItemNoPreviousResponse();
@@ -561,7 +588,10 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
                   height: 32,
                   decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle),
                   child: Center(
-                    child: Text('${index + 1}', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      '${index + 1}',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -582,7 +612,8 @@ class _RequestChainWorkbenchTabState extends ConsumerState<RequestChainWorkbench
                   ),
                 ),
                 if (index > 0) IconButton(icon: const Icon(Icons.arrow_upward), onPressed: () => _moveRequestUp(index), tooltip: 'Move up'),
-                if (index < _chainItems.length - 1) IconButton(icon: const Icon(Icons.arrow_downward), onPressed: () => _moveRequestDown(index), tooltip: 'Move down'),
+                if (index < _chainItems.length - 1)
+                  IconButton(icon: const Icon(Icons.arrow_downward), onPressed: () => _moveRequestDown(index), tooltip: 'Move down'),
                 IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _removeRequestFromChain(index), tooltip: 'Remove'),
               ],
             ),
