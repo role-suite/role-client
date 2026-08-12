@@ -193,33 +193,46 @@ Detailed technical docs live in [`docs/`](docs/):
 
 ## Architecture
 
-Röle follows a feature-oriented clean architecture with Riverpod providers and local data sources.
+Röle is one persistent workbench shell — a top bar, left rail, contextual sidebar, tabbed
+center workbench, and inspector — built on Riverpod notifiers and local JSON storage. No
+usecase/repository layers: a local-only app's state notifiers *are* the data layer.
 
 ```text
 lib/
 ├── core/
-│   ├── constants/
-│   ├── models/
-│   ├── services/
-│   ├── theme/
-│   ├── utils/
-│   └── presentation/
-├── features/
-│   ├── home/                  # requests, collections, environments
-│   ├── collection_runner/     # sequential collection execution + history
-│   └── request_chain/         # chained request execution
+│   ├── models/       # ApiRequest, Collection, Environment, RequestResult, ...
+│   ├── storage/      # JsonStore — local JSON persistence
+│   ├── network/      # HttpClient, TemplateResolver, RequestRunner
+│   ├── io/           # Workspace export + Röle/Postman import
+│   ├── theme/        # Design tokens, colors, typography, ThemeData
+│   └── utils/
+├── state/            # Riverpod notifiers (workspace, environments, history,
+│                      # runs, flows, settings, workbench UI state)
+├── ui/
+│   ├── shell/          # Persistent shell: top bar, rail, sidebar, workbench, inspector
+│   ├── sidebar/         # Requests/collections sidebar panel
+│   ├── request/         # Request tab: editor + response viewer
+│   ├── environments/    # Environment sidebar panel + editor tab
+│   ├── history/          # History sidebar panel + snapshot viewer
+│   ├── runner/           # Collection runner + run report tabs
+│   ├── flows/            # Flow (request chain) editor + sidebar panel
+│   └── widgets/          # Shared design-system widgets
+├── app.dart
 └── main.dart
 ```
 
+See [docs/](docs/) for the full architecture writeup.
+
 ## Configuration
 
-Key values are in `lib/core/constants/app_constants.dart`:
+Key values are in `lib/core/constants.dart`:
 
 - `appName`: display name
 - `defaultConnectTimeout`: request connect timeout
 - `defaultReceiveTimeout`: response timeout
 - `maxHistoryEntriesPerRequest`: history limit per request
-- `variableStart` / `variableEnd`: variable delimiters (`{{` / `}}`)
+
+Variable syntax (`{{name}}`) is defined in `lib/core/network/template_resolver.dart`.
 
 ## Development
 
