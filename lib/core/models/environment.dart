@@ -34,8 +34,12 @@ class Environment {
   };
 
   factory Environment.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    if (rawId is! String || rawId.isEmpty) {
+      throw FormatException('Environment is missing a valid id');
+    }
     return Environment(
-      id: json['id'] as String,
+      id: rawId,
       name: json['name'] as String? ?? 'Untitled Environment',
       variables: stringMapFrom(json['variables']),
       createdAt: dateTimeFrom(json['createdAt']),

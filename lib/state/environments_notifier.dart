@@ -4,13 +4,22 @@ import '../core/models/environment.dart';
 import '../core/storage/json_store.dart';
 import '../core/storage/workspace_paths.dart';
 import '../core/utils/id.dart';
+import '../core/utils/logger.dart';
 import 'settings_providers.dart';
 
 class EnvironmentsNotifier extends AsyncNotifier<List<Environment>> {
   @override
   Future<List<Environment>> build() async {
     final raw = await JsonStore.instance.readAll(WorkspacePaths.environments);
-    final envs = raw.map(Environment.fromJson).toList()..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final envs = <Environment>[];
+    for (final entry in raw) {
+      try {
+        envs.add(Environment.fromJson(entry));
+      } catch (error) {
+        Log.d('Skipping unparseable environment entry: $error');
+      }
+    }
+    envs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     return envs;
   }
 
