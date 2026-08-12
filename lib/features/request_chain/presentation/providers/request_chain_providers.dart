@@ -23,3 +23,8 @@ final savedChainRepositoryProvider = Provider<SavedChainRepository>((ref) {
   final dataSource = ref.watch(savedChainLocalDataSourceProvider);
   return SavedChainRepositoryImpl(dataSource);
 });
+
+final savedChainsProvider = FutureProvider.autoDispose((ref) async {
+  final repository = ref.watch(savedChainRepositoryProvider);
+  return repository.getAllSavedChains();
+});

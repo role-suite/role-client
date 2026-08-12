@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:relay/core/models/api_request_model.dart';
 import 'package:relay/core/models/request_enums.dart';
-import 'package:relay/core/services/role_sdk_http_compat.dart';
+import 'package:relay/core/services/relay_http_client.dart';
 
 /// Builds effective headers (request headers + auth-derived) and body for sending a request.
 class RequestBuildHelper {
@@ -75,7 +75,7 @@ class RequestBuildHelper {
             if (e.key.trim().isEmpty) continue;
             formDataFields[e.key] = resolve(e.value);
           }
-          return RoleSdkFormData(fields: formDataFields);
+          return RelayFormData(fields: formDataFields);
         }
       case BodyType.urlEncoded:
         {

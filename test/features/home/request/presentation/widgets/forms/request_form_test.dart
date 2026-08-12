@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:relay/core/constants/data_source_mode.dart';
 import 'package:relay/core/models/collection_model.dart';
-import 'package:relay/core/models/data_source_config.dart';
 import 'package:relay/core/models/environment_model.dart';
 import 'package:relay/features/home/collection/presentation/providers/collection_providers.dart';
 import 'package:relay/features/home/environment/presentation/providers/environment_providers.dart';
-import 'package:relay/features/home/presentation/providers/data_source_providers.dart';
 import 'package:relay/features/home/request/presentation/controllers/request_form_controller.dart';
 import 'package:relay/features/home/request/presentation/widgets/forms/request_form.dart';
 
@@ -17,7 +14,7 @@ CollectionModel _collection(String id, String name) {
 }
 
 void main() {
-  testWidgets('local mode injects default collection when missing', (tester) async {
+  testWidgets('selects first available collection when none is chosen', (tester) async {
     final controller = RequestFormController(initialCollectionId: null);
     addTearDown(controller.dispose);
 
@@ -26,9 +23,6 @@ void main() {
         overrides: [
           collectionsNotifierProvider.overrideWith(() => _StaticCollectionsNotifier([_collection('team', 'Team')])),
           environmentsNotifierProvider.overrideWith(() => _StaticEnvironmentsNotifier(const [])),
-          currentDataSourceStateProvider.overrideWith(
-            (ref) => (mode: DataSourceMode.local, config: const DataSourceConfig(baseUrl: '')),
-          ),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -41,36 +35,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Default'), findsOneWidget);
-    expect(controller.selectedCollectionId, 'default');
-  });
-
-  testWidgets('api mode keeps first API collection and does not add default option', (tester) async {
-    final controller = RequestFormController(initialCollectionId: null);
-    addTearDown(controller.dispose);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          collectionsNotifierProvider.overrideWith(() => _StaticCollectionsNotifier([_collection('101', 'API Team')])),
-          environmentsNotifierProvider.overrideWith(() => _StaticEnvironmentsNotifier(const [])),
-          currentDataSourceStateProvider.overrideWith(
-            (ref) => (mode: DataSourceMode.api, config: const DataSourceConfig(baseUrl: 'https://example.test')),
-          ),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: RequestForm(controller: controller, isSubmitting: false),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Default'), findsNothing);
-    expect(controller.selectedCollectionId, '101');
+    expect(find.text('Team'), findsOneWidget);
+    expect(controller.selectedCollectionId, 'team');
   });
 
   testWidgets('shows environment variable helper text and chips', (tester) async {
@@ -85,9 +51,6 @@ void main() {
             () => _StaticEnvironmentsNotifier([
               EnvironmentModel(name: 'dev', variables: {'baseUrl': 'https://dev.example.com'}),
             ]),
-          ),
-          currentDataSourceStateProvider.overrideWith(
-            (ref) => (mode: DataSourceMode.local, config: const DataSourceConfig(baseUrl: '')),
           ),
         ],
         child: MaterialApp(

@@ -1,14 +1,14 @@
 import 'dart:io';
 
 import 'package:relay/core/constants/app_constants.dart';
-import 'package:relay/core/services/role_sdk_http_compat.dart';
+import 'package:relay/core/services/relay_http_client.dart';
 
-typedef ApiResponse<T> = RoleSdkResponse<T>;
+typedef ApiResponse<T> = RelayHttpResponse<T>;
 
 class ApiServiceException implements Exception {
   ApiServiceException({required this.message, this.statusCode, this.statusMessage, this.responseData, this.cause, this.isOffline = false});
 
-  factory ApiServiceException.fromSdk(RoleSdkHttpException error) {
+  factory ApiServiceException.fromSdk(RelayHttpException error) {
     return ApiServiceException(
       message: error.message,
       statusCode: error.statusCode,
@@ -43,12 +43,12 @@ class ApiServiceException implements Exception {
 
 class ApiService {
   ApiService._internal() {
-    _sdkHttp = RoleSdkHttpClient.localBackend(connectTimeout: AppConstants.defaultConnectTimeout, receiveTimeout: AppConstants.defaultReceiveTimeout);
+    _sdkHttp = RelayHttpClient(baseUrl: '', connectTimeout: AppConstants.defaultConnectTimeout, receiveTimeout: AppConstants.defaultReceiveTimeout);
   }
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   static ApiService get instance => _instance;
-  late final RoleSdkHttpClient _sdkHttp;
+  late final RelayHttpClient _sdkHttp;
 
   Future<ApiResponse<T>> send<T>({
     required String method,
@@ -59,7 +59,7 @@ class ApiService {
   }) async {
     try {
       return await _sdkHttp.request<T>(method: method, path: url, headers: headers, queryParameters: queryParameters, data: data);
-    } on RoleSdkHttpException catch (error) {
+    } on RelayHttpException catch (error) {
       throw ApiServiceException.fromSdk(error);
     } catch (error) {
       throw ApiServiceException(message: error.toString(), cause: error);

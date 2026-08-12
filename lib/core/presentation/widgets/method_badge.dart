@@ -10,7 +10,7 @@ class MethodBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getMethodColor(method);
+    final color = colorFor(method);
     final text = method.name;
 
     return _buildBadge(context, text, color);
@@ -34,7 +34,9 @@ class MethodBadge extends StatelessWidget {
     );
   }
 
-  Color _getMethodColor(HttpMethod method) {
+  /// The color used to represent [method] throughout the app (badges,
+  /// method selectors, list rows).
+  static Color colorFor(HttpMethod method) {
     switch (method) {
       case HttpMethod.get:
         return Colors.blue;

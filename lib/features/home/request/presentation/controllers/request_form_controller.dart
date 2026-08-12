@@ -247,10 +247,20 @@ class RequestFormController extends ChangeNotifier {
 
   ApiRequestModel buildRequest() {
     final now = DateTime.now();
+    return _buildRequest(id: UuidUtils.generate(), createdAt: now, updatedAt: now);
+  }
+
+  /// Builds an updated [ApiRequestModel] for an existing request, preserving
+  /// its [id] and [createdAt] while refreshing [updatedAt].
+  ApiRequestModel buildUpdatedRequest({required String id, required DateTime createdAt}) {
+    return _buildRequest(id: id, createdAt: createdAt, updatedAt: DateTime.now());
+  }
+
+  ApiRequestModel _buildRequest({required String id, required DateTime createdAt, required DateTime updatedAt}) {
     final body = _bodyController.text.trim();
     final formDataFields = buildFormDataFields();
     return ApiRequestModel(
-      id: UuidUtils.generate(),
+      id: id,
       name: _nameController.text.trim(),
       method: _selectedMethod,
       urlTemplate: _urlController.text.trim(),
@@ -263,8 +273,8 @@ class RequestFormController extends ChangeNotifier {
       authConfig: buildAuthConfig(),
       collectionId: (_selectedCollectionId ?? '').trim(),
       environmentName: _selectedEnvironmentName,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 

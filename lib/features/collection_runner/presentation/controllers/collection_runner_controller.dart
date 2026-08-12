@@ -134,6 +134,7 @@ class CollectionRunnerController extends Notifier<CollectionRunnerState> {
             completedAt: completedAt,
             results: state.results,
           );
+          ref.invalidate(collectionRunHistoriesProvider);
         } catch (e) {
           // Log error but don't fail the run
           AppLogger.error('Failed to save collection run history: $e');
