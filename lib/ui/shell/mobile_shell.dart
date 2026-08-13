@@ -11,6 +11,7 @@ import '../history/history_sidebar_panel.dart';
 import '../runner/runs_sidebar_panel.dart';
 import '../sidebar/requests_sidebar_panel.dart';
 import 'import_export_actions.dart';
+import 'top_bar.dart';
 import 'workbench_tab_content.dart';
 
 /// Mobile navigation: bottom nav over the section panels the desktop
@@ -62,6 +63,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
         foregroundColor: colors.textPrimary,
         elevation: 0,
         actions: [
+          const EnvironmentSwitcher(),
           IconButton(icon: const Icon(Icons.file_upload_outlined), tooltip: 'Import', onPressed: () => runImportWorkspace(context, ref)),
           IconButton(icon: const Icon(Icons.file_download_outlined), tooltip: 'Export', onPressed: () => runExportWorkspace(context, ref)),
           IconButton(

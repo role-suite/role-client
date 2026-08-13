@@ -35,7 +35,7 @@ class TopBar extends ConsumerWidget {
           Text(AppConstants.appName, style: context.type.title),
           const SizedBox(width: AppSpacing.lg),
           if (desktop) ...[Expanded(child: _SearchField()), const SizedBox(width: AppSpacing.lg)] else const Spacer(),
-          const _EnvironmentSwitcher(),
+          const EnvironmentSwitcher(),
           const SizedBox(width: AppSpacing.sm),
           AppIconButton(icon: Icons.file_upload_outlined, tooltip: 'Import workspace', onPressed: onImport),
           AppIconButton(icon: Icons.file_download_outlined, tooltip: 'Export workspace', onPressed: onExport),
@@ -81,8 +81,14 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
   }
 }
 
-class _EnvironmentSwitcher extends ConsumerWidget {
-  const _EnvironmentSwitcher();
+/// Sentinel menu value for "No environment". PopupMenuButton can't use a
+/// literal `null` item value: it pops the selection via Navigator, and a
+/// popped `null` is indistinguishable from the menu being dismissed, so
+/// onSelected would never fire for it.
+const _noEnvironmentValue = '__no_environment__';
+
+class EnvironmentSwitcher extends ConsumerWidget {
+  const EnvironmentSwitcher({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -91,7 +97,7 @@ class _EnvironmentSwitcher extends ConsumerWidget {
     final activeId = ref.watch(activeEnvironmentIdProvider);
     final active = environments.where((e) => e.id == activeId);
 
-    return PopupMenuButton<String?>(
+    return PopupMenuButton<String>(
       tooltip: 'Active environment',
       offset: const Offset(0, 32),
       color: colors.surfaceRaised,
@@ -100,10 +106,12 @@ class _EnvironmentSwitcher extends ConsumerWidget {
         side: BorderSide(color: colors.border),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(value: null, child: Text('No environment')),
+        const PopupMenuItem(value: _noEnvironmentValue, child: Text('No environment')),
         for (final env in environments) PopupMenuItem(value: env.id, child: Text(env.name)),
       ],
-      onSelected: (id) => ref.read(activeEnvironmentIdProvider.notifier).setActiveEnvironment(id),
+      onSelected: (id) => ref
+          .read(activeEnvironmentIdProvider.notifier)
+          .setActiveEnvironment(id == _noEnvironmentValue ? null : id),
       child: Container(
         height: AppSizes.controlHeightSm + 4,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
