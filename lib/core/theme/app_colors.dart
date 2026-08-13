@@ -2,23 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/enums.dart';
 
-/// A single neutral graphite scale plus one restrained accent — the
-/// tool-grade palette both themes are built from. 0 = darkest, 100 = lightest.
-class _Scale {
-  const _Scale();
-  static const c950 = Color(0xFF0B0D10);
-  static const c900 = Color(0xFF111418);
-  static const c850 = Color(0xFF15181D);
-  static const c700 = Color(0xFF262B33);
-  static const c600 = Color(0xFF343B45);
-  static const c400 = Color(0xFF6B7280);
-  static const c300 = Color(0xFF9AA2AF);
-  static const c200 = Color(0xFFC3C9D1);
-  static const c100 = Color(0xFFE4E7EB);
-  static const c50 = Color(0xFFF3F4F6);
-  static const c0 = Color(0xFFFFFFFF);
-}
-
 class AppColors {
   const AppColors({
     required this.bg,
@@ -55,56 +38,56 @@ class AppColors {
   final Color info;
 
   static const dark = AppColors(
-    bg: _Scale.c950,
-    surface: _Scale.c900,
-    surfaceRaised: _Scale.c850,
-    surfaceSunken: Color(0xFF08090B),
-    border: _Scale.c700,
-    borderStrong: _Scale.c600,
-    textPrimary: Color(0xFFEDEFF2),
-    textSecondary: _Scale.c300,
-    textMuted: _Scale.c400,
-    accent: Color(0xFF4C9EFF),
-    onAccent: Color(0xFF04101F),
-    danger: Color(0xFFEF5A5A),
-    warning: Color(0xFFE0A339),
-    success: Color(0xFF4CC38A),
-    info: Color(0xFF4C9EFF),
+    bg: Color(0xFF12141A),
+    surface: Color(0xFF1A1D25),
+    surfaceRaised: Color(0xFF232733),
+    surfaceSunken: Color(0xFF0D0F14),
+    border: Color(0xFF2E3340),
+    borderStrong: Color(0xFF3F4759),
+    textPrimary: Color(0xFFDEE1E8),
+    textSecondary: Color(0xFFA7ADBB),
+    textMuted: Color(0xFF767C8C),
+    accent: Color(0xFF7C9EF2),
+    onAccent: Color(0xFF0B1220),
+    danger: Color(0xFFE37B72),
+    warning: Color(0xFFE0B15E),
+    success: Color(0xFF5FC08F),
+    info: Color(0xFF7C9EF2),
   );
 
   static const light = AppColors(
-    bg: _Scale.c50,
-    surface: _Scale.c0,
-    surfaceRaised: _Scale.c0,
-    surfaceSunken: Color(0xFFEBEDF0),
-    border: _Scale.c100,
-    borderStrong: _Scale.c200,
-    textPrimary: Color(0xFF14171C),
-    textSecondary: Color(0xFF454B54),
-    textMuted: _Scale.c400,
-    accent: Color(0xFF1E6FE0),
+    bg: Color(0xFFE7E8EC),
+    surface: Color(0xFFEEEFF2),
+    surfaceRaised: Color(0xFFF7F7FA),
+    surfaceSunken: Color(0xFFDCDEE3),
+    border: Color(0xFFD2D5DC),
+    borderStrong: Color(0xFFB7BBC7),
+    textPrimary: Color(0xFF23262E),
+    textSecondary: Color(0xFF565B68),
+    textMuted: Color(0xFF7A7F8C),
+    accent: Color(0xFF3F63C7),
     onAccent: Color(0xFFFFFFFF),
-    danger: Color(0xFFD1372F),
-    warning: Color(0xFFA9640C),
-    success: Color(0xFF1D8A57),
-    info: Color(0xFF1E6FE0),
+    danger: Color(0xFFB84A42),
+    warning: Color(0xFF87600E),
+    success: Color(0xFF206A4B),
+    info: Color(0xFF3F63C7),
   );
 
   static Color methodColor(HttpMethod method, {bool dark = true}) {
     switch (method) {
       case HttpMethod.get:
-        return dark ? const Color(0xFF4C9EFF) : const Color(0xFF1E6FE0);
+        return dark ? const Color(0xFF7C9EF2) : const Color(0xFF3F63C7);
       case HttpMethod.post:
-        return dark ? const Color(0xFF4CC38A) : const Color(0xFF1D8A57);
+        return dark ? const Color(0xFF5FC08F) : const Color(0xFF206A4B);
       case HttpMethod.put:
-        return dark ? const Color(0xFFE0A339) : const Color(0xFFA9640C);
+        return dark ? const Color(0xFFE0B15E) : const Color(0xFF87600E);
       case HttpMethod.patch:
-        return dark ? const Color(0xFFB48CE0) : const Color(0xFF7C4CC4);
+        return dark ? const Color(0xFFB79CE0) : const Color(0xFF7357B8);
       case HttpMethod.delete:
-        return dark ? const Color(0xFFEF5A5A) : const Color(0xFFD1372F);
+        return dark ? const Color(0xFFE37B72) : const Color(0xFFB84A42);
       case HttpMethod.head:
       case HttpMethod.options:
-        return dark ? const Color(0xFF9AA2AF) : const Color(0xFF6B7280);
+        return dark ? const Color(0xFFA7ADBB) : const Color(0xFF7A7F8C);
     }
   }
 

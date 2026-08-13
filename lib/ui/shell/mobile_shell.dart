@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/role_theme.dart';
+import '../../state/settings_providers.dart';
 import '../../state/workbench_notifier.dart';
 import '../../state/workbench_state.dart';
 import '../environments/environments_sidebar_panel.dart';
@@ -43,6 +44,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
 
     final colors = context.colors;
     final section = ref.watch(workbenchProvider.select((s) => s.section));
+    final themeMode = ref.watch(themeModeProvider);
 
     final content = switch (section) {
       WorkspaceSection.requests => const RequestsSidebarPanel(),
@@ -62,6 +64,11 @@ class _MobileShellState extends ConsumerState<MobileShell> {
         actions: [
           IconButton(icon: const Icon(Icons.file_upload_outlined), tooltip: 'Import', onPressed: () => runImportWorkspace(context, ref)),
           IconButton(icon: const Icon(Icons.file_download_outlined), tooltip: 'Export', onPressed: () => runExportWorkspace(context, ref)),
+          IconButton(
+            icon: Icon(themeModeIcon(themeMode)),
+            tooltip: 'Theme: ${themeMode.name}',
+            onPressed: () => ref.read(themeModeProvider.notifier).cycleThemeMode(),
+          ),
         ],
       ),
       body: content,

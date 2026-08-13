@@ -10,6 +10,14 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('sharedPreferencesProvider must be overridden before use');
 });
 
+const _themeModeCycle = [ThemeMode.dark, ThemeMode.light, ThemeMode.system];
+
+IconData themeModeIcon(ThemeMode mode) => switch (mode) {
+  ThemeMode.dark => Icons.dark_mode_outlined,
+  ThemeMode.light => Icons.light_mode_outlined,
+  ThemeMode.system => Icons.brightness_auto_outlined,
+};
+
 class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
@@ -20,6 +28,11 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   Future<void> setThemeMode(ThemeMode mode) async {
     state = mode;
     await ref.read(sharedPreferencesProvider).setString(_themeModeKey, mode.name);
+  }
+
+  Future<void> cycleThemeMode() {
+    final next = _themeModeCycle[(_themeModeCycle.indexOf(state) + 1) % _themeModeCycle.length];
+    return setThemeMode(next);
   }
 }
 

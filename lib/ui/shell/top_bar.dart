@@ -147,19 +147,10 @@ class _ThemeToggle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mode = ref.watch(themeModeProvider);
-    final icon = switch (mode) {
-      ThemeMode.dark => Icons.dark_mode_outlined,
-      ThemeMode.light => Icons.light_mode_outlined,
-      ThemeMode.system => Icons.brightness_auto_outlined,
-    };
     return AppIconButton(
-      icon: icon,
+      icon: themeModeIcon(mode),
       tooltip: 'Theme: ${mode.name}',
-      onPressed: () {
-        const order = [ThemeMode.dark, ThemeMode.light, ThemeMode.system];
-        final next = order[(order.indexOf(mode) + 1) % order.length];
-        ref.read(themeModeProvider.notifier).setThemeMode(next);
-      },
+      onPressed: () => ref.read(themeModeProvider.notifier).cycleThemeMode(),
     );
   }
 }
