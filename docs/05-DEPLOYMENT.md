@@ -48,10 +48,12 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-This builds a signed + notarized macOS app, a Windows executable (signed if a certificate
-secret is configured), and a Linux tarball, then attaches all three to a GitHub Release with
-auto-generated notes. See `.github/workflows/README.md` for the full list of required signing
-secrets and one-time setup steps.
+This builds a macOS app (signed + notarized if certificate secrets are configured, otherwise
+unsigned), a Windows executable (signed if a certificate secret is configured, otherwise
+unsigned), and a Linux tarball, then attaches all three to a GitHub Release with
+auto-generated notes. No secrets are required to cut a release — see
+`.github/workflows/README.md` for the full list of optional signing secrets and one-time
+setup steps.
 
 Android and iOS are **not** built by this pipeline — they're submitted to the Play Store and
 App Store directly (see Code Signing and Store Submission below), so `flutter build apk`,
