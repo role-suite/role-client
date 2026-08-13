@@ -57,9 +57,7 @@ void main() {
 
     test('headerEquals fails when the header is missing', () {
       final result = _result(statusCode: 200);
-      final results = AssertionEvaluator.evaluate([
-        _assertion(AssertionType.headerEquals, target: 'x-missing', expected: 'anything'),
-      ], result);
+      final results = AssertionEvaluator.evaluate([_assertion(AssertionType.headerEquals, target: 'x-missing', expected: 'anything')], result);
       expect(results.single.passed, isFalse);
       expect(results.single.message, contains('missing'));
     });
@@ -85,17 +83,13 @@ void main() {
           ],
         },
       );
-      final results = AssertionEvaluator.evaluate([
-        _assertion(AssertionType.jsonPath, target: 'items[1].id', expected: '2'),
-      ], result);
+      final results = AssertionEvaluator.evaluate([_assertion(AssertionType.jsonPath, target: 'items[1].id', expected: '2')], result);
       expect(results.single.passed, isTrue);
     });
 
     test('jsonPath fails when the path does not exist', () {
       final result = _result(statusCode: 200, body: {'data': {}});
-      final results = AssertionEvaluator.evaluate([
-        _assertion(AssertionType.jsonPath, target: 'data.missing', expected: 'x'),
-      ], result);
+      final results = AssertionEvaluator.evaluate([_assertion(AssertionType.jsonPath, target: 'data.missing', expected: 'x')], result);
       expect(results.single.passed, isFalse);
       expect(results.single.message, contains('not found'));
     });
@@ -107,9 +101,7 @@ void main() {
           'items': [1],
         },
       );
-      final results = AssertionEvaluator.evaluate([
-        _assertion(AssertionType.jsonPath, target: 'items[5]', expected: 'x'),
-      ], result);
+      final results = AssertionEvaluator.evaluate([_assertion(AssertionType.jsonPath, target: 'items[5]', expected: 'x')], result);
       expect(results.single.passed, isFalse);
     });
 

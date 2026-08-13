@@ -89,10 +89,7 @@ class _ResponseViewerState extends State<ResponseViewer> {
         Expanded(
           child: switch (_tab) {
             _ResponseTab.body when result.isHtml && !_showRawHtml => _HtmlPreview(html: result.prettyBody),
-            _ResponseTab.body => SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: MonoText(result.prettyBody),
-            ),
+            _ResponseTab.body => SingleChildScrollView(padding: const EdgeInsets.all(AppSpacing.md), child: MonoText(result.prettyBody)),
             _ResponseTab.headers => SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: _HeadersList(headers: result.headers),
@@ -173,12 +170,7 @@ class _HtmlPreviewState extends State<_HtmlPreview> {
                     if (uri != null) launchUrl(uri, mode: LaunchMode.externalApplication);
                   },
                   style: {
-                    'body': Style(
-                      color: colors.textPrimary,
-                      backgroundColor: colors.surfaceRaised,
-                      margin: Margins.zero,
-                      fontSize: FontSize(14),
-                    ),
+                    'body': Style(color: colors.textPrimary, backgroundColor: colors.surfaceRaised, margin: Margins.zero, fontSize: FontSize(14)),
                     'a': Style(color: colors.accent, textDecoration: TextDecoration.underline),
                     'code': Style(backgroundColor: colors.surfaceSunken, fontFamily: 'JetBrains Mono'),
                     'pre': Style(backgroundColor: colors.surfaceSunken, padding: HtmlPaddings.all(AppSpacing.sm)),
@@ -230,11 +222,7 @@ class _TestsList extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  result.passed ? Icons.check_circle : Icons.cancel,
-                  size: 14,
-                  color: result.passed ? colors.success : colors.danger,
-                ),
+                Icon(result.passed ? Icons.check_circle : Icons.cancel, size: 14, color: result.passed ? colors.success : colors.danger),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(

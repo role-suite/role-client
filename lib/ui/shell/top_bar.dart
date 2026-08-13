@@ -109,9 +109,7 @@ class EnvironmentSwitcher extends ConsumerWidget {
         const PopupMenuItem(value: _noEnvironmentValue, child: Text('No environment')),
         for (final env in environments) PopupMenuItem(value: env.id, child: Text(env.name)),
       ],
-      onSelected: (id) => ref
-          .read(activeEnvironmentIdProvider.notifier)
-          .setActiveEnvironment(id == _noEnvironmentValue ? null : id),
+      onSelected: (id) => ref.read(activeEnvironmentIdProvider.notifier).setActiveEnvironment(id == _noEnvironmentValue ? null : id),
       child: Container(
         height: AppSizes.controlHeightSm + 4,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),

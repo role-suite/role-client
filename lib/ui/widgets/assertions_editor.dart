@@ -48,7 +48,10 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(border: Border.all(color: colors.border), borderRadius: AppRadius.smRadius),
+              decoration: BoxDecoration(
+                border: Border.all(color: colors.border),
+                borderRadius: AppRadius.smRadius,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
