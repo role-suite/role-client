@@ -5,6 +5,7 @@
 **role-client** (Röle) is a cross-platform, local-only API testing client built with Flutter. It provides:
 
 - **Request editing and execution**: Compose and send HTTP requests (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS), view responses, and track history.
+- **Assertions**: Attach declarative, no-scripting checks (status code, response time, body contains, header equals, JSON path equals) to a request; pass/fail is shown per-send and rolled up in Collection Runner reports.
 - **Collections and environments**: Organize requests into collections; use environments with variables (e.g. `{{baseUrl}}`) for URLs, headers, and bodies.
 - **Collection Runner**: Run every request in a collection sequentially and inspect pass/fail run reports.
 - **Flows**: Chain requests together sequentially, optionally passing the previous response into the next request.
@@ -34,9 +35,9 @@ role-client/
 │   ├── app.dart              # MaterialApp + theme wiring
 │   ├── core/
 │   │   ├── constants.dart    # App-wide constants
-│   │   ├── models/           # ApiRequest, Collection, Environment, RequestResult, ...
+│   │   ├── models/           # ApiRequest, Collection, Environment, Assertion, RequestResult, ...
 │   │   ├── storage/          # JsonStore — local JSON persistence under the workspace dir
-│   │   ├── network/          # HttpClient (Dio wrapper), TemplateResolver, RequestRunner
+│   │   ├── network/          # HttpClient (Dio wrapper), TemplateResolver, RequestRunner, AssertionEvaluator
 │   │   ├── io/                # Workspace export + Röle/Postman import
 │   │   ├── theme/             # Design tokens, colors, typography, ThemeData assembly
 │   │   └── utils/
