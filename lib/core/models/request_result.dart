@@ -51,6 +51,29 @@ class RequestResult {
     return body.toString();
   }
 
+  /// The `Content-Type` response header, lower-cased, ignoring any
+  /// `; charset=...` suffix. Header lookup is case-insensitive since
+  /// servers vary in how they capitalize it.
+  String? get contentType {
+    for (final entry in headers.entries) {
+      if (entry.key.toLowerCase() == 'content-type') {
+        if (entry.value.isEmpty) return null;
+        return entry.value.first.split(';').first.trim().toLowerCase();
+      }
+    }
+    return null;
+  }
+
+  /// Whether the body looks like HTML, so the UI can offer a rendered
+  /// preview instead of (or alongside) the raw-text view.
+  bool get isHtml {
+    final ct = contentType;
+    if (ct != null) return ct.contains('html');
+    if (body is! String) return false;
+    final trimmed = (body as String).trimLeft().toLowerCase();
+    return trimmed.startsWith('<!doctype html') || trimmed.startsWith('<html');
+  }
+
   Map<String, dynamic> toJson() => {
     'ok': ok,
     'statusCode': statusCode,

@@ -1,4 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as html_parser;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/models/assertion.dart';
 import '../../core/models/request_result.dart';
@@ -21,6 +26,7 @@ class ResponseViewer extends StatefulWidget {
 
 class _ResponseViewerState extends State<ResponseViewer> {
   _ResponseTab _tab = _ResponseTab.body;
+  bool _showRawHtml = false;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +57,12 @@ class _ResponseViewerState extends State<ResponseViewer> {
               const SizedBox(width: AppSpacing.md),
               Text('${(result.sizeBytes / 1024).toStringAsFixed(1)} KB', style: context.type.caption),
               const Spacer(),
+              if (_tab == _ResponseTab.body && result.isHtml) ...[
+                _TabButton(label: 'Preview', selected: !_showRawHtml, onTap: () => setState(() => _showRawHtml = false)),
+                const SizedBox(width: AppSpacing.md),
+                _TabButton(label: 'Raw', selected: _showRawHtml, onTap: () => setState(() => _showRawHtml = true)),
+                const SizedBox(width: AppSpacing.lg),
+              ],
               _TabButton(label: 'Body', selected: _tab == _ResponseTab.body, onTap: () => setState(() => _tab = _ResponseTab.body)),
               const SizedBox(width: AppSpacing.md),
               _TabButton(
@@ -75,16 +87,108 @@ class _ResponseViewerState extends State<ResponseViewer> {
             child: Text(result.errorMessage!, style: context.type.body.copyWith(color: colors.danger)),
           ),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: switch (_tab) {
-              _ResponseTab.body => MonoText(result.prettyBody),
-              _ResponseTab.headers => _HeadersList(headers: result.headers),
-              _ResponseTab.tests => _TestsList(results: widget.assertionResults),
-            },
-          ),
+          child: switch (_tab) {
+            _ResponseTab.body when result.isHtml && !_showRawHtml => _HtmlPreview(html: result.prettyBody),
+            _ResponseTab.body => SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: MonoText(result.prettyBody),
+            ),
+            _ResponseTab.headers => SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: _HeadersList(headers: result.headers),
+            ),
+            _ResponseTab.tests => SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: _TestsList(results: widget.assertionResults),
+            ),
+          },
         ),
       ],
+    );
+  }
+}
+
+class _HtmlPreview extends StatefulWidget {
+  const _HtmlPreview({required this.html});
+
+  final String html;
+
+  @override
+  State<_HtmlPreview> createState() => _HtmlPreviewState();
+}
+
+class _HtmlPreviewState extends State<_HtmlPreview> {
+  // Below this size, parsing is fast enough to do inline during build.
+  // Above it, hand the parse off to a background isolate via `compute`
+  // so a large response body can't jank the UI thread.
+  static const _syncParseThreshold = 40000;
+
+  late Future<dom.Document> _parsed;
+
+  @override
+  void initState() {
+    super.initState();
+    _parsed = _parse(widget.html);
+  }
+
+  @override
+  void didUpdateWidget(covariant _HtmlPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.html != widget.html) {
+      _parsed = _parse(widget.html);
+    }
+  }
+
+  static Future<dom.Document> _parse(String html) {
+    if (html.length <= _syncParseThreshold) {
+      return SynchronousFuture(html_parser.parse(html));
+    }
+    return compute(html_parser.parse, html);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return ColoredBox(
+      color: colors.surfaceRaised,
+      child: FutureBuilder<dom.Document>(
+        future: _parsed,
+        builder: (context, snapshot) {
+          final document = snapshot.data;
+          if (document == null) {
+            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+          }
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: SelectionArea(
+              // Isolates the (potentially large) rendered HTML tree from
+              // repaints triggered elsewhere in the response panel.
+              child: RepaintBoundary(
+                child: Html.fromDom(
+                  document: document,
+                  // Links open in the system browser instead of doing
+                  // nothing — flutter_html has no in-app navigation here.
+                  onLinkTap: (url, attributes, element) {
+                    final uri = url == null ? null : Uri.tryParse(url);
+                    if (uri != null) launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                  style: {
+                    'body': Style(
+                      color: colors.textPrimary,
+                      backgroundColor: colors.surfaceRaised,
+                      margin: Margins.zero,
+                      fontSize: FontSize(14),
+                    ),
+                    'a': Style(color: colors.accent, textDecoration: TextDecoration.underline),
+                    'code': Style(backgroundColor: colors.surfaceSunken, fontFamily: 'JetBrains Mono'),
+                    'pre': Style(backgroundColor: colors.surfaceSunken, padding: HtmlPaddings.all(AppSpacing.sm)),
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
