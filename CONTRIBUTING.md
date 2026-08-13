@@ -30,7 +30,7 @@ This project and everyone participating in it is governed by our [Code of Conduc
 
 Before creating a bug report:
 
-1. **Check the [issue tracker](https://github.com/battletech45/relay/issues)** to see if the bug has already been reported
+1. **Check the [issue tracker](https://github.com/role-suite/role-client/issues)** to see if the bug has already been reported
 2. If you find a closed issue that matches your problem, open a new issue and include a link to the original
 
 When creating a bug report, include:
@@ -45,8 +45,8 @@ When creating a bug report, include:
 
 Feature requests are welcome! Before suggesting:
 
-1. Check if the feature is already on our [Roadmap](README.md#roadmap)
-2. Search existing issues to avoid duplicates
+1. Search existing issues to avoid duplicates
+2. Check [docs/](docs/) to confirm the feature doesn't already exist
 
 When creating a feature request:
 
@@ -77,13 +77,13 @@ We actively welcome pull requests! Here's how:
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/relay.git
-   cd relay
+   git clone https://github.com/YOUR_USERNAME/role-client.git
+   cd role-client
    ```
 
 2. **Add the upstream remote**
    ```bash
-   git remote add upstream https://github.com/battletech45/relay.git
+   git remote add upstream https://github.com/role-suite/role-client.git
    ```
 
 3. **Install dependencies**
@@ -118,15 +118,16 @@ git merge upstream/main
 
 2. **Make your changes** following our style guidelines
 
-3. **Test your changes**
+3. **Format, analyze, and test your changes**
    ```bash
+   dart format .
    flutter analyze
    flutter test
    ```
 
 4. **Commit with a meaningful message**
    ```bash
-   git commit -m "Add: brief description of your changes"
+   git commit -m "feat: add environment variable autocomplete"
    ```
 
 5. **Push to your fork**
@@ -138,52 +139,52 @@ git merge upstream/main
 
 ### PR Requirements
 
-- [ ] Code passes `flutter analyze` with no errors
-- [ ] All existing tests pass
+CI (`.github/workflows/`) enforces these automatically, so it's worth checking them locally first:
+
+- [ ] `dart format --output=none --set-exit-if-changed .` reports no changes
+- [ ] `flutter analyze` passes with no issues (this includes `custom_lint`/`riverpod_lint`)
+- [ ] `flutter test` passes
+- [ ] The macOS/Windows/Linux build-check workflow would still compile (no platform-specific breakage)
+- [ ] The PR title follows [Conventional Commits](https://www.conventionalcommits.org/) (see below) — checked by `pr-title.yml`
 - [ ] New features include appropriate tests (when applicable)
-- [ ] Documentation is updated if needed
-- [ ] Commit messages are clear and descriptive
+- [ ] Documentation in [`docs/`](docs/) is updated if the change affects architecture, data model, or setup
 
 ## Style Guidelines
 
 ### Code Style
 
 - Follow [Effective Dart](https://dart.dev/guides/language/effective-dart) guidelines
-- Use the project's `analysis_options.yaml` for linting rules
-- Run `flutter analyze` before committing
+- Use the project's `analysis_options.yaml` for linting rules; don't disable a rule locally without a good reason
+- Run `dart format .` and `flutter analyze` before committing
 
-### Commit Messages
+### Commit Messages and PR Titles
 
-Use clear, descriptive commit messages:
+The PR title (not every individual commit) must start with one of these [Conventional Commits](https://www.conventionalcommits.org/) types, enforced by CI:
 
-- **Add:** for new features
-- **Fix:** for bug fixes
-- **Update:** for non-breaking changes
-- **Remove:** for removed features
-- **Docs:** for documentation changes
-- **Refactor:** for code refactoring
+`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
 
 Examples:
 ```
-Add: environment variable autocomplete in request editor
-Fix: collection filter not updating on selection change
-Docs: update README with new installation instructions
+feat: add environment variable autocomplete in request editor
+fix: collection filter not updating on selection change
+docs: update README with new installation instructions
 ```
 
 ### Architecture
 
-Follow the existing clean architecture pattern:
+Röle is local-only and has no backend, so it doesn't use a repository/usecase/data-domain-presentation
+split. Follow the existing structure instead:
 
 ```
 lib/
-├── core/           # Shared utilities, models, services, and UI components
-│   └── presentation/  # Reusable UI components (layout, widgets)
-├── features/       # Feature modules
-│   └── feature_name/
-│       ├── data/           # Data layer
-│       ├── domain/         # Business logic
-│       └── presentation/   # UI layer
+├── core/       # Models, local JSON storage, HTTP execution, import/export, theme, utils
+├── state/      # Riverpod notifiers — this *is* the data/business-logic layer
+└── ui/         # Widgets, organized by the workbench section they belong to
+                # (shell/, sidebar/, request/, environments/, history/, runner/, flows/, widgets/)
 ```
+
+See [docs/02-ARCHITECTURE.md](docs/02-ARCHITECTURE.md) for the full picture, and
+[docs/07-MAINTENANCE.md](docs/07-MAINTENANCE.md) for how to add a new feature within it.
 
 ## Questions?
 

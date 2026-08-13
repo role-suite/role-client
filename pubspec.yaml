@@ -2,6 +2,8 @@ name: relay
 description: "A modern, cross-platform API testing client built with Flutter."
 publish_to: 'none'
 version: 1.0.0+1
+repository: https://github.com/role-suite/role-client
+issue_tracker: https://github.com/role-suite/role-client/issues
 
 environment:
   sdk: ^3.9.2
@@ -11,22 +13,22 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
+  dio: ^5.9.0
+  file_picker: ^10.3.7
+  flutter_native_splash: ^2.4.8
+  flutter_riverpod: ^3.0.3
   path: ^1.9.1
   path_provider: ^2.1.5
-  file_picker: ^10.3.7
-  flutter_riverpod: ^3.0.3
   shared_preferences: ^2.3.3
-  dio: ^5.9.0
-  flutter_native_splash: ^2.4.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^6.0.0
   custom_lint: ^0.8.1
-  riverpod_lint: ^3.1.0
   flutter_launcher_icons: ^0.14.4
+  flutter_lints: ^6.0.0
+  riverpod_lint: ^3.1.0
 
 flutter_launcher_icons:
   android: true
