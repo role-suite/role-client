@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../core/models/assertion.dart';
 import '../../core/models/request_result.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../widgets/widgets.dart';
 
-enum _ResponseTab { body, headers }
+enum _ResponseTab { body, headers, tests }
 
 class ResponseViewer extends StatefulWidget {
-  const ResponseViewer({super.key, required this.result, required this.sending});
+  const ResponseViewer({super.key, required this.result, required this.sending, this.assertionResults = const []});
 
   final RequestResult? result;
   final bool sending;
+  final List<AssertionResult> assertionResults;
 
   @override
   State<ResponseViewer> createState() => _ResponseViewerState();
@@ -56,6 +58,14 @@ class _ResponseViewerState extends State<ResponseViewer> {
                 selected: _tab == _ResponseTab.headers,
                 onTap: () => setState(() => _tab = _ResponseTab.headers),
               ),
+              if (widget.assertionResults.isNotEmpty) ...[
+                const SizedBox(width: AppSpacing.md),
+                _TabButton(
+                  label: 'Tests (${widget.assertionResults.where((r) => r.passed).length}/${widget.assertionResults.length})',
+                  selected: _tab == _ResponseTab.tests,
+                  onTap: () => setState(() => _tab = _ResponseTab.tests),
+                ),
+              ],
             ],
           ),
         ),
@@ -67,7 +77,11 @@ class _ResponseViewerState extends State<ResponseViewer> {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: _tab == _ResponseTab.body ? MonoText(result.prettyBody) : _HeadersList(headers: result.headers),
+            child: switch (_tab) {
+              _ResponseTab.body => MonoText(result.prettyBody),
+              _ResponseTab.headers => _HeadersList(headers: result.headers),
+              _ResponseTab.tests => _TestsList(results: widget.assertionResults),
+            },
           ),
         ),
       ],
@@ -88,6 +102,49 @@ class _TabButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Text(label, style: context.type.label.copyWith(color: selected ? colors.textPrimary : colors.textMuted)),
+    );
+  }
+}
+
+class _TestsList extends StatelessWidget {
+  const _TestsList({required this.results});
+
+  final List<AssertionResult> results;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    if (results.isEmpty) {
+      return Text('No assertions defined for this request.', style: context.type.caption);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final result in results)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  result.passed ? Icons.check_circle : Icons.cancel,
+                  size: 14,
+                  color: result.passed ? colors.success : colors.danger,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(result.assertion.type.label, style: context.type.body),
+                      Text(result.message, style: context.type.caption.copyWith(color: result.passed ? colors.textMuted : colors.danger)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

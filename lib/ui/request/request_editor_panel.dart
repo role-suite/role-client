@@ -6,7 +6,7 @@ import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../widgets/widgets.dart';
 
-enum _EditorTab { params, headers, body, auth, description }
+enum _EditorTab { params, headers, body, auth, tests, description }
 
 /// Params / Headers / Body / Auth / Description sub-editors for a request draft.
 class RequestEditorPanel extends StatefulWidget {
@@ -62,6 +62,9 @@ class _RequestEditorPanelState extends State<RequestEditorPanel> {
         return 'Body';
       case _EditorTab.auth:
         return 'Auth';
+      case _EditorTab.tests:
+        final count = widget.request.assertions.length;
+        return count == 0 ? 'Tests' : 'Tests ($count)';
       case _EditorTab.description:
         return 'Description';
     }
@@ -87,6 +90,12 @@ class _RequestEditorPanelState extends State<RequestEditorPanel> {
         return _BodyEditor(request: widget.request, onChanged: widget.onChanged);
       case _EditorTab.auth:
         return _AuthEditor(request: widget.request, onChanged: widget.onChanged);
+      case _EditorTab.tests:
+        return AssertionsEditor(
+          key: ValueKey('tests-${widget.request.id}'),
+          initial: widget.request.assertions,
+          onChanged: (v) => widget.onChanged(widget.request.copyWith(assertions: v)),
+        );
       case _EditorTab.description:
         return TextFormField(
           key: ValueKey('desc-${widget.request.id}'),

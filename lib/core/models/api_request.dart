@@ -1,4 +1,5 @@
 import '../utils/json_utils.dart';
+import 'assertion.dart';
 import 'enums.dart';
 
 class ApiRequest {
@@ -14,6 +15,7 @@ class ApiRequest {
   final Map<String, String> formFields;
   final AuthType authType;
   final Map<String, String> authConfig;
+  final List<Assertion> assertions;
   final String? description;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -31,6 +33,7 @@ class ApiRequest {
     this.formFields = const {},
     this.authType = AuthType.none,
     this.authConfig = const {},
+    this.assertions = const [],
     this.description,
     required this.createdAt,
     required this.updatedAt,
@@ -49,6 +52,7 @@ class ApiRequest {
     Map<String, String>? formFields,
     AuthType? authType,
     Map<String, String>? authConfig,
+    List<Assertion>? assertions,
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -66,6 +70,7 @@ class ApiRequest {
       formFields: formFields ?? this.formFields,
       authType: authType ?? this.authType,
       authConfig: authConfig ?? this.authConfig,
+      assertions: assertions ?? this.assertions,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -85,6 +90,7 @@ class ApiRequest {
     'formFields': formFields,
     'authType': authType.name,
     'authConfig': authConfig,
+    'assertions': assertions.map((a) => a.toJson()).toList(),
     'description': description,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
@@ -104,6 +110,7 @@ class ApiRequest {
       formFields: stringMapFrom(json['formFields']),
       authType: AuthTypeX.fromString(json['authType'] as String? ?? 'none'),
       authConfig: stringMapFrom(json['authConfig']),
+      assertions: (json['assertions'] as List? ?? const []).whereType<Map>().map((e) => Assertion.fromJson(Map<String, dynamic>.from(e))).toList(),
       description: json['description'] as String?,
       createdAt: dateTimeFrom(json['createdAt']),
       updatedAt: dateTimeFrom(json['updatedAt']),

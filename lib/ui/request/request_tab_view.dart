@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/api_request.dart';
+import '../../core/models/assertion.dart';
 import '../../core/models/request_result.dart';
 import '../../core/models/response_snapshot.dart';
+import '../../core/network/assertion_evaluator.dart';
 import '../../core/network/template_resolver.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
@@ -32,6 +34,7 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
   ApiRequest? _draft;
   ApiRequest? _saved;
   RequestResult? _result;
+  List<AssertionResult> _assertionResults = const [];
   bool _sending = false;
 
   String get _tabId => WorkbenchTab.idFor(WorkbenchTabType.request, widget.requestId);
@@ -53,6 +56,7 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
         a.formFields.toString() == b.formFields.toString() &&
         a.authType == b.authType &&
         a.authConfig.toString() == b.authConfig.toString() &&
+        a.assertions.map((x) => x.toJson()).toString() == b.assertions.map((x) => x.toJson()).toString() &&
         a.description == b.description;
   }
 
@@ -73,6 +77,7 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
     setState(() {
       _sending = true;
       _result = null;
+      _assertionResults = const [];
     });
 
     final variables = ref.read(activeVariablesProvider);
@@ -83,6 +88,7 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
     setState(() {
       _sending = false;
       _result = result;
+      _assertionResults = AssertionEvaluator.evaluate(draft.assertions, result);
     });
 
     await ref
@@ -183,7 +189,7 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
                 ),
               ],
             ),
-            bottom: ResponseViewer(result: _result, sending: _sending),
+            bottom: ResponseViewer(result: _result, sending: _sending, assertionResults: _assertionResults),
           ),
         ),
       ],
