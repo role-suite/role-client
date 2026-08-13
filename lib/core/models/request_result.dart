@@ -62,6 +62,22 @@ class RequestResult {
     'isOffline': isOffline,
   };
 
+  /// Same as [toJson] but with the response body omitted — used when
+  /// persisting history, where bodies are stored separately so the
+  /// always-loaded snapshot list stays cheap to read and hold in memory.
+  Map<String, dynamic> toMetadataJson() => toJson()..['body'] = null;
+
+  RequestResult withBody(dynamic newBody) => RequestResult(
+    ok: ok,
+    statusCode: statusCode,
+    statusMessage: statusMessage,
+    headers: headers,
+    body: newBody,
+    duration: duration,
+    errorMessage: errorMessage,
+    isOffline: isOffline,
+  );
+
   factory RequestResult.fromJson(Map<String, dynamic> json) {
     return RequestResult(
       ok: json['ok'] as bool? ?? false,

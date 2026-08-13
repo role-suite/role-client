@@ -21,15 +21,22 @@ class ResponseSnapshot {
     required this.result,
   });
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson({bool includeBody = true}) => {
     'id': id,
     'requestId': requestId,
     'requestName': requestName,
     'method': method.name,
     'url': url,
     'timestamp': timestamp.toIso8601String(),
-    'result': result.toJson(),
+    'result': includeBody ? result.toJson() : result.toMetadataJson(),
   };
+
+  /// For history persistence — body is stored in a separate per-snapshot
+  /// file, so the list every request keeps in memory never holds bodies.
+  Map<String, dynamic> toMetadataJson() => toJson(includeBody: false);
+
+  ResponseSnapshot withResult(RequestResult newResult) =>
+      ResponseSnapshot(id: id, requestId: requestId, requestName: requestName, method: method, url: url, timestamp: timestamp, result: newResult);
 
   factory ResponseSnapshot.fromJson(Map<String, dynamic> json) {
     return ResponseSnapshot(

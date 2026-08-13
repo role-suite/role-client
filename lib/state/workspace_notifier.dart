@@ -7,6 +7,8 @@ import '../core/models/workspace_bundle.dart';
 import '../core/storage/json_store.dart';
 import '../core/storage/workspace_paths.dart';
 import '../core/utils/id.dart';
+import 'history_notifier.dart';
+import 'run_history_notifier.dart';
 
 class WorkspaceState {
   const WorkspaceState({this.collections = const [], this.requests = const []});
@@ -84,6 +86,7 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
         requests: current.requests.where((r) => r.collectionId != collectionId).toList(),
       ),
     );
+    await ref.read(runHistoryProvider.notifier).clearForCollection(collectionId);
   }
 
   Future<ApiRequest> createRequest({required String collectionId, required String name}) async {
@@ -110,6 +113,7 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
     final next = current.copyWith(requests: current.requests.where((r) => r.id != request.id).toList());
     await _persist(_bundleFor(next, request.collectionId));
     state = AsyncData(next);
+    await ref.read(historyProvider.notifier).clearForRequest(request.id);
   }
 
   Future<ApiRequest> duplicateRequest(ApiRequest request) async {
