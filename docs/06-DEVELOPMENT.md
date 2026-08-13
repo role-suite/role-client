@@ -43,6 +43,9 @@ See [02-ARCHITECTURE.md](02-ARCHITECTURE.md) for the full architecture writeup.
 - `dio`: HTTP for request execution
 - `shared_preferences`: persistent app preferences
 - `path_provider`: local storage paths
+- `flutter_html`: renders HTML response bodies in the response viewer
+- `url_launcher`: opens links tapped inside a rendered HTML response
+- `html`: DOM parsing backing the HTML response preview
 
 ## Riverpod Development Standard
 

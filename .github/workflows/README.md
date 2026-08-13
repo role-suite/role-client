@@ -5,18 +5,17 @@
 | `ci.yml` | push/PR to `main` | `dart format` check, `flutter analyze` (incl. `custom_lint`/`riverpod_lint`), `flutter test` |
 | `build-check.yml` | push/PR to `main` | Compile-only build of macOS, Windows, Linux to catch platform build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
-| `release.yml` | push tag `v*.*.*` | Builds signed+notarized macOS app, Windows exe (signed if cert provided), Linux bundle; publishes them to a GitHub Release |
-| `dependabot.yml` (in `.github/`) | weekly | Opens PRs for outdated `pub` packages and GitHub Action versions |
+| `release.yml` | push tag `v*.*.*` | Builds macOS (signed+notarized if cert provided), Windows (signed if cert provided), and Linux artifacts; publishes them to a GitHub Release |
 
 ## Required secrets for `release.yml`
 
-None of these are needed for `ci.yml` or `build-check.yml`. Add them under **Settings → Secrets and variables → Actions** before pushing a release tag.
+None of these are needed for `ci.yml` or `build-check.yml`. Add them under **Settings → Secrets and variables → Actions** before pushing a release tag. Every secret below is optional — with none set, `release.yml` still builds and publishes unsigned artifacts for all three platforms.
 
 Android and iOS are distributed through their respective app stores, not through this pipeline, so `release.yml` does not build them.
 
-### macOS (required for the `macos` job)
+### macOS (optional for the `macos` job)
 
-You need an Apple Developer account, a **Developer ID Application** certificate, and an app-specific password for notarization.
+If `MACOS_CERTIFICATE_BASE64` is not set, the workflow still builds and packages the app, just unsigned and unnotarized. To sign and notarize, you need an Apple Developer account, a **Developer ID Application** certificate, and an app-specific password for notarization.
 
 | Secret | Value |
 |---|---|
