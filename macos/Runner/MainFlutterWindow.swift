@@ -10,6 +10,10 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 
+    if let displayName = Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String {
+      self.title = displayName
+    }
+
     super.awakeFromNib()
   }
 }
