@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../core/utils/date_format.dart';
@@ -10,11 +11,18 @@ import '../../state/workbench_state.dart';
 import '../../state/workspace_notifier.dart';
 import '../widgets/widgets.dart';
 
-class RunsSidebarPanel extends ConsumerWidget {
+class RunsSidebarPanel extends ConsumerStatefulWidget {
   const RunsSidebarPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RunsSidebarPanel> createState() => _RunsSidebarPanelState();
+}
+
+class _RunsSidebarPanelState extends ConsumerState<RunsSidebarPanel> {
+  int _visibleCount = AppConstants.runHistoryPageSize;
+
+  @override
+  Widget build(BuildContext context) {
     final workspace = ref.watch(workspaceProvider);
     final runHistory = ref.watch(runHistoryProvider);
     final colors = context.colors;
@@ -73,9 +81,11 @@ class RunsSidebarPanel extends ConsumerWidget {
                 child: Text('No runs yet.', style: context.type.caption),
               );
             }
+            final visibleCount = _visibleCount.clamp(0, entries.length);
+            final hasMore = visibleCount < entries.length;
             return Column(
               children: [
-                for (final entry in entries)
+                for (final entry in entries.take(visibleCount))
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -103,6 +113,16 @@ class RunsSidebarPanel extends ConsumerWidget {
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                  ),
+                if (hasMore)
+                  InkWell(
+                    onTap: () => setState(() => _visibleCount += AppConstants.runHistoryPageSize),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Text('Load ${entries.length - visibleCount} more', style: context.type.label.copyWith(color: colors.accent)),
                       ),
                     ),
                   ),

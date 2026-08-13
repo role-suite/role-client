@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants.dart';
 import '../../core/models/response_snapshot.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
@@ -23,6 +26,14 @@ class HistorySidebarPanel extends ConsumerStatefulWidget {
 
 class _HistorySidebarPanelState extends ConsumerState<HistorySidebarPanel> {
   _HistoryFilter _filter = _HistoryFilter.all;
+  int _visibleCount = AppConstants.historyPageSize;
+
+  void _setFilter(_HistoryFilter filter) {
+    setState(() {
+      _filter = filter;
+      _visibleCount = AppConstants.historyPageSize;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +50,8 @@ class _HistorySidebarPanelState extends ConsumerState<HistorySidebarPanel> {
           child: Wrap(
             spacing: AppSpacing.xs,
             children: [
-              _FilterChip(label: 'All', selected: _filter == _HistoryFilter.all, onTap: () => setState(() => _filter = _HistoryFilter.all)),
-              _FilterChip(label: 'Errors', selected: _filter == _HistoryFilter.errors, onTap: () => setState(() => _filter = _HistoryFilter.errors)),
+              _FilterChip(label: 'All', selected: _filter == _HistoryFilter.all, onTap: () => _setFilter(_HistoryFilter.all)),
+              _FilterChip(label: 'Errors', selected: _filter == _HistoryFilter.errors, onTap: () => _setFilter(_HistoryFilter.errors)),
             ],
           ),
         ),
@@ -63,9 +74,18 @@ class _HistorySidebarPanelState extends ConsumerState<HistorySidebarPanel> {
                 );
               }
 
+              final visibleCount = _visibleCount.clamp(0, filtered.length);
+              final hasMore = visibleCount < filtered.length;
+
               return ListView.builder(
-                itemCount: filtered.length,
+                itemCount: visibleCount + (hasMore ? 1 : 0),
                 itemBuilder: (context, index) {
+                  if (index == visibleCount) {
+                    return _LoadMoreRow(
+                      remaining: filtered.length - visibleCount,
+                      onTap: () => setState(() => _visibleCount += AppConstants.historyPageSize),
+                    );
+                  }
                   final snapshot = filtered[index];
                   return _HistoryRow(snapshot: snapshot, canReopen: workspaceRequestIds.contains(snapshot.requestId));
                 },
@@ -74,6 +94,27 @@ class _HistorySidebarPanelState extends ConsumerState<HistorySidebarPanel> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LoadMoreRow extends StatelessWidget {
+  const _LoadMoreRow({required this.remaining, required this.onTap});
+
+  final int remaining;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: Text('Load $remaining more', style: context.type.label.copyWith(color: colors.accent)),
+        ),
+      ),
     );
   }
 }
@@ -113,7 +154,10 @@ class _HistoryRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () => showHistorySnapshotDialog(context, snapshot),
+      onTap: () async {
+        final hydrated = await ref.read(historyProvider.notifier).hydrate(snapshot);
+        if (context.mounted) unawaited(showHistorySnapshotDialog(context, hydrated));
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
         child: Row(
