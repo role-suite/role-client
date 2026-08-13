@@ -66,7 +66,7 @@ flutter test
 Fix analyzer warnings before committing. Add or update tests when behavior changes.
 `.editorconfig` at the repo root keeps indentation/line-ending/charset consistent across
 editors; `analysis_options.yaml` configures the analyzer and linter (including
-`custom_lint`/`riverpod_lint`).
+`riverpod_lint`).
 
 ## Continuous Integration
 

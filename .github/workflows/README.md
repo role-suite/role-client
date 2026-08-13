@@ -2,7 +2,7 @@
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `ci.yml` | push/PR to `main` | `dart format` check, `flutter analyze` (incl. `custom_lint`/`riverpod_lint`), `flutter test` |
+| `ci.yml` | push/PR to `main` | `dart format` check, `flutter analyze` (incl. `riverpod_lint`), `flutter test` |
 | `build-check.yml` | push/PR to `main` | Compile-only build of macOS, Windows, Linux to catch platform build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
 | `release.yml` | push tag `v*.*.*` | Builds macOS (signed+notarized if cert provided), Windows (signed if cert provided), and Linux artifacts; publishes them to a GitHub Release |
