@@ -98,7 +98,7 @@ All collections, requests, and environments are stored on your device. There is 
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.9.2` or newer
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.44.0` or newer
 - Platform development tooling:
   - **Windows**: Visual Studio 2022 with C++ workload
   - **macOS**: Xcode 14+

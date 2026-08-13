@@ -69,7 +69,7 @@ We actively welcome pull requests! Here's how:
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (version 3.9.2 or higher)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (version 3.44.0 or higher)
 - An IDE with Flutter support (VS Code, Android Studio, or IntelliJ)
 - Git
 
