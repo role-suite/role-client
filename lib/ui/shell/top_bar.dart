@@ -39,6 +39,7 @@ class TopBar extends ConsumerWidget {
           const SizedBox(width: AppSpacing.sm),
           AppIconButton(icon: Icons.file_upload_outlined, tooltip: 'Import workspace', onPressed: onImport),
           AppIconButton(icon: Icons.file_download_outlined, tooltip: 'Export workspace', onPressed: onExport),
+          const _InspectorToggle(),
           const _ThemeToggle(),
         ],
       ),
@@ -122,6 +123,20 @@ class _EnvironmentSwitcher extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InspectorToggle extends ConsumerWidget {
+  const _InspectorToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final visible = ref.watch(workbenchProvider.select((s) => s.inspectorVisible));
+    return AppIconButton(
+      icon: visible ? Icons.view_sidebar : Icons.view_sidebar_outlined,
+      tooltip: visible ? 'Hide inspector' : 'Show inspector',
+      onPressed: () => ref.read(workbenchProvider.notifier).toggleInspector(),
     );
   }
 }
