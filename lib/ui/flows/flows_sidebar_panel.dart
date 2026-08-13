@@ -48,19 +48,25 @@ class FlowsSidebarPanel extends ConsumerWidget {
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.flow, title: chain.name, payloadId: chain.id),
+                        onTap: () =>
+                            ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.flow, title: chain.name, payloadId: chain.id),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
                           child: Row(
                             children: [
                               Icon(Icons.alt_route, size: 14, color: colors.textMuted),
                               const SizedBox(width: AppSpacing.sm),
-                              Expanded(child: Text(chain.name, style: context.type.body, overflow: TextOverflow.ellipsis)),
+                              Expanded(
+                                child: Text(chain.name, style: context.type.body, overflow: TextOverflow.ellipsis),
+                              ),
                               Text('${chain.steps.length}', style: context.type.caption),
                               PopupMenuButton<String>(
                                 icon: Icon(Icons.more_horiz, size: 14, color: colors.textMuted),
                                 color: colors.surfaceRaised,
-                                shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius, side: BorderSide(color: colors.border)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppRadius.mdRadius,
+                                  side: BorderSide(color: colors.border),
+                                ),
                                 itemBuilder: (context) => const [PopupMenuItem(value: 'delete', child: Text('Delete'))],
                                 onSelected: (action) {
                                   if (action == 'delete') {

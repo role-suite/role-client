@@ -24,7 +24,10 @@ class SideRail extends ConsumerWidget {
 
     return Container(
       width: AppSizes.iconRailWidth,
-      decoration: BoxDecoration(color: colors.surface, border: Border(right: BorderSide(color: colors.border))),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(right: BorderSide(color: colors.border)),
+      ),
       child: Column(
         children: [
           const SizedBox(height: AppSpacing.sm),

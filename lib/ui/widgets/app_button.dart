@@ -6,14 +6,7 @@ import '../../core/theme/role_theme.dart';
 enum AppButtonVariant { primary, secondary, ghost, danger }
 
 class AppButton extends StatelessWidget {
-  const AppButton({
-    super.key,
-    required this.label,
-    this.onPressed,
-    this.icon,
-    this.variant = AppButtonVariant.secondary,
-    this.dense = false,
-  });
+  const AppButton({super.key, required this.label, this.onPressed, this.icon, this.variant = AppButtonVariant.secondary, this.dense = false});
 
   final String label;
   final VoidCallback? onPressed;
@@ -61,7 +54,11 @@ class AppButton extends StatelessWidget {
         child: Container(
           height: dense ? AppSizes.controlHeightSm : AppSizes.controlHeight,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          decoration: BoxDecoration(color: bg, borderRadius: AppRadius.smRadius, border: border != null ? Border.all(color: border) : null),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: AppRadius.smRadius,
+            border: border != null ? Border.all(color: border) : null,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

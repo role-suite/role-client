@@ -24,18 +24,17 @@ class TopBar extends ConsumerWidget {
     return Container(
       height: AppSizes.topBarHeight,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(color: colors.surface, border: Border(bottom: BorderSide(color: colors.border))),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(bottom: BorderSide(color: colors.border)),
+      ),
       child: Row(
         children: [
           Icon(Icons.bolt, size: 18, color: colors.accent),
           const SizedBox(width: AppSpacing.xs),
           Text(AppConstants.appName, style: context.type.title),
           const SizedBox(width: AppSpacing.lg),
-          if (desktop) ...[
-            Expanded(child: _SearchField()),
-            const SizedBox(width: AppSpacing.lg),
-          ] else
-            const Spacer(),
+          if (desktop) ...[Expanded(child: _SearchField()), const SizedBox(width: AppSpacing.lg)] else const Spacer(),
           const _EnvironmentSwitcher(),
           const SizedBox(width: AppSpacing.sm),
           AppIconButton(icon: Icons.file_upload_outlined, tooltip: 'Import workspace', onPressed: onImport),
@@ -95,7 +94,10 @@ class _EnvironmentSwitcher extends ConsumerWidget {
       tooltip: 'Active environment',
       offset: const Offset(0, 32),
       color: colors.surfaceRaised,
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius, side: BorderSide(color: colors.border)),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.mdRadius,
+        side: BorderSide(color: colors.border),
+      ),
       itemBuilder: (context) => [
         const PopupMenuItem(value: null, child: Text('No environment')),
         for (final env in environments) PopupMenuItem(value: env.id, child: Text(env.name)),
@@ -104,7 +106,11 @@ class _EnvironmentSwitcher extends ConsumerWidget {
       child: Container(
         height: AppSizes.controlHeightSm + 4,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-        decoration: BoxDecoration(color: colors.surfaceSunken, borderRadius: AppRadius.smRadius, border: Border.all(color: colors.border)),
+        decoration: BoxDecoration(
+          color: colors.surfaceSunken,
+          borderRadius: AppRadius.smRadius,
+          border: Border.all(color: colors.border),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

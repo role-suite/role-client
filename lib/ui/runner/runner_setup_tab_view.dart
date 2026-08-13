@@ -45,7 +45,9 @@ class _RunnerSetupTabViewState extends ConsumerState<RunnerSetupTabView> {
     final variables = ref.read(activeVariablesProvider);
     final runner = ref.read(requestRunnerProvider);
     final activeEnvId = ref.read(activeEnvironmentIdProvider);
-    final envName = activeEnvId == null ? null : ref.read(environmentsProvider).value?.where((e) => e.id == activeEnvId).map((e) => e.name).firstOrNull;
+    final envName = activeEnvId == null
+        ? null
+        : ref.read(environmentsProvider).value?.where((e) => e.id == activeEnvId).map((e) => e.name).firstOrNull;
 
     for (var i = 0; i < selected.length; i++) {
       final request = selected[i];
@@ -80,7 +82,13 @@ class _RunnerSetupTabViewState extends ConsumerState<RunnerSetupTabView> {
 
     await ref
         .read(runHistoryProvider.notifier)
-        .record(collectionId: widget.collectionId, collectionName: collectionName, environmentName: envName, startedAt: startedAt, results: _liveResults!);
+        .record(
+          collectionId: widget.collectionId,
+          collectionName: collectionName,
+          environmentName: envName,
+          startedAt: startedAt,
+          results: _liveResults!,
+        );
 
     if (!mounted) return;
     setState(() => _running = false);
@@ -151,7 +159,10 @@ class _RunnerSetupTabViewState extends ConsumerState<RunnerSetupTabView> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
-                        decoration: BoxDecoration(border: Border.all(color: colors.border), borderRadius: AppRadius.smRadius),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: colors.border),
+                          borderRadius: AppRadius.smRadius,
+                        ),
                         child: Row(
                           children: [
                             Checkbox(
@@ -168,12 +179,18 @@ class _RunnerSetupTabViewState extends ConsumerState<RunnerSetupTabView> {
                                     }),
                             ),
                             SizedBox(width: 44, child: MethodBadge(request.method, compact: true)),
-                            Expanded(child: Text(request.name, style: context.type.body, overflow: TextOverflow.ellipsis)),
+                            Expanded(
+                              child: Text(request.name, style: context.type.body, overflow: TextOverflow.ellipsis),
+                            ),
                             if (live != null) ...[
-                              if (live.status == RunStatus.running) const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                              if (live.status == RunStatus.running)
+                                const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
                               if (live.status == RunStatus.success || live.status == RunStatus.failed)
                                 StatusBadge(statusCode: live.statusCode, errorMessage: live.errorMessage),
-                              if (live.duration != null) ...[const SizedBox(width: AppSpacing.sm), Text('${live.duration!.inMilliseconds} ms', style: context.type.caption)],
+                              if (live.duration != null) ...[
+                                const SizedBox(width: AppSpacing.sm),
+                                Text('${live.duration!.inMilliseconds} ms', style: context.type.caption),
+                              ],
                             ],
                           ],
                         ),

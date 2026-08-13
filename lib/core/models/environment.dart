@@ -7,13 +7,7 @@ class Environment {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const Environment({
-    required this.id,
-    required this.name,
-    this.variables = const {},
-    required this.createdAt,
-    required this.updatedAt,
-  });
+  const Environment({required this.id, required this.name, this.variables = const {}, required this.createdAt, required this.updatedAt});
 
   Environment copyWith({String? name, Map<String, String>? variables, DateTime? updatedAt}) {
     return Environment(

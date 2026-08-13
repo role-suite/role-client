@@ -7,13 +7,7 @@ class Collection {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const Collection({
-    required this.id,
-    required this.name,
-    this.description = '',
-    required this.createdAt,
-    required this.updatedAt,
-  });
+  const Collection({required this.id, required this.name, this.description = '', required this.createdAt, required this.updatedAt});
 
   Collection copyWith({String? name, String? description, DateTime? updatedAt}) {
     return Collection(

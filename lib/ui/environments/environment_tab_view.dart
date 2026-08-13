@@ -75,7 +75,9 @@ class _EnvironmentTabViewState extends ConsumerState<EnvironmentTabView> {
       children: [
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: colors.border))),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: colors.border)),
+          ),
           child: Row(
             children: [
               Expanded(

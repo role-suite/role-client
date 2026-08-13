@@ -48,9 +48,12 @@ class EnvironmentsSidebarPanel extends ConsumerWidget {
                 children: [
                   for (final env in envs)
                     Material(
-                      color: activeTabId == WorkbenchTab.idFor(WorkbenchTabType.environment, env.id) ? colors.accent.withValues(alpha: 0.1) : Colors.transparent,
+                      color: activeTabId == WorkbenchTab.idFor(WorkbenchTabType.environment, env.id)
+                          ? colors.accent.withValues(alpha: 0.1)
+                          : Colors.transparent,
                       child: InkWell(
-                        onTap: () => ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.environment, title: env.name, payloadId: env.id),
+                        onTap: () =>
+                            ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.environment, title: env.name, payloadId: env.id),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
                           child: Row(
@@ -61,12 +64,17 @@ class EnvironmentsSidebarPanel extends ConsumerWidget {
                                 color: env.id == activeId ? colors.accent : colors.textMuted,
                               ),
                               const SizedBox(width: AppSpacing.sm),
-                              Expanded(child: Text(env.name, style: context.type.body, overflow: TextOverflow.ellipsis)),
+                              Expanded(
+                                child: Text(env.name, style: context.type.body, overflow: TextOverflow.ellipsis),
+                              ),
                               Text('${env.variables.length}', style: context.type.caption),
                               PopupMenuButton<String>(
                                 icon: Icon(Icons.more_horiz, size: 14, color: colors.textMuted),
                                 color: colors.surfaceRaised,
-                                shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius, side: BorderSide(color: colors.border)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppRadius.mdRadius,
+                                  side: BorderSide(color: colors.border),
+                                ),
                                 itemBuilder: (context) => const [PopupMenuItem(value: 'delete', child: Text('Delete'))],
                                 onSelected: (action) {
                                   if (action == 'delete') {

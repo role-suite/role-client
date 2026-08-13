@@ -88,7 +88,9 @@ class _CollectionSectionState extends ConsumerState<_CollectionSection> {
               children: [
                 Icon(_expanded ? Icons.expand_more : Icons.chevron_right, size: 16, color: colors.textMuted),
                 const SizedBox(width: 2),
-                Expanded(child: Text(widget.collection.name, style: context.type.bodyStrong, overflow: TextOverflow.ellipsis)),
+                Expanded(
+                  child: Text(widget.collection.name, style: context.type.bodyStrong, overflow: TextOverflow.ellipsis),
+                ),
                 AppIconButton(
                   icon: Icons.add,
                   tooltip: 'New request',
@@ -101,7 +103,10 @@ class _CollectionSectionState extends ConsumerState<_CollectionSection> {
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_horiz, size: 16, color: colors.textMuted),
                   color: colors.surfaceRaised,
-                  shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius, side: BorderSide(color: colors.border)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.mdRadius,
+                    side: BorderSide(color: colors.border),
+                  ),
                   itemBuilder: (context) => const [
                     PopupMenuItem(value: 'rename', child: Text('Rename')),
                     PopupMenuItem(value: 'delete', child: Text('Delete')),
@@ -147,11 +152,16 @@ class _RequestRow extends ConsumerWidget {
             children: [
               SizedBox(width: 40, child: MethodBadge(request.method, compact: true)),
               const SizedBox(width: AppSpacing.xs),
-              Expanded(child: Text(request.name, style: context.type.body, overflow: TextOverflow.ellipsis)),
+              Expanded(
+                child: Text(request.name, style: context.type.body, overflow: TextOverflow.ellipsis),
+              ),
               PopupMenuButton<String>(
                 icon: Icon(Icons.more_horiz, size: 14, color: colors.textMuted),
                 color: colors.surfaceRaised,
-                shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius, side: BorderSide(color: colors.border)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.mdRadius,
+                  side: BorderSide(color: colors.border),
+                ),
                 itemBuilder: (context) => const [
                   PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
                   PopupMenuItem(value: 'delete', child: Text('Delete')),

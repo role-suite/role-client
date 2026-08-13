@@ -68,15 +68,24 @@ class RunReportTabView extends ConsumerWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 8),
-                  decoration: BoxDecoration(border: Border.all(color: colors.border), borderRadius: AppRadius.smRadius),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: colors.border),
+                    borderRadius: AppRadius.smRadius,
+                  ),
                   child: Row(
                     children: [
                       SizedBox(width: 44, child: MethodBadge(result.method, compact: true)),
-                      Expanded(child: Text(result.requestName, style: context.type.body, overflow: TextOverflow.ellipsis)),
+                      Expanded(
+                        child: Text(result.requestName, style: context.type.body, overflow: TextOverflow.ellipsis),
+                      ),
                       if (result.errorMessage != null)
                         Expanded(
                           flex: 2,
-                          child: Text(result.errorMessage!, style: context.type.caption.copyWith(color: colors.danger), overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            result.errorMessage!,
+                            style: context.type.caption.copyWith(color: colors.danger),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       StatusBadge(statusCode: result.statusCode, errorMessage: result.errorMessage),
                       const SizedBox(width: AppSpacing.sm),

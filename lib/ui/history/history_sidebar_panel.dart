@@ -50,7 +50,7 @@ class _HistorySidebarPanelState extends ConsumerState<HistorySidebarPanel> {
             loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
             error: (error, _) => Padding(padding: const EdgeInsets.all(16), child: Text('$error')),
             data: (snapshots) {
-              var filtered = snapshots.where((s) {
+              final filtered = snapshots.where((s) {
                 if (_filter == _HistoryFilter.errors && s.result.ok) return false;
                 if (query.isNotEmpty && !s.requestName.toLowerCase().contains(query) && !s.url.toLowerCase().contains(query)) return false;
                 return true;

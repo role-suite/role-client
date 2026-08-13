@@ -31,7 +31,9 @@ class _RequestEditorPanelState extends State<RequestEditorPanel> {
         Container(
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: colors.border))),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: colors.border)),
+          ),
           child: Row(
             children: [
               for (final tab in _EditorTab.values) _TabButton(label: _labelFor(tab), selected: _tab == tab, onTap: () => setState(() => _tab = tab)),
@@ -114,7 +116,9 @@ class _TabButton extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(right: AppSpacing.lg),
         alignment: Alignment.center,
-        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: selected ? colors.accent : Colors.transparent, width: 2))),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: selected ? colors.accent : Colors.transparent, width: 2)),
+        ),
         child: Text(label, style: context.type.label.copyWith(color: selected ? colors.textPrimary : colors.textMuted)),
       ),
     );
@@ -187,10 +191,7 @@ class _AuthEditor extends StatelessWidget {
           AuthType.none => Text('No authentication for this request.', style: context.type.caption),
           AuthType.bearer => LabeledField(
             label: 'Token',
-            child: _AuthField(
-              initial: request.authConfig[AuthConfigKeys.token] ?? '',
-              onChanged: (v) => _setConfig(AuthConfigKeys.token, v),
-            ),
+            child: _AuthField(initial: request.authConfig[AuthConfigKeys.token] ?? '', onChanged: (v) => _setConfig(AuthConfigKeys.token, v)),
           ),
           AuthType.basic => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,18 +219,12 @@ class _AuthEditor extends StatelessWidget {
             children: [
               LabeledField(
                 label: 'Key',
-                child: _AuthField(
-                  initial: request.authConfig[AuthConfigKeys.key] ?? '',
-                  onChanged: (v) => _setConfig(AuthConfigKeys.key, v),
-                ),
+                child: _AuthField(initial: request.authConfig[AuthConfigKeys.key] ?? '', onChanged: (v) => _setConfig(AuthConfigKeys.key, v)),
               ),
               const SizedBox(height: AppSpacing.md),
               LabeledField(
                 label: 'Value',
-                child: _AuthField(
-                  initial: request.authConfig[AuthConfigKeys.value] ?? '',
-                  onChanged: (v) => _setConfig(AuthConfigKeys.value, v),
-                ),
+                child: _AuthField(initial: request.authConfig[AuthConfigKeys.value] ?? '', onChanged: (v) => _setConfig(AuthConfigKeys.value, v)),
               ),
               const SizedBox(height: AppSpacing.md),
               LabeledField(

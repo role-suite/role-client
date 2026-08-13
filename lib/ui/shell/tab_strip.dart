@@ -34,7 +34,10 @@ class TabStrip extends ConsumerWidget {
 
     return Container(
       height: AppSizes.tabStripHeight,
-      decoration: BoxDecoration(color: colors.surface, border: Border(bottom: BorderSide(color: colors.border))),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(bottom: BorderSide(color: colors.border)),
+      ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: tabs.length,
@@ -73,13 +76,14 @@ class _TabChip extends ConsumerWidget {
             children: [
               Icon(iconForTabType(tab.type), size: 13, color: selected ? colors.textPrimary : colors.textMuted),
               const SizedBox(width: AppSpacing.xs),
-              Text(
-                tab.title,
-                style: context.type.body.copyWith(color: selected ? colors.textPrimary : colors.textSecondary, fontSize: 12.5),
-              ),
+              Text(tab.title, style: context.type.body.copyWith(color: selected ? colors.textPrimary : colors.textSecondary, fontSize: 12.5)),
               if (tab.isDirty) ...[
                 const SizedBox(width: 4),
-                Container(width: 5, height: 5, decoration: BoxDecoration(color: colors.accent, shape: BoxShape.circle)),
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(color: colors.accent, shape: BoxShape.circle),
+                ),
               ],
               const SizedBox(width: AppSpacing.xs),
               InkWell(

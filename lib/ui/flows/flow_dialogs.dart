@@ -35,7 +35,12 @@ class NameDialog extends StatelessWidget {
       title: Text(title),
       content: SizedBox(
         width: 320,
-        child: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Name'), onSubmitted: (v) => Navigator.of(context).pop(v)),
+        child: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Name'),
+          onSubmitted: (v) => Navigator.of(context).pop(v),
+        ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),

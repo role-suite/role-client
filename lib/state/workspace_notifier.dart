@@ -45,10 +45,7 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
       return WorkspaceState(collections: [defaultCollection], requests: const []);
     }
 
-    return WorkspaceState(
-      collections: bundles.map((b) => b.collection).toList(),
-      requests: bundles.expand((b) => b.requests).toList(),
-    );
+    return WorkspaceState(collections: bundles.map((b) => b.collection).toList(), requests: bundles.expand((b) => b.requests).toList());
   }
 
   Future<void> _persist(CollectionBundle bundle) {

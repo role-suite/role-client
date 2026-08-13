@@ -8,10 +8,7 @@ class CollectionBundle {
 
   const CollectionBundle({required this.collection, required this.requests});
 
-  Map<String, dynamic> toJson() => {
-    'collection': collection.toJson(),
-    'requests': requests.map((r) => r.toJson()).toList(),
-  };
+  Map<String, dynamic> toJson() => {'collection': collection.toJson(), 'requests': requests.map((r) => r.toJson()).toList()};
 
   factory CollectionBundle.fromJson(Map<String, dynamic> json) {
     final collectionJson = json['collection'];

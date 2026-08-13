@@ -140,7 +140,9 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: colors.border))),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: colors.border)),
+          ),
           child: Row(
             children: [
               Expanded(
@@ -176,7 +178,9 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
                   onUrlChanged: (v) => _updateDraft(draft.copyWith(url: v)),
                   onSend: _send,
                 ),
-                Expanded(child: RequestEditorPanel(request: draft, onChanged: _updateDraft)),
+                Expanded(
+                  child: RequestEditorPanel(request: draft, onChanged: _updateDraft),
+                ),
               ],
             ),
             bottom: ResponseViewer(result: _result, sending: _sending),

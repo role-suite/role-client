@@ -23,10 +23,7 @@ class EmptyState extends StatelessWidget {
             Icon(icon, size: 32, color: colors.textMuted),
             const SizedBox(height: AppSpacing.md),
             Text(title, textAlign: TextAlign.center, style: context.type.bodyStrong),
-            if (message != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(message!, textAlign: TextAlign.center, style: context.type.caption),
-            ],
+            if (message != null) ...[const SizedBox(height: AppSpacing.xs), Text(message!, textAlign: TextAlign.center, style: context.type.caption)],
             if (action != null) ...[const SizedBox(height: AppSpacing.lg), action!],
           ],
         ),

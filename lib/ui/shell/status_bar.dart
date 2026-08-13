@@ -20,7 +20,10 @@ class StatusBar extends ConsumerWidget {
     return Container(
       height: AppSizes.statusBarHeight,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(color: colors.surface, border: Border(top: BorderSide(color: colors.border))),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.border)),
+      ),
       child: Row(
         children: [
           Icon(Icons.lock_outline, size: 11, color: colors.success),

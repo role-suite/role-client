@@ -36,7 +36,11 @@ class MethodUrlBar extends StatelessWidget {
           Container(
             height: AppSizes.controlHeight,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            decoration: BoxDecoration(color: colors.surfaceSunken, borderRadius: AppRadius.smRadius, border: Border.all(color: colors.border)),
+            decoration: BoxDecoration(
+              color: colors.surfaceSunken,
+              borderRadius: AppRadius.smRadius,
+              border: Border.all(color: colors.border),
+            ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<HttpMethod>(
                 value: method,

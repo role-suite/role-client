@@ -63,7 +63,14 @@ class _FlowTabViewState extends ConsumerState<FlowTabView> {
     if (draft == null) return;
     final request = await showFlowRequestPicker(context, ref);
     if (request == null) return;
-    _update(draft.copyWith(steps: [...draft.steps, ChainStep(requestId: request.id, requestName: request.name)]));
+    _update(
+      draft.copyWith(
+        steps: [
+          ...draft.steps,
+          ChainStep(requestId: request.id, requestName: request.name),
+        ],
+      ),
+    );
   }
 
   Future<void> _runFlow(List<ApiRequest> allRequests) async {
@@ -199,7 +206,14 @@ class _FlowTabViewState extends ConsumerState<FlowTabView> {
                         onDelay: (ms) => _update(draft.copyWith(steps: [for (final s in draft.steps) s == step ? s.copyWith(delayMs: ms) : s])),
                         onUsePrevious: (v) =>
                             _update(draft.copyWith(steps: [for (final s in draft.steps) s == step ? s.copyWith(usePreviousResponse: v) : s])),
-                        onRemove: () => _update(draft.copyWith(steps: [for (final s in draft.steps) if (s != step) s])),
+                        onRemove: () => _update(
+                          draft.copyWith(
+                            steps: [
+                              for (final s in draft.steps)
+                                if (s != step) s,
+                            ],
+                          ),
+                        ),
                         onMoveUp: index == 0
                             ? null
                             : () {
@@ -255,7 +269,10 @@ class _StepRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.xs),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 8),
-      decoration: BoxDecoration(border: Border.all(color: colors.border), borderRadius: AppRadius.smRadius),
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.border),
+        borderRadius: AppRadius.smRadius,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -264,7 +281,9 @@ class _StepRow extends StatelessWidget {
               Text('${index + 1}.', style: context.type.caption),
               const SizedBox(width: AppSpacing.sm),
               if (request != null) SizedBox(width: 44, child: MethodBadge(request!.method, compact: true)),
-              Expanded(child: Text(request?.name ?? step.requestName, style: context.type.body, overflow: TextOverflow.ellipsis)),
+              Expanded(
+                child: Text(request?.name ?? step.requestName, style: context.type.body, overflow: TextOverflow.ellipsis),
+              ),
               if (result != null) ...[
                 if (result!.status == RunStatus.running) const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
                 if (result!.status == RunStatus.success || result!.status == RunStatus.failed)

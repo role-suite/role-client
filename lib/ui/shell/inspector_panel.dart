@@ -18,13 +18,20 @@ class InspectorPanel extends ConsumerWidget {
 
     return Container(
       width: AppSizes.inspectorWidth,
-      decoration: BoxDecoration(color: colors.surface, border: Border(left: BorderSide(color: colors.border))),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(left: BorderSide(color: colors.border)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SectionHeader(
             'Inspector',
-            trailing: AppIconButton(icon: Icons.close, tooltip: 'Hide inspector', onPressed: () => ref.read(workbenchProvider.notifier).toggleInspector()),
+            trailing: AppIconButton(
+              icon: Icons.close,
+              tooltip: 'Hide inspector',
+              onPressed: () => ref.read(workbenchProvider.notifier).toggleInspector(),
+            ),
           ),
           const Divider(height: 1),
           Expanded(child: _InspectorContent(tab: activeTab)),

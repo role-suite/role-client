@@ -37,7 +37,11 @@ abstract class AppTheme {
       textSelectionTheme: TextSelectionThemeData(cursorColor: colors.accent, selectionColor: colors.accent.withValues(alpha: 0.3)),
       iconTheme: IconThemeData(color: colors.textSecondary, size: 16),
       tooltipTheme: TooltipThemeData(
-        decoration: BoxDecoration(color: colors.surfaceRaised, borderRadius: AppRadius.smRadius, border: Border.all(color: colors.borderStrong)),
+        decoration: BoxDecoration(
+          color: colors.surfaceRaised,
+          borderRadius: AppRadius.smRadius,
+          border: Border.all(color: colors.borderStrong),
+        ),
         textStyle: typography.caption.copyWith(color: colors.textPrimary),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       ),
@@ -51,36 +55,49 @@ abstract class AppTheme {
         fillColor: colors.surfaceSunken,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
-        border: OutlineInputBorder(borderRadius: AppRadius.smRadius, borderSide: BorderSide(color: colors.border)),
-        enabledBorder: OutlineInputBorder(borderRadius: AppRadius.smRadius, borderSide: BorderSide(color: colors.border)),
-        focusedBorder: OutlineInputBorder(borderRadius: AppRadius.smRadius, borderSide: BorderSide(color: colors.accent)),
+        border: OutlineInputBorder(
+          borderRadius: AppRadius.smRadius,
+          borderSide: BorderSide(color: colors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadius.smRadius,
+          borderSide: BorderSide(color: colors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadius.smRadius,
+          borderSide: BorderSide(color: colors.accent),
+        ),
         hintStyle: typography.body.copyWith(color: colors.textMuted),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: colors.surfaceRaised,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius, side: BorderSide(color: colors.border)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.mdRadius,
+          side: BorderSide(color: colors.border),
+        ),
         titleTextStyle: typography.title,
         contentTextStyle: typography.body,
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: colors.surfaceRaised,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius, side: BorderSide(color: colors.border)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.mdRadius,
+          side: BorderSide(color: colors.border),
+        ),
         textStyle: typography.body,
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: colors.surfaceRaised,
         contentTextStyle: typography.body,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius, side: BorderSide(color: colors.border)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.mdRadius,
+          side: BorderSide(color: colors.border),
+        ),
         behavior: SnackBarBehavior.floating,
       ),
-      textTheme: TextTheme(
-        titleMedium: typography.title,
-        bodyMedium: typography.body,
-        labelMedium: typography.label,
-        bodySmall: typography.caption,
-      ),
+      textTheme: TextTheme(titleMedium: typography.title, bodyMedium: typography.body, labelMedium: typography.label, bodySmall: typography.caption),
       extensions: [RoleThemeExtension(colors: colors, typography: typography)],
     );
   }

@@ -27,7 +27,10 @@ class RunsSidebarPanel extends ConsumerWidget {
           error: (error, _) => Padding(padding: const EdgeInsets.all(16), child: Text('$error')),
           data: (state) {
             if (state.collections.isEmpty) {
-              return Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: Text('No collections yet.', style: context.type.caption));
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Text('No collections yet.', style: context.type.caption),
+              );
             }
             return Column(
               children: [
@@ -44,7 +47,9 @@ class RunsSidebarPanel extends ConsumerWidget {
                           children: [
                             Icon(Icons.dns_outlined, size: 14, color: colors.textMuted),
                             const SizedBox(width: AppSpacing.sm),
-                            Expanded(child: Text(collection.name, style: context.type.body, overflow: TextOverflow.ellipsis)),
+                            Expanded(
+                              child: Text(collection.name, style: context.type.body, overflow: TextOverflow.ellipsis),
+                            ),
                             Text('${state.requestsIn(collection.id).length}', style: context.type.caption),
                             const SizedBox(width: 4),
                             Icon(Icons.play_arrow, size: 15, color: colors.textMuted),
@@ -63,7 +68,10 @@ class RunsSidebarPanel extends ConsumerWidget {
           error: (error, _) => Padding(padding: const EdgeInsets.all(16), child: Text('$error')),
           data: (entries) {
             if (entries.isEmpty) {
-              return Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: Text('No runs yet.', style: context.type.caption));
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Text('No runs yet.', style: context.type.caption),
+              );
             }
             return Column(
               children: [

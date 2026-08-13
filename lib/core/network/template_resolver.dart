@@ -23,10 +23,6 @@ class TemplateResolver {
   /// Every `{{name}}` reference found in [input] that has no matching variable.
   static Set<String> unresolvedIn(String? input, Map<String, String> variables) {
     if (input == null) return const {};
-    return _variablePattern
-        .allMatches(input)
-        .map((m) => m.group(1)!)
-        .where((name) => !variables.containsKey(name))
-        .toSet();
+    return _variablePattern.allMatches(input).map((m) => m.group(1)!).where((name) => !variables.containsKey(name)).toSet();
   }
 }

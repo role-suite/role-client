@@ -68,10 +68,7 @@ class RequestResult {
       statusCode: json['statusCode'] as int?,
       statusMessage: json['statusMessage'] as String?,
       headers:
-          (json['headers'] as Map?)?.map(
-            (key, value) => MapEntry(key.toString(), (value as List).map((e) => e.toString()).toList()),
-          ) ??
-          const {},
+          (json['headers'] as Map?)?.map((key, value) => MapEntry(key.toString(), (value as List).map((e) => e.toString()).toList())) ?? const {},
       body: json['body'],
       duration: Duration(milliseconds: json['durationMs'] as int? ?? 0),
       errorMessage: json['errorMessage'] as String?,

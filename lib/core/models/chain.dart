@@ -7,12 +7,7 @@ class ChainStep {
   final int delayMs;
   final bool usePreviousResponse;
 
-  const ChainStep({
-    required this.requestId,
-    required this.requestName,
-    this.delayMs = 0,
-    this.usePreviousResponse = false,
-  });
+  const ChainStep({required this.requestId, required this.requestName, this.delayMs = 0, this.usePreviousResponse = false});
 
   ChainStep copyWith({int? delayMs, bool? usePreviousResponse}) {
     return ChainStep(
@@ -48,14 +43,7 @@ class SavedChain {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const SavedChain({
-    required this.id,
-    required this.name,
-    this.description,
-    this.steps = const [],
-    required this.createdAt,
-    required this.updatedAt,
-  });
+  const SavedChain({required this.id, required this.name, this.description, this.steps = const [], required this.createdAt, required this.updatedAt});
 
   SavedChain copyWith({String? name, String? description, List<ChainStep>? steps, DateTime? updatedAt}) {
     return SavedChain(
@@ -97,12 +85,5 @@ class ChainStepResult {
   final String? errorMessage;
   final dynamic responseBody;
 
-  const ChainStepResult({
-    required this.step,
-    required this.status,
-    this.statusCode,
-    this.duration,
-    this.errorMessage,
-    this.responseBody,
-  });
+  const ChainStepResult({required this.step, required this.status, this.statusCode, this.duration, this.errorMessage, this.responseBody});
 }

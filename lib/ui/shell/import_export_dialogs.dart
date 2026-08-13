@@ -14,11 +14,7 @@ Future<ImportConflictChoice> showImportConflictDialog(BuildContext context, Stri
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(ImportConflictChoice.skip), child: const Text('Skip')),
         TextButton(onPressed: () => Navigator.of(context).pop(ImportConflictChoice.keepBoth), child: const Text('Keep both')),
-        AppButton(
-          label: 'Overwrite',
-          variant: AppButtonVariant.danger,
-          onPressed: () => Navigator.of(context).pop(ImportConflictChoice.overwrite),
-        ),
+        AppButton(label: 'Overwrite', variant: AppButtonVariant.danger, onPressed: () => Navigator.of(context).pop(ImportConflictChoice.overwrite)),
       ],
     ),
   );

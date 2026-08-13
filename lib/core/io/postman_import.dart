@@ -35,7 +35,13 @@ class PostmanImport {
         variables[entry['key'].toString()] = entry['value']?.toString() ?? '';
       }
     }
-    return Environment(id: generateId('env'), name: (json['name'] as String?) ?? 'Imported Environment', variables: variables, createdAt: now, updatedAt: now);
+    return Environment(
+      id: generateId('env'),
+      name: (json['name'] as String?) ?? 'Imported Environment',
+      variables: variables,
+      createdAt: now,
+      updatedAt: now,
+    );
   }
 
   static void _collectItems(List items, String collectionId, List<ApiRequest> out) {

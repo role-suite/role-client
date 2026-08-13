@@ -9,11 +9,12 @@ class HistoryNotifier extends AsyncNotifier<List<ResponseSnapshot>> {
   @override
   Future<List<ResponseSnapshot>> build() async {
     final raw = await JsonStore.instance.readAll(WorkspacePaths.history);
-    final snapshots = raw
-        .expand((file) => (file['snapshots'] as List? ?? const []).whereType<Map>())
-        .map((e) => ResponseSnapshot.fromJson(Map<String, dynamic>.from(e)))
-        .toList()
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final snapshots =
+        raw
+            .expand((file) => (file['snapshots'] as List? ?? const []).whereType<Map>())
+            .map((e) => ResponseSnapshot.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+          ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return snapshots;
   }
 

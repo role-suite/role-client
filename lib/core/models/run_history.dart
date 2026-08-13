@@ -99,10 +99,7 @@ class RunHistoryEntry {
       environmentName: json['environmentName'] as String?,
       startedAt: dateTimeFrom(json['startedAt']),
       completedAt: dateTimeFrom(json['completedAt']),
-      results: (json['results'] as List? ?? const [])
-          .whereType<Map>()
-          .map((e) => RunItemResult.fromJson(Map<String, dynamic>.from(e)))
-          .toList(),
+      results: (json['results'] as List? ?? const []).whereType<Map>().map((e) => RunItemResult.fromJson(Map<String, dynamic>.from(e))).toList(),
     );
   }
 }

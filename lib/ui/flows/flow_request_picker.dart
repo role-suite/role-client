@@ -41,7 +41,9 @@ Future<ApiRequest?> showFlowRequestPicker(BuildContext context, WidgetRef ref) {
                             child: Row(
                               children: [
                                 SizedBox(width: 44, child: MethodBadge(request.method, compact: true)),
-                                Expanded(child: Text(request.name, style: context.type.body, overflow: TextOverflow.ellipsis)),
+                                Expanded(
+                                  child: Text(request.name, style: context.type.body, overflow: TextOverflow.ellipsis),
+                                ),
                               ],
                             ),
                           ),

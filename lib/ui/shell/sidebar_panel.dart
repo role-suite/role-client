@@ -23,7 +23,10 @@ class SidebarPanel extends ConsumerWidget {
 
     return Container(
       width: width,
-      decoration: BoxDecoration(color: colors.surface, border: Border(right: BorderSide(color: colors.border))),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(right: BorderSide(color: colors.border)),
+      ),
       child: switch (section) {
         WorkspaceSection.requests => const RequestsSidebarPanel(),
         WorkspaceSection.history => const HistorySidebarPanel(),

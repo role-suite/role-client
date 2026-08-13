@@ -27,12 +27,7 @@ class HttpClient {
 
   final Dio _dio;
 
-  Future<HttpCallResult> send({
-    required String method,
-    required String url,
-    Map<String, String>? headers,
-    dynamic data,
-  }) async {
+  Future<HttpCallResult> send({required String method, required String url, Map<String, String>? headers, dynamic data}) async {
     try {
       final response = await _dio.request<dynamic>(
         url,
@@ -46,11 +41,7 @@ class HttpClient {
         headers: response.headers.map,
       );
     } on DioException catch (error) {
-      throw HttpCallException(
-        message: _messageFrom(error),
-        statusCode: error.response?.statusCode,
-        isOffline: _isOffline(error),
-      );
+      throw HttpCallException(message: _messageFrom(error), statusCode: error.response?.statusCode, isOffline: _isOffline(error));
     } catch (error) {
       throw HttpCallException(message: error.toString(), isOffline: error is SocketException);
     }
@@ -63,8 +54,6 @@ class HttpClient {
   }
 
   static bool _isOffline(DioException error) {
-    return error.type == DioExceptionType.connectionError ||
-        error.type == DioExceptionType.connectionTimeout ||
-        error.error is SocketException;
+    return error.type == DioExceptionType.connectionError || error.type == DioExceptionType.connectionTimeout || error.error is SocketException;
   }
 }

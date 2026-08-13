@@ -25,10 +25,7 @@ class Workbench extends ConsumerWidget {
           Expanded(
             child: activeTab == null
                 ? _WorkbenchEmptyState(hasClosedTabs: tabs.isNotEmpty)
-                : IndexedStack(
-                    index: tabs.indexOf(activeTab),
-                    children: [for (final tab in tabs) buildWorkbenchTabContent(tab)],
-                  ),
+                : IndexedStack(index: tabs.indexOf(activeTab), children: [for (final tab in tabs) buildWorkbenchTabContent(tab)]),
           ),
         ],
       ),

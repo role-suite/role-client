@@ -17,8 +17,7 @@ class AppTypography {
   TextStyle get bodyStrong => TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.textPrimary, height: 1.4);
   TextStyle get label => TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colors.textSecondary, height: 1.3);
   TextStyle get caption => TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: colors.textMuted, height: 1.3);
-  TextStyle get sectionHeader =>
-      TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: colors.textMuted, letterSpacing: 0.6, height: 1.3);
+  TextStyle get sectionHeader => TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: colors.textMuted, letterSpacing: 0.6, height: 1.3);
 
   TextStyle get mono => TextStyle(fontFamily: monoFamily, fontSize: 13, color: colors.textPrimary, height: 1.45);
   TextStyle get monoSmall => TextStyle(fontFamily: monoFamily, fontSize: 12, color: colors.textSecondary, height: 1.4);

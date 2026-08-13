@@ -22,7 +22,9 @@ Future<void> showHistorySnapshotDialog(BuildContext context, ResponseSnapshot sn
                 children: [
                   MethodBadge(snapshot.method),
                   const SizedBox(width: AppSpacing.sm),
-                  Expanded(child: Text(snapshot.requestName, style: context.type.title, overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                    child: Text(snapshot.requestName, style: context.type.title, overflow: TextOverflow.ellipsis),
+                  ),
                   IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () => Navigator.of(context).pop()),
                 ],
               ),

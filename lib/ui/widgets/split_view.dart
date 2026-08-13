@@ -5,13 +5,7 @@ import '../../core/theme/role_theme.dart';
 /// A vertically-stacked pane pair with a draggable divider between them —
 /// used for the request/response split in a request tab.
 class SplitView extends StatefulWidget {
-  const SplitView({
-    super.key,
-    required this.top,
-    required this.bottom,
-    this.initialTopFraction = 0.45,
-    this.minFraction = 0.15,
-  });
+  const SplitView({super.key, required this.top, required this.bottom, this.initialTopFraction = 0.45, this.minFraction = 0.15});
 
   final Widget top;
   final Widget bottom;

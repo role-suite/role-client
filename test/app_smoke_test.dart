@@ -9,9 +9,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
-    await tester.pumpWidget(
-      ProviderScope(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)], child: const RoleApp()),
-    );
+    await tester.pumpWidget(ProviderScope(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)], child: const RoleApp()));
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(tester.takeException(), isNull);

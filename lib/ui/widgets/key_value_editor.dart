@@ -15,13 +15,7 @@ class KeyValueRow {
 /// An editable key/value table (headers, query params, form fields) with a
 /// trailing empty row that grows the list as soon as you type into it.
 class KeyValueEditor extends StatefulWidget {
-  const KeyValueEditor({
-    super.key,
-    required this.initial,
-    required this.onChanged,
-    this.keyHint = 'Key',
-    this.valueHint = 'Value',
-  });
+  const KeyValueEditor({super.key, required this.initial, required this.onChanged, this.keyHint = 'Key', this.valueHint = 'Value'});
 
   final Map<String, String> initial;
   final ValueChanged<Map<String, String>> onChanged;

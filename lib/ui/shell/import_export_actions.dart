@@ -71,12 +71,16 @@ Future<void> runImportWorkspace(BuildContext context, WidgetRef ref) async {
 
   final collectionsToImport = data.collections.where((b) => collectionIdOverrides[b.collection.id] != _skip).toList();
   if (collectionsToImport.isNotEmpty) {
-    await ref.read(workspaceProvider.notifier).importBundles(collectionsToImport, resolveId: (incoming, nameTaken) => collectionIdOverrides[incoming.id]);
+    await ref
+        .read(workspaceProvider.notifier)
+        .importBundles(collectionsToImport, resolveId: (incoming, nameTaken) => collectionIdOverrides[incoming.id]);
   }
 
   final environmentsToImport = data.environments.where((e) => environmentIdOverrides[e.id] != _skip).toList();
   if (environmentsToImport.isNotEmpty) {
-    await ref.read(environmentsProvider.notifier).importAll(environmentsToImport, resolveId: (incoming, nameTaken) => environmentIdOverrides[incoming.id]);
+    await ref
+        .read(environmentsProvider.notifier)
+        .importAll(environmentsToImport, resolveId: (incoming, nameTaken) => environmentIdOverrides[incoming.id]);
   }
 
   if (!context.mounted) return;

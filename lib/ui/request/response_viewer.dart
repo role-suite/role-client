@@ -38,7 +38,9 @@ class _ResponseViewerState extends State<ResponseViewer> {
         Container(
           height: 34,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: colors.border))),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: colors.border)),
+          ),
           child: Row(
             children: [
               StatusBadge(statusCode: result.statusCode, errorMessage: result.errorMessage),
@@ -110,7 +112,10 @@ class _HeadersList extends StatelessWidget {
               text: TextSpan(
                 style: context.type.monoSmall,
                 children: [
-                  TextSpan(text: '${entry.key}: ', style: context.type.monoSmall.copyWith(fontWeight: FontWeight.w600)),
+                  TextSpan(
+                    text: '${entry.key}: ',
+                    style: context.type.monoSmall.copyWith(fontWeight: FontWeight.w600),
+                  ),
                   TextSpan(text: entry.value.join(', ')),
                 ],
               ),

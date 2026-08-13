@@ -6,10 +6,7 @@ extension HttpMethodX on HttpMethod {
   bool get canHaveBody => this != HttpMethod.get && this != HttpMethod.head;
 
   static HttpMethod fromString(String value) {
-    return HttpMethod.values.firstWhere(
-      (m) => m.name.toLowerCase() == value.toLowerCase(),
-      orElse: () => HttpMethod.get,
-    );
+    return HttpMethod.values.firstWhere((m) => m.name.toLowerCase() == value.toLowerCase(), orElse: () => HttpMethod.get);
   }
 }
 
@@ -96,9 +93,6 @@ enum RunStatus { pending, running, success, failed }
 
 extension RunStatusX on RunStatus {
   static RunStatus fromString(String value) {
-    return RunStatus.values.firstWhere(
-      (s) => s.name.toLowerCase() == value.toLowerCase(),
-      orElse: () => RunStatus.pending,
-    );
+    return RunStatus.values.firstWhere((s) => s.name.toLowerCase() == value.toLowerCase(), orElse: () => RunStatus.pending);
   }
 }
