@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are currently being supported with security updates.
+Only the latest released version of Röle receives security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |

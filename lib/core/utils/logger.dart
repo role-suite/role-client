@@ -1,31 +1,16 @@
 import 'package:flutter/foundation.dart';
 
-class AppLogger {
-  static bool enabled = true;
+class Log {
+  const Log._();
 
-  static void _log(
-    String level,
-    String message, [
-    Object? error,
-    StackTrace? stackTrace,
-  ]) {
-    if (!enabled) return;
-
-    final buffer = StringBuffer()
-      ..write('[$level] ')
-      ..write(message);
-
-    if (error != null) {
-      buffer.write(' | error: $error');
-    }
-    if (stackTrace != null && kDebugMode) {
-      buffer.write('\n$stackTrace');
-    }
-    debugPrint(buffer.toString());
+  static void d(String message, {String tag = 'role'}) {
+    if (kDebugMode) debugPrint('[$tag] $message');
   }
 
-  static void debug(String message) => _log('DEBUG', message);
-  static void info(String message) => _log('INFO', message);
-  static void warn(String message) => _log('WARN', message);
-  static void error(String message, [Object? error, StackTrace? stackTrace]) => _log('ERROR', message, error, stackTrace);
+  static void e(String message, {Object? error, StackTrace? stackTrace, String tag = 'role'}) {
+    if (kDebugMode) {
+      debugPrint('[$tag] ERROR: $message${error != null ? ' — $error' : ''}');
+      if (stackTrace != null) debugPrint(stackTrace.toString());
+    }
+  }
 }

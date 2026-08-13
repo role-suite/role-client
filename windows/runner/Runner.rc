@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.devora" "\0"
-            VALUE "FileDescription", "relay" "\0"
+            VALUE "FileDescription", "Röle" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "relay" "\0"
+            VALUE "InternalName", "Röle" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.devora. All rights reserved." "\0"
             VALUE "OriginalFilename", "relay.exe" "\0"
-            VALUE "ProductName", "relay" "\0"
+            VALUE "ProductName", "Röle" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

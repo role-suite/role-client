@@ -38,6 +38,29 @@ Replace `<platform>` with one of:
 - **Android**: Configure signing in `android/app/build.gradle` (keystore, key alias). For Play Store use the App Bundle and the Play Console.
 - **iOS**: Configure signing in Xcode (team, provisioning profile). Archive and upload to App Store Connect or distribute via TestFlight/Ad Hoc.
 
+## Automated Releases (GitHub Actions)
+
+macOS, Windows, and Linux are built and published automatically by `.github/workflows/release.yml`
+whenever a `v*.*.*` tag is pushed:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This builds a signed + notarized macOS app, a Windows executable (signed if a certificate
+secret is configured), and a Linux tarball, then attaches all three to a GitHub Release with
+auto-generated notes. See `.github/workflows/README.md` for the full list of required signing
+secrets and one-time setup steps.
+
+Android and iOS are **not** built by this pipeline — they're submitted to the Play Store and
+App Store directly (see Code Signing and Store Submission below), so `flutter build apk`,
+`appbundle`, and `ios` remain manual, local steps.
+
+Every push/PR to `main` also runs `.github/workflows/ci.yml` (format, analyze, test) and
+`.github/workflows/build-check.yml` (compile-only builds for macOS/Windows/Linux) before code
+reaches `main`.
+
 ## Versioning
 
-- **Version** is set in `pubspec.yaml` (`version: 1.0.16+1`). The optional `+1` is the build number. Bump before release; Flutter uses this for the app version shown on device and in stores.
+- **Version** is set in `pubspec.yaml` (`version: 1.0.0+1`). The optional `+1` is the build number. Bump before release; Flutter uses this for the app version shown on device and in stores.

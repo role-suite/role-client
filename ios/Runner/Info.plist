@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Relay</string>
+	<string>Röle</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Röle needs access to your photo library so you can attach files to your requests.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Röle needs access to your photo library so you can save files from your requests.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Röle needs access to your camera so you can capture images to attach to your requests.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Röle needs access to your microphone to record audio attachments.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Röle needs access to your documents to import and export files.</string>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

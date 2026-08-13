@@ -1,27 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:relay/core/constants/app_constants.dart';
-import 'package:relay/core/theme/app_theme.dart';
-import 'package:relay/features/home/home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
-}
+import 'app.dart';
+import 'state/settings_providers.dart';
 
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeNotifierProvider);
-
-    return MaterialApp(
-      title: AppConstants.appName,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
-      home: const HomeScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
+  runApp(ProviderScope(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)], child: const RoleApp()));
 }

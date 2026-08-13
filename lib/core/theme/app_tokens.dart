@@ -1,20 +1,36 @@
-class AppTokens {
-  const AppTokens._();
+import 'package:flutter/widgets.dart';
 
-  static const double radiusSm = 6;
-  static const double radiusMd = 10;
-  static const double radiusLg = 14;
+/// Spacing, radius, and sizing tokens for a dense, tool-grade UI —
+/// deliberately smaller than Material defaults.
+abstract class AppSpacing {
+  static const xs = 4.0;
+  static const sm = 8.0;
+  static const md = 12.0;
+  static const lg = 16.0;
+  static const xl = 24.0;
+  static const xxl = 32.0;
+}
 
-  static const double controlHeight = 40;
-  static const double compactControlHeight = 36;
+abstract class AppRadius {
+  static const sm = 3.0;
+  static const md = 4.0;
+  static const lg = 6.0;
 
-  static const double borderWidth = 1;
-  static const double focusBorderWidth = 1.5;
+  static final smRadius = BorderRadius.circular(sm);
+  static final mdRadius = BorderRadius.circular(md);
+  static final lgRadius = BorderRadius.circular(lg);
+}
 
-  static const double panelElevation = 0;
-  static const double dialogElevation = 10;
-
-  static const double sidebarRailWidth = 76;
-  static const double topBarHeight = 64;
-  static const double statusBarHeight = 32;
+abstract class AppSizes {
+  static const controlHeight = 30.0;
+  static const controlHeightSm = 24.0;
+  static const iconRailWidth = 48.0;
+  static const sidebarWidthDefault = 260.0;
+  static const sidebarWidthMin = 200.0;
+  static const sidebarWidthMax = 420.0;
+  static const inspectorWidth = 280.0;
+  static const topBarHeight = 44.0;
+  static const tabStripHeight = 34.0;
+  static const statusBarHeight = 26.0;
+  static const borderWidth = 1.0;
 }

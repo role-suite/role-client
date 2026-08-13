@@ -4,8 +4,13 @@
 // future. If not, the values below would default to using the project name when this becomes a
 // 'flutter create' template.
 
-// The application's name. By default this is also the title of the Flutter window.
+// The application's name. This becomes the executable/bundle filename, so it must stay
+// ASCII-only (non-ASCII bytes here can break macOS codesigning). Use DISPLAY_NAME below
+// for the user-facing app name shown in the Dock, Finder, and the Flutter window title.
 PRODUCT_NAME = relay
+
+// The user-facing application name shown in the Dock, Finder, and window title.
+DISPLAY_NAME = Röle
 
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = com.devora.relay

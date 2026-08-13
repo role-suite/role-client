@@ -1,79 +1,66 @@
-import 'package:relay/core/models/api_request_model.dart';
-import 'package:relay/core/models/collection_model.dart';
-import 'package:relay/core/models/environment_model.dart';
+import 'api_request.dart';
+import 'collection.dart';
+import 'environment.dart';
 
-class WorkspaceBundle {
-  WorkspaceBundle({required this.version, required this.exportedAt, required this.collections, required this.environments, this.source});
+class CollectionBundle {
+  final Collection collection;
+  final List<ApiRequest> requests;
 
-  static const int currentVersion = 1;
+  const CollectionBundle({required this.collection, required this.requests});
 
-  final int version;
-  final DateTime exportedAt;
-  final List<CollectionBundle> collections;
-  final List<EnvironmentModel> environments;
-  final String? source;
+  Map<String, dynamic> toJson() => {'collection': collection.toJson(), 'requests': requests.map((r) => r.toJson()).toList()};
 
-  Map<String, dynamic> toJson() {
-    return {
-      'version': version,
-      'exportedAt': exportedAt.toIso8601String(),
-      'source': source,
-      'collections': collections.map((c) => c.toJson()).toList(),
-      'environments': environments.map((e) => e.toJson()).toList(),
-    };
-  }
-
-  static bool matchesSchema(Map<String, dynamic> json) {
-    return json.containsKey('version') && json.containsKey('collections');
-  }
-
-  factory WorkspaceBundle.fromJson(Map<String, dynamic> json) {
-    final version = json['version'] is int ? json['version'] as int : currentVersion;
-    final exportedAtRaw = json['exportedAt'];
-    DateTime exportedAt;
-    if (exportedAtRaw is String) {
-      exportedAt = DateTime.tryParse(exportedAtRaw) ?? DateTime.now();
-    } else {
-      exportedAt = DateTime.now();
-    }
-
-    final collectionsJson = json['collections'];
-    final environmentsJson = json['environments'];
-
-    return WorkspaceBundle(
-      version: version,
-      exportedAt: exportedAt,
-      source: json['source'] as String?,
-      collections: collectionsJson is List ? collectionsJson.whereType<Map<String, dynamic>>().map(CollectionBundle.fromJson).toList() : const [],
-      environments: environmentsJson is List ? environmentsJson.whereType<Map<String, dynamic>>().map(EnvironmentModel.fromJson).toList() : const [],
+  factory CollectionBundle.fromJson(Map<String, dynamic> json) {
+    final collectionJson = json['collection'];
+    return CollectionBundle(
+      collection: collectionJson is Map
+          ? Collection.fromJson(Map<String, dynamic>.from(collectionJson))
+          : Collection(id: 'imported', name: 'Imported Collection', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+      requests: (json['requests'] as List? ?? const []).whereType<Map>().map((e) => ApiRequest.fromJson(Map<String, dynamic>.from(e))).toList(),
     );
   }
 }
 
-class CollectionBundle {
-  CollectionBundle({required this.collection, required this.requests});
+class WorkspaceBundle {
+  static const int currentVersion = 1;
 
-  final CollectionModel collection;
-  final List<ApiRequestModel> requests;
+  final int version;
+  final DateTime exportedAt;
+  final String? source;
+  final List<CollectionBundle> collections;
+  final List<Environment> environments;
 
-  Map<String, dynamic> toJson() {
-    return {'collection': collection.toJson(), 'requests': requests.map((r) => r.toJson()).toList()};
-  }
+  const WorkspaceBundle({
+    this.version = currentVersion,
+    required this.exportedAt,
+    this.source,
+    required this.collections,
+    required this.environments,
+  });
 
-  factory CollectionBundle.fromJson(Map<String, dynamic> json) {
-    final collectionJson = json['collection'];
-    final requestsJson = json['requests'];
-    return CollectionBundle(
-      collection: collectionJson is Map<String, dynamic>
-          ? CollectionModel.fromJson(collectionJson)
-          : CollectionModel(
-              id: 'imported-${DateTime.now().millisecondsSinceEpoch}',
-              name: 'Imported Collection',
-              description: '',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            ),
-      requests: requestsJson is List ? requestsJson.whereType<Map<String, dynamic>>().map(ApiRequestModel.fromJson).toList() : const [],
+  static bool matchesSchema(Map<String, dynamic> json) => json.containsKey('version') && json.containsKey('collections');
+
+  Map<String, dynamic> toJson() => {
+    'version': version,
+    'exportedAt': exportedAt.toIso8601String(),
+    'source': source,
+    'collections': collections.map((c) => c.toJson()).toList(),
+    'environments': environments.map((e) => e.toJson()).toList(),
+  };
+
+  factory WorkspaceBundle.fromJson(Map<String, dynamic> json) {
+    return WorkspaceBundle(
+      version: json['version'] is int ? json['version'] as int : currentVersion,
+      exportedAt: DateTime.tryParse(json['exportedAt'] as String? ?? '') ?? DateTime.now(),
+      source: json['source'] as String?,
+      collections: (json['collections'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => CollectionBundle.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      environments: (json['environments'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => Environment.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 }
