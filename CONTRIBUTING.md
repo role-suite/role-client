@@ -142,7 +142,7 @@ git merge upstream/main
 CI (`.github/workflows/`) enforces these automatically, so it's worth checking them locally first:
 
 - [ ] `dart format --output=none --set-exit-if-changed .` reports no changes
-- [ ] `flutter analyze` passes with no issues (this includes `custom_lint`/`riverpod_lint`)
+- [ ] `flutter analyze` passes with no issues (this includes `riverpod_lint`)
 - [ ] `flutter test` passes
 - [ ] The macOS/Windows/Linux build-check workflow would still compile (no platform-specific breakage)
 - [ ] The PR title follows [Conventional Commits](https://www.conventionalcommits.org/) (see below) — checked by `pr-title.yml`
