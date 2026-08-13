@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/api_request.dart';
+import '../../core/models/assertion.dart';
 import '../../core/models/enums.dart';
 import '../../core/models/response_snapshot.dart';
 import '../../core/models/run_history.dart';
+import '../../core/network/assertion_evaluator.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../core/utils/id.dart';
@@ -69,13 +71,19 @@ class _RunnerSetupTabViewState extends ConsumerState<RunnerSetupTabView> {
             ),
           );
 
+      final assertionResults = AssertionEvaluator.evaluate(request.assertions, result);
+      final passed = assertionResults.isEmpty ? result.ok : assertionResults.every((r) => r.passed);
+
       if (!mounted) return;
       setState(() {
         _liveResults![i] = _liveResults![i].copyWith(
-          status: result.ok ? RunStatus.success : RunStatus.failed,
+          status: passed ? RunStatus.success : RunStatus.failed,
           statusCode: result.statusCode,
           duration: result.duration,
           errorMessage: result.errorMessage,
+          assertionsPassed: assertionResults.where((r) => r.passed).length,
+          assertionsTotal: assertionResults.length,
+          failedAssertions: assertionResults.where((r) => !r.passed).map((r) => '${r.assertion.type.label}: ${r.message}').toList(),
         );
       });
     }

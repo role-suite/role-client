@@ -65,6 +65,8 @@ class RunReportTabView extends ConsumerWidget {
               itemCount: entry.results.length,
               itemBuilder: (context, index) {
                 final result = entry.results[index];
+                final hasAssertions = (result.assertionsTotal ?? 0) > 0;
+                final allAssertionsPassed = result.assertionsPassed == result.assertionsTotal;
                 return Container(
                   margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 8),
@@ -72,24 +74,48 @@ class RunReportTabView extends ConsumerWidget {
                     border: Border.all(color: colors.border),
                     borderRadius: AppRadius.smRadius,
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(width: 44, child: MethodBadge(result.method, compact: true)),
-                      Expanded(
-                        child: Text(result.requestName, style: context.type.body, overflow: TextOverflow.ellipsis),
-                      ),
-                      if (result.errorMessage != null)
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            result.errorMessage!,
-                            style: context.type.caption.copyWith(color: colors.danger),
-                            overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          SizedBox(width: 44, child: MethodBadge(result.method, compact: true)),
+                          Expanded(
+                            child: Text(result.requestName, style: context.type.body, overflow: TextOverflow.ellipsis),
                           ),
+                          if (result.errorMessage != null)
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                result.errorMessage!,
+                                style: context.type.caption.copyWith(color: colors.danger),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          if (hasAssertions) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: (allAssertionsPassed ? colors.success : colors.danger).withValues(alpha: 0.12),
+                                borderRadius: AppRadius.smRadius,
+                              ),
+                              child: Text(
+                                '${result.assertionsPassed}/${result.assertionsTotal} checks',
+                                style: context.type.caption.copyWith(color: allAssertionsPassed ? colors.success : colors.danger),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                          ],
+                          StatusBadge(statusCode: result.statusCode, errorMessage: result.errorMessage),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(result.duration != null ? '${result.duration!.inMilliseconds} ms' : '—', style: context.type.caption),
+                        ],
+                      ),
+                      for (final message in result.failedAssertions)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, left: 52),
+                          child: Text(message, style: context.type.caption.copyWith(color: colors.danger)),
                         ),
-                      StatusBadge(statusCode: result.statusCode, errorMessage: result.errorMessage),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(result.duration != null ? '${result.duration!.inMilliseconds} ms' : '—', style: context.type.caption),
                     ],
                   ),
                 );

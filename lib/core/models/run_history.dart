@@ -9,6 +9,9 @@ class RunItemResult {
   final int? statusCode;
   final Duration? duration;
   final String? errorMessage;
+  final int? assertionsPassed;
+  final int? assertionsTotal;
+  final List<String> failedAssertions;
 
   const RunItemResult({
     required this.requestId,
@@ -18,9 +21,20 @@ class RunItemResult {
     this.statusCode,
     this.duration,
     this.errorMessage,
+    this.assertionsPassed,
+    this.assertionsTotal,
+    this.failedAssertions = const [],
   });
 
-  RunItemResult copyWith({RunStatus? status, int? statusCode, Duration? duration, String? errorMessage}) {
+  RunItemResult copyWith({
+    RunStatus? status,
+    int? statusCode,
+    Duration? duration,
+    String? errorMessage,
+    int? assertionsPassed,
+    int? assertionsTotal,
+    List<String>? failedAssertions,
+  }) {
     return RunItemResult(
       requestId: requestId,
       requestName: requestName,
@@ -29,6 +43,9 @@ class RunItemResult {
       statusCode: statusCode ?? this.statusCode,
       duration: duration ?? this.duration,
       errorMessage: errorMessage ?? this.errorMessage,
+      assertionsPassed: assertionsPassed ?? this.assertionsPassed,
+      assertionsTotal: assertionsTotal ?? this.assertionsTotal,
+      failedAssertions: failedAssertions ?? this.failedAssertions,
     );
   }
 
@@ -42,6 +59,9 @@ class RunItemResult {
     'statusCode': statusCode,
     'durationMs': duration?.inMilliseconds,
     'errorMessage': errorMessage,
+    'assertionsPassed': assertionsPassed,
+    'assertionsTotal': assertionsTotal,
+    'failedAssertions': failedAssertions,
   };
 
   factory RunItemResult.fromJson(Map<String, dynamic> json) {
@@ -53,6 +73,9 @@ class RunItemResult {
       statusCode: json['statusCode'] as int?,
       duration: json['durationMs'] != null ? Duration(milliseconds: json['durationMs'] as int) : null,
       errorMessage: json['errorMessage'] as String?,
+      assertionsPassed: json['assertionsPassed'] as int?,
+      assertionsTotal: json['assertionsTotal'] as int?,
+      failedAssertions: (json['failedAssertions'] as List? ?? const []).map((e) => e.toString()).toList(),
     );
   }
 }
