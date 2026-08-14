@@ -9,6 +9,14 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/role-suite/role-client/actions/workflows/ci.yml"><img src="https://github.com/role-suite/role-client/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/role-suite/role-client/releases"><img src="https://img.shields.io/github/v/release/role-suite/role-client?label=release" alt="Latest Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <a href="https://docs.flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.44%2B-02569B?logo=flutter&logoColor=white" alt="Flutter"></a>
+  <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-informational" alt="Platforms">
+</p>
+
+<p align="center">
   <a href="#overview">Overview</a> •
   <a href="#features">Features</a> •
   <a href="#screenshots">Screenshots</a> •
@@ -30,69 +38,44 @@ All collections, requests, and environments are stored on your device. There is 
 
 ## Features
 
-### API Requesting
-
-- HTTP methods: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `HEAD`, `OPTIONS`
-- Request editor with URL, headers, query params, and body
-- Response viewer with status, headers, body formatting, and timing
-- Per-request history snapshots
-
-### Organization and Reuse
-
-- Collections to organize request sets
-- Environment variables with `{{variableName}}` substitution
-- Active collection and environment selectors
-- Request search/filter on home screen
-
-### Import and Export
-
-- Import workspace JSON (Röle and Postman-style exports)
-- Conflict handling during import (`Skip`, `Keep both`, `Overwrite`)
-- Export workspace JSON from the app
-
-### Execution and Automation
-
-- **Collection Runner**: run all requests in a collection sequentially
-- **Run History**: inspect previous test runs with pass/fail summaries
-- **Request Chain (Flows)**: compose multi-step chained request execution with delays and previous-response passing
-
-### UX and Platform
-
-- Material 3 UI with responsive desktop/mobile layout
-- Light, dark, and system theme modes
-- Supported platforms: Windows, macOS, Linux, Android, iOS
+| Category | What you get |
+| --- | --- |
+| 🚀 **API Requesting** | `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `HEAD`, `OPTIONS` · full request editor (URL, headers, query params, body) · response viewer with status, headers, formatted body, and timing · per-request history snapshots |
+| 🗂 **Organization & Reuse** | Collections to group requests · environment variables with `{{variableName}}` substitution · active collection/environment selectors · request search & filter |
+| 🔁 **Import & Export** | Import Röle or Postman-style workspace JSON · conflict handling (`Skip`, `Keep both`, `Overwrite`) · export your workspace as JSON |
+| ⚙️ **Execution & Automation** | **Collection Runner** — run a full collection sequentially · **Run History** — pass/fail summaries for past runs · **Flows** — chain multi-step requests with delays and previous-response passing |
+| 🎨 **UX & Platform** | Material 3 UI, responsive desktop/mobile layout · light, dark, and system theme modes · Windows, macOS, Linux, Android, and iOS |
 
 ## Screenshots
 
-### Home Screen
-
-<p align="center">
-  <img src="assets/screenshots/home-screen.png" alt="Röle Home Screen" width="800">
-</p>
-
-### Request Editor
-
-<p align="center">
-  <img src="assets/screenshots/request-editor.png" alt="Röle Request Editor" width="800">
-</p>
-
-### Request Body
-
-<p align="center">
-  <img src="assets/screenshots/request-body.png" alt="Röle Request Body Editor" width="800">
-</p>
-
-### Response Viewer
-
-<p align="center">
-  <img src="assets/screenshots/response-body.png" alt="Röle Response Body Viewer" width="800">
-</p>
-
-### Response Headers
-
-<p align="center">
-  <img src="assets/screenshots/response-headers.png" alt="Röle Response Headers Viewer" width="800">
-</p>
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/home-screen.png" alt="Röle Home Screen" width="100%"><br>
+      <sub><strong>Home Screen</strong></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/request-editor.png" alt="Röle Request Editor" width="100%"><br>
+      <sub><strong>Request Editor</strong></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/request-body.png" alt="Röle Request Body Editor" width="100%"><br>
+      <sub><strong>Request Body</strong></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/response-body.png" alt="Röle Response Body Viewer" width="100%"><br>
+      <sub><strong>Response Viewer</strong></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/screenshots/response-headers.png" alt="Röle Response Headers Viewer" width="100%"><br>
+      <sub><strong>Response Headers</strong></sub>
+    </td>
+  </tr>
+</table>
 
 ## Installation
 
@@ -154,6 +137,9 @@ flutter build ios --release
 ### Pre-built Releases
 
 macOS, Windows, and Linux builds are published automatically to [GitHub Releases](https://github.com/role-suite/role-client/releases) on every version tag. Android and iOS are distributed through their respective app stores rather than through this repository.
+
+> [!TIP]
+> Grab the latest build straight from the [Releases page](https://github.com/role-suite/role-client/releases/latest) — no build tooling required.
 
 ## Getting Started
 
@@ -277,5 +263,5 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE).
 ---
 
 <p align="center">
-  Made with ❤️ and Flutter
+  <sub>Made with ❤️ and Flutter — if Röle is useful to you, consider giving it a ⭐</sub>
 </p>
