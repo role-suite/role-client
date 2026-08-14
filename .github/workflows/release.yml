@@ -16,13 +16,15 @@ jobs:
   macos:
     name: macOS (signed + notarized if certificate present)
     runs-on: macos-latest
+    env:
+      HAS_MACOS_CERT: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: ./.github/actions/setup-flutter
 
       - name: Import signing certificate
-        if: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
+        if: env.HAS_MACOS_CERT == 'true'
         env:
           MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -41,7 +43,7 @@ jobs:
         run: flutter build macos --release
 
       - name: Codesign app
-        if: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
+        if: env.HAS_MACOS_CERT == 'true'
         run: |
           codesign --deep --force --options runtime \
             --sign "${{ secrets.MACOS_CERTIFICATE_IDENTITY }}" \
@@ -51,7 +53,7 @@ jobs:
         run: ditto -c -k --keepParent "build/macos/Build/Products/Release/relay.app" relay-macos.zip
 
       - name: Notarize
-        if: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
+        if: env.HAS_MACOS_CERT == 'true'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
@@ -65,7 +67,7 @@ jobs:
           xcrun stapler staple "build/macos/Build/Products/Release/relay.app"
 
       - name: Re-zip stapled app
-        if: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
+        if: env.HAS_MACOS_CERT == 'true'
         run: |
           rm relay-macos.zip
           ditto -c -k --keepParent "build/macos/Build/Products/Release/relay.app" relay-macos.zip
@@ -80,6 +82,8 @@ jobs:
   windows:
     name: Windows (signed if certificate present)
     runs-on: windows-latest
+    env:
+      HAS_WINDOWS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -89,7 +93,7 @@ jobs:
         run: flutter build windows --release
 
       - name: Sign executable
-        if: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
+        if: env.HAS_WINDOWS_CERT == 'true'
         shell: pwsh
         env:
           WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
