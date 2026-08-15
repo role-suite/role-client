@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)build and publish, e.g. v1.0.0"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -12,14 +18,37 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
+  verify-version:
+    name: Verify tag matches pubspec version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Check tag against pubspec.yaml
+        run: |
+          TAG_VERSION="${RELEASE_TAG#v}"
+          PUBSPEC_VERSION="$(awk '/^version:/ {print $2}' pubspec.yaml | cut -d+ -f1)"
+          if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
+            echo "::error::Tag ${RELEASE_TAG} does not match pubspec.yaml version ${PUBSPEC_VERSION} — bump pubspec.yaml or push the correct tag"
+            exit 1
+          fi
+
   macos:
     name: macOS (signed + notarized if certificate present)
     runs-on: macos-latest
+    needs: verify-version
     env:
       HAS_MACOS_CERT: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: ./.github/actions/setup-flutter
 
@@ -41,6 +70,9 @@ jobs:
 
       - name: Build macOS app
         run: flutter build macos --release
+
+      - name: Verify universal binary
+        run: lipo -info "build/macos/Build/Products/Release/relay.app/Contents/MacOS/relay" | grep -q "x86_64 arm64"
 
       - name: Codesign app
         if: env.HAS_MACOS_CERT == 'true'
@@ -82,10 +114,13 @@ jobs:
   windows:
     name: Windows (signed if certificate present)
     runs-on: windows-latest
+    needs: verify-version
     env:
       HAS_WINDOWS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: ./.github/actions/setup-flutter
 
@@ -119,8 +154,11 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest
+    needs: verify-version
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Install Linux build dependencies
         run: |
@@ -133,7 +171,9 @@ jobs:
         run: flutter build linux --release
 
       - name: Package build
-        run: tar -czf relay-linux.tar.gz -C build/linux/x64/release/bundle .
+        run: |
+          mv build/linux/x64/release/bundle build/linux/x64/release/relay
+          tar -czf relay-linux.tar.gz -C build/linux/x64/release relay
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -147,17 +187,27 @@ jobs:
     needs: [macos, windows, linux]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 
       - name: Collect release assets
         run: |
+          VERSION="${RELEASE_TAG#v}"
           mkdir -p release-assets
-          find artifacts -type f \( -name "*.zip" -o -name "*.tar.gz" \) -exec cp {} release-assets/ \;
+          cp artifacts/macos-release/relay-macos.zip "release-assets/relay-${VERSION}-macos.zip"
+          cp artifacts/windows-release/relay-windows.zip "release-assets/relay-${VERSION}-windows-x64.zip"
+          cp artifacts/linux-release/relay-linux.tar.gz "release-assets/relay-${VERSION}-linux-x64.tar.gz"
+
+      - name: Generate checksums
+        run: |
+          cd release-assets
+          sha256sum relay-* > SHA256SUMS
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: release-assets/*
           generate_release_notes: true
