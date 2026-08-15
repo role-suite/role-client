@@ -48,10 +48,13 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-This builds a macOS app (signed + notarized if certificate secrets are configured, otherwise
-unsigned), a Windows executable (signed if a certificate secret is configured, otherwise
-unsigned), and a Linux tarball, then attaches all three to a GitHub Release with
-auto-generated notes. No secrets are required to cut a release — see
+This builds a macOS app (universal arm64 + x86_64, signed + notarized if certificate secrets
+are configured, otherwise unsigned), a Windows executable (signed if a certificate secret is
+configured, otherwise unsigned), and a Linux tarball, then attaches versioned assets
+(`relay-<version>-macos.zip`, `relay-<version>-windows-x64.zip`,
+`relay-<version>-linux-x64.tar.gz`) plus a `SHA256SUMS` file to a GitHub Release with
+auto-generated notes. The workflow fails fast if the tag doesn't match the `version:` in
+`pubspec.yaml`. No secrets are required to cut a release — see
 `.github/workflows/README.md` for the full list of optional signing secrets and one-time
 setup steps.
 
@@ -65,4 +68,4 @@ reaches `main`.
 
 ## Versioning
 
-- **Version** is set in `pubspec.yaml` (`version: 1.0.0+1`). The optional `+1` is the build number. Bump before release; Flutter uses this for the app version shown on device and in stores.
+- **Version** is set in `pubspec.yaml` (`version: 1.0.0+2`). The optional `+2` is the build number. Bump before release; Flutter uses this for the app version shown on device and in stores. The release workflow rejects tags that don't match this version.

@@ -5,7 +5,7 @@
 | `ci.yml` | push/PR to `main` | `dart format` check, `flutter analyze` (incl. `riverpod_lint`), `flutter test` |
 | `build-check.yml` | push/PR to `main` | Compile-only build of macOS, Windows, Linux to catch platform build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
-| `release.yml` | push tag `v*.*.*` | Builds macOS (signed+notarized if cert provided), Windows (signed if cert provided), and Linux artifacts; publishes them to a GitHub Release |
+| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml`, builds macOS (universal, signed+notarized if cert provided), Windows (signed if cert provided), and Linux artifacts; publishes them to a GitHub Release with versioned filenames and a `SHA256SUMS` file |
 
 ## Required secrets for `release.yml`
 
@@ -47,4 +47,16 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-This triggers `release.yml`, which builds all platforms in parallel and publishes a GitHub Release with auto-generated notes and all artifacts attached.
+This triggers `release.yml`, which first checks that the tag matches the `version:` in
+`pubspec.yaml` (the workflow fails fast otherwise), then builds all platforms in parallel and
+publishes a GitHub Release with auto-generated notes and these assets:
+
+| Asset | Contents |
+|---|---|
+| `relay-<version>-macos.zip` | universal (arm64 + x86_64) `relay.app`, stapled if signed |
+| `relay-<version>-windows-x64.zip` | `relay.exe` and runtime DLLs |
+| `relay-<version>-linux-x64.tar.gz` | extracts to a `relay/` folder with the binary and libs |
+| `SHA256SUMS` | checksums for all of the above |
+
+You can also re-run a release from the **Actions → Release → Run workflow** dialog by entering
+an existing tag; the workflow checks out that tag and re-publishes its assets.
