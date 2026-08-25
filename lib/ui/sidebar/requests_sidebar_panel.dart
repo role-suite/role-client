@@ -101,23 +101,22 @@ class _CollectionSectionState extends ConsumerState<_CollectionSection> {
                       child: Icon(Icons.cloud_outlined, size: 14, color: colors.textMuted),
                     ),
                   ),
-                // "New request" stays local-collections-only: creating a
-                // brand-new endpoint inside a remote collection needs an id
-                // reconciliation step (temp local id -> server id) this
-                // phase deliberately doesn't build — see docs/
-                // 08-ONLINE-MODE-INTEGRATION.md phase-4 scope note.
-                if (!isRemote)
-                  AppIconButton(
-                    icon: Icons.add,
-                    tooltip: 'New request',
-                    onPressed: () async {
+                AppIconButton(
+                  icon: Icons.add,
+                  tooltip: 'New request',
+                  onPressed: () async {
+                    try {
                       final request = await ref
                           .read(workspaceProvider.notifier)
                           .createRequest(collectionId: widget.collection.id, name: 'New Request');
                       if (!context.mounted) return;
                       ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.request, title: request.name, payloadId: request.id);
-                    },
-                  ),
+                    } catch (error) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not create request: $error')));
+                    }
+                  },
+                ),
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_horiz, size: 16, color: colors.textMuted),
                   color: colors.surfaceRaised,

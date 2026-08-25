@@ -167,12 +167,13 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
     final auth = ref.watch(authNotifierProvider) as AuthSignedIn;
     final isOwner = auth.activeWorkspace.role == 'owner';
     final isTeam = auth.activeWorkspace.type == 'team';
+    final dialogWidth = (MediaQuery.sizeOf(context).width - AppSpacing.xxl).clamp(280.0, 440.0);
+    final dialogMaxHeight = (MediaQuery.sizeOf(context).height * 0.78).clamp(360.0, 520.0);
 
     return AlertDialog(
       title: const Text('Workspace'),
-      content: SizedBox(
-        width: 440,
-        height: 460,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: dialogWidth, maxHeight: dialogMaxHeight),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,10 +198,11 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
                       : () => runImportRemoteWorkspace(context, ref, workspaceId: workspace.id, workspaceName: workspace.name),
                 ),
               const SizedBox(height: AppSpacing.xs),
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextButton(onPressed: _busy ? null : _createWorkspace, child: const Text('Create workspace')),
-                  TextButton(onPressed: _busy ? null : _joinWithInvitation, child: const Text('Join with invitation')),
+                  _DialogActionRow(icon: Icons.add_circle_outline, label: 'Create workspace', onTap: _busy ? null : _createWorkspace),
+                  _DialogActionRow(icon: Icons.mail_outline, label: 'Join with invitation', onTap: _busy ? null : _joinWithInvitation),
                 ],
               ),
               const Divider(height: AppSpacing.lg),
@@ -278,20 +280,125 @@ class _WorkspaceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final actions = [
+      if (!isActive) _WorkspaceActionButton(icon: Icons.swap_horiz, label: 'Switch', onTap: busy ? null : onSwitch),
+      if (onExport != null) _WorkspaceActionButton(icon: Icons.file_download_outlined, label: 'Export', onTap: onExport),
+      if (onImport != null) _WorkspaceActionButton(icon: Icons.file_upload_outlined, label: 'Import', onTap: onImport),
+      if (onLeave != null) _WorkspaceActionButton(icon: Icons.exit_to_app, label: 'Leave', onTap: busy ? null : onLeave),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: isActive ? colors.accent.withValues(alpha: 0.08) : colors.surfaceSunken,
+          borderRadius: AppRadius.lgRadius,
+          border: Border.all(color: isActive ? colors.accent.withValues(alpha: 0.35) : colors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                  size: 17,
+                  color: isActive ? colors.accent : colors.textMuted,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(workspace.name, style: context.type.bodyStrong, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text('${workspace.type} · ${workspace.role}', style: context.type.label.copyWith(color: colors.textMuted)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (actions.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(spacing: AppSpacing.xs, runSpacing: AppSpacing.xs, children: actions),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogActionRow extends StatelessWidget {
+  const _DialogActionRow({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Icon(isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked, size: 15, color: isActive ? colors.accent : colors.textMuted),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text('${workspace.name} · ${workspace.type} · ${workspace.role}', style: context.type.body, overflow: TextOverflow.ellipsis),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.mdRadius,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+            child: Row(
+              children: [
+                Icon(icon, size: 17, color: onTap == null ? colors.textMuted : colors.accent),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(label, style: context.type.bodyStrong.copyWith(color: onTap == null ? colors.textMuted : colors.accent)),
+                ),
+              ],
+            ),
           ),
-          if (!isActive) TextButton(onPressed: busy ? null : onSwitch, child: const Text('Switch')),
-          if (onExport != null) AppIconButton(icon: Icons.file_download_outlined, tooltip: 'Export this workspace', onPressed: onExport),
-          if (onImport != null) AppIconButton(icon: Icons.file_upload_outlined, tooltip: 'Import into this workspace', onPressed: onImport),
-          if (onLeave != null) AppIconButton(icon: Icons.exit_to_app, tooltip: 'Leave workspace', onPressed: busy ? null : onLeave),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkspaceActionButton extends StatelessWidget {
+  const _WorkspaceActionButton({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final disabled = onTap == null;
+    return Material(
+      color: disabled ? colors.surfaceSunken : colors.surfaceRaised,
+      borderRadius: AppRadius.smRadius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.smRadius,
+        child: Container(
+          height: AppSizes.controlHeightSm,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.smRadius,
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: disabled ? colors.textMuted : colors.textSecondary),
+              const SizedBox(width: AppSpacing.xs),
+              Text(label, style: context.type.label.copyWith(color: disabled ? colors.textMuted : colors.textSecondary)),
+            ],
+          ),
+        ),
       ),
     );
   }

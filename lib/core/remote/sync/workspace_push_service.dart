@@ -16,6 +16,55 @@ class WorkspacePushService {
 
   final RemoteApiClient _client;
 
+  Future<Collection> createCollection(int workspaceId, {required String name, String description = ''}) async {
+    final data = Map<String, dynamic>.from(
+      await _client.post('/workspaces/$workspaceId/collections', data: {'name': name, if (description.isNotEmpty) 'description': description}) as Map,
+    );
+    return collectionFromRemote(data, workspaceId: workspaceId);
+  }
+
+  Future<ApiRequest> createEndpoint(int workspaceId, int remoteCollectionId, {required String collectionLocalId, required ApiRequest request}) async {
+    final data = Map<String, dynamic>.from(
+      await _client.post(
+            '/workspaces/$workspaceId/collections/$remoteCollectionId/endpoints',
+            data: {
+              'name': request.name,
+              'method': request.method.name.toUpperCase(),
+              // role-node requires a non-empty URL even for a draft endpoint.
+              'url': request.url.isEmpty ? '/' : request.url,
+              'headers': request.headers.map((e) => e.toJson()).toList(),
+              'queryParams': request.queryParams.map((e) => e.toJson()).toList(),
+              'body': requestBodyToWire(request.requestBody),
+              'auth': authToWire(request.authType, request.authConfig),
+            },
+          )
+          as Map,
+    );
+    return apiRequestFromRemoteEndpoint(data, workspaceId: workspaceId, collectionId: collectionLocalId);
+  }
+
+  Future<Environment> createEnvironment(int workspaceId, {required String name}) async {
+    final data = Map<String, dynamic>.from(await _client.post('/workspaces/$workspaceId/environments', data: {'name': name}) as Map);
+    return environmentFromRemote(data, workspaceId: workspaceId);
+  }
+
+  Future<EnvironmentVariable> createEnvironmentVariable(int workspaceId, int remoteEnvironmentId, EnvironmentVariable variable) async {
+    final data = Map<String, dynamic>.from(
+      await _client.post(
+            '/workspaces/$workspaceId/environments/$remoteEnvironmentId/variables',
+            data: {
+              'key': variable.key,
+              'value': variable.value,
+              'enabled': variable.enabled,
+              'isSecret': variable.isSecret,
+              'position': variable.position,
+            },
+          )
+          as Map,
+    );
+    return environmentVariableFromRemote(data);
+  }
+
   Future<void> updateCollection(int workspaceId, int remoteId, Collection collection) {
     return _client.patch('/workspaces/$workspaceId/collections/$remoteId', data: {'name': collection.name, 'description': collection.description});
   }

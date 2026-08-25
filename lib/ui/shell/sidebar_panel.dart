@@ -33,6 +33,7 @@ class SidebarPanel extends ConsumerWidget {
         WorkspaceSection.runs => const RunsSidebarPanel(),
         WorkspaceSection.flows => const FlowsSidebarPanel(),
         WorkspaceSection.environments => const EnvironmentsSidebarPanel(),
+        WorkspaceSection.online => const RequestsSidebarPanel(),
       },
     );
   }

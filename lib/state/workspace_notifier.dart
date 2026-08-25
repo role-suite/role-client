@@ -92,6 +92,17 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   }
 
   Future<Collection> createCollection({required String name, String description = ''}) async {
+    final remoteWorkspaceId = ref.read(activeRemoteWorkspaceIdProvider);
+    if (remoteWorkspaceId != null) {
+      final client = ref.read(remoteApiClientProvider);
+      if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
+      final collection = await WorkspacePushService(client).createCollection(remoteWorkspaceId, name: name, description: description);
+      await _persist(CollectionBundle(collection: collection, requests: const []));
+      final current = state.value ?? const WorkspaceState();
+      state = AsyncData(current.copyWith(collections: [...current.collections, collection]));
+      return collection;
+    }
+
     final current = state.value ?? const WorkspaceState();
     final now = DateTime.now();
     final collection = Collection(id: generateId('col'), name: name, description: description, createdAt: now, updatedAt: now);
@@ -153,8 +164,23 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
 
   Future<ApiRequest> createRequest({required String collectionId, required String name}) async {
     final current = state.value ?? const WorkspaceState();
+    final collection = current.collections.firstWhere((c) => c.id == collectionId);
     final now = DateTime.now();
     final request = ApiRequest(id: generateId('req'), collectionId: collectionId, name: name, createdAt: now, updatedAt: now);
+
+    if (collection.origin == WorkspaceOrigin.remote) {
+      final client = ref.read(remoteApiClientProvider);
+      if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
+      final remoteId = collection.remoteId;
+      if (remoteId == null) throw StateError('Remote collection is missing its server id.');
+      final remoteRequest = await WorkspacePushService(
+        client,
+      ).createEndpoint(collection.remoteWorkspaceId!, remoteId, collectionLocalId: collection.id, request: request);
+      final next = current.copyWith(requests: [...current.requests, remoteRequest]);
+      await _persist(_bundleFor(next, collectionId));
+      state = AsyncData(next);
+      return remoteRequest;
+    }
 
     final next = current.copyWith(requests: [...current.requests, request]);
     await _persist(_bundleFor(next, collectionId));

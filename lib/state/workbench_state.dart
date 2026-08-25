@@ -1,4 +1,4 @@
-enum WorkspaceSection { requests, history, runs, flows, environments }
+enum WorkspaceSection { requests, history, runs, flows, environments, online }
 
 enum WorkbenchTabType { request, environment, runnerSetup, runReport, flow, flowRun }
 

@@ -39,6 +39,22 @@ class EnvironmentsNotifier extends AsyncNotifier<List<Environment>> {
   }
 
   Future<Environment> create({required String name, List<EnvironmentVariable> variables = const []}) async {
+    final remoteWorkspaceId = ref.read(activeRemoteWorkspaceIdProvider);
+    if (remoteWorkspaceId != null) {
+      final client = ref.read(remoteApiClientProvider);
+      if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
+      final service = WorkspacePushService(client);
+      final created = await service.createEnvironment(remoteWorkspaceId, name: name);
+      final remoteVariables = <EnvironmentVariable>[];
+      for (final variable in variables) {
+        remoteVariables.add(await service.createEnvironmentVariable(remoteWorkspaceId, created.remoteId!, variable));
+      }
+      final env = created.copyWith(variables: remoteVariables);
+      await JsonStore.instance.write(WorkspacePaths.remoteEnvironmentFile(remoteWorkspaceId, env.id), env.toJson());
+      state = AsyncData([...state.value ?? const [], env]);
+      return env;
+    }
+
     final now = DateTime.now();
     final env = Environment(id: generateId('env'), name: name, variables: variables, createdAt: now, updatedAt: now);
     await JsonStore.instance.write(WorkspacePaths.environmentFile(env.id), env.toJson());

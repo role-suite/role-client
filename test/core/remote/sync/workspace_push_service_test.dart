@@ -68,6 +68,67 @@ ApiRequest _request({RequestBody body = const NoneBody(), AuthType authType = Au
     );
 
 void main() {
+  group('createCollection / createEndpoint', () {
+    test('POSTs collection create payload and maps the response', () async {
+      Map<String, dynamic>? sentData;
+      final service = _serviceWith((options) {
+        sentData = Map<String, dynamic>.from(options.data as Map);
+        expect(options.method, 'POST');
+        expect(options.path, '/workspaces/1/collections');
+        return _jsonBody({
+          'success': true,
+          'data': {
+            'id': 7,
+            'name': 'Orders API',
+            'description': 'desc',
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+          },
+        }, 201);
+      });
+
+      final collection = await service.createCollection(1, name: 'Orders API', description: 'desc');
+
+      expect(sentData, {'name': 'Orders API', 'description': 'desc'});
+      expect(collection.origin, WorkspaceOrigin.remote);
+      expect(collection.remoteId, 7);
+      expect(collection.id, 'remote-col-1-7');
+    });
+
+    test('POSTs endpoint create payload and maps the response', () async {
+      Map<String, dynamic>? sentData;
+      final service = _serviceWith((options) {
+        sentData = Map<String, dynamic>.from(options.data as Map);
+        expect(options.method, 'POST');
+        expect(options.path, '/workspaces/1/collections/7/endpoints');
+        return _jsonBody({
+          'success': true,
+          'data': {
+            'id': 42,
+            'name': 'Get Orders',
+            'method': 'GET',
+            'url': 'https://api.example.com/orders',
+            'headers': const [],
+            'queryParams': const [],
+            'body': {'mode': 'none'},
+            'auth': {'type': 'none'},
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+          },
+        }, 201);
+      });
+
+      final request = await service.createEndpoint(1, 7, collectionLocalId: 'remote-col-1-7', request: _request());
+
+      expect(sentData!['method'], 'GET');
+      expect(sentData!['url'], 'https://api.example.com/orders');
+      expect(sentData!['auth'], {'type': 'none'});
+      expect(request.origin, WorkspaceOrigin.remote);
+      expect(request.remoteId, 42);
+      expect(request.collectionId, 'remote-col-1-7');
+    });
+  });
+
   group('updateCollection / deleteCollection', () {
     test('PATCHes name+description, DELETEs by remote id', () async {
       final calls = <String>[];
