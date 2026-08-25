@@ -168,6 +168,74 @@ future cleanup pass:
 `top_bar.dart`, `request_editor_panel.dart`). Worth a checkpoint commit now that all phases are
 done.
 
+### Client-backend sync follow-up pass (completed)
+
+This bounded client-side pass aligned the Flutter UI and state-layer behavior with the role-node
+write capabilities and authorization rules that now exist. It did not require backend changes.
+
+1. **Permission-aware remote UI**
+   - Treat `owner` and `admin` as writable roles; treat `member` as read-only for collections,
+     requests, environments, variables, and remote import/export.
+   - Disable or hide remote mutation affordances for read-only members: new collection, new request
+     in a remote collection, rename/delete collection, save/delete request, duplicate request, new
+     environment, save/delete environment, variable edits, and remote import/export actions.
+   - Surface a consistent message when an action is blocked: `Only workspace owners and admins can
+     modify this workspace.`
+2. **Shared remote write error handling**
+   - Use one small UI helper/pattern for `RemoteApiException` so role-node's `message` and useful
+     validation details are shown instead of raw Dart exception strings.
+   - Apply it to collection, request, environment, variable, workspace, and import/export mutation
+     paths that are still using ad hoc `error.toString()` handling.
+   - Keep branching on role-node error `code` where behavior matters; use `message` only for display.
+3. **Remote duplicate support**
+   - Enable duplicating a remote request by creating a new remote endpoint in the same remote
+     collection and seeding it with the copied request fields.
+   - Prefer extending the existing create path to accept an optional template payload, so local and
+     remote duplicate behavior stays in one notifier flow.
+   - Preserve local duplicate behavior unchanged.
+4. **Backend field mismatch UX**
+   - The client currently has fields/options role-node does not persist losslessly, including request
+     descriptions, request assertions/tests, and API-key auth.
+   - Add a non-destructive warning for remote-origin requests: `Descriptions, tests, and API key auth
+     are local-only until backend support is added.`
+   - Do not hide existing local fields by default; hiding can look destructive and should wait for a
+     product decision.
+5. **Unified import/export choice**
+   - Keep import/export in one top-bar location instead of splitting local actions into the shell and
+     remote actions into the workspace dialog.
+   - When the user clicks Import or Export, show a choice between the local workspace path and the
+     active remote workspace path.
+   - Make the remote option explicit (`Import into remote workspace` / `Export remote workspace`) and
+     disable it when signed out or when the active workspace role is read-only.
+   - This prevents signed-in users from guessing which storage target the import/export action will
+     affect.
+6. **Client-side validation before remote creates**
+   - Match role-node's simple create constraints before sending writes: collection/environment name
+     length, endpoint URL presence, and environment variable key presence.
+   - Show inline or snackbar errors for simple invalid input instead of relying on backend
+     `VALIDATION_FAILED` responses.
+7. **Mobile online status polish**
+   - Extend the mobile Online panel with last-sync time, active workspace role, and whether the
+     current role has write access.
+   - Keep mobile local-only behavior unchanged when signed out or when no role-node base URL is set.
+
+Recommended implementation order for this pass:
+
+1. Add shared permission helpers and apply the highest-risk UI guards first.
+2. Add the shared remote error display helper and replace ad hoc mutation error display.
+3. Enable remote request duplicate through the existing remote endpoint create path.
+4. Add remote-field mismatch warnings for request editor screens.
+5. Unify import/export behind top-bar target selection.
+6. Add simple preflight validation for remote creates.
+7. Polish the mobile Online panel with role/write-access details.
+
+Out of scope for this pass:
+
+- Backend schema changes for descriptions, assertions/tests, API-key auth, examples, or folders.
+- A durable offline create queue with idempotent create retry semantics.
+- Live end-to-end tests against a running role-node instance.
+- Replacing the existing hand-mapped REST services with generated OpenAPI DTOs.
+
 ## 0. The one rule everything else follows
 
 > **Local mode is the product. Online mode is an optional second layer on top of it.**
