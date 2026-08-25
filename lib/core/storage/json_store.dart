@@ -75,4 +75,24 @@ class JsonStore {
     }
     return results;
   }
+
+  /// The `id` (filename without `.json`) of every file directly inside
+  /// [relativeDir] — used to reconcile a full-list refetch against what's
+  /// currently cached, so stale entries can be deleted.
+  Future<Set<String>> listIds(String relativeDir) async {
+    final fullPath = await _resolve(relativeDir);
+    final dir = Directory(fullPath);
+    if (!await dir.exists()) return {};
+
+    final entries = await dir.list(followLinks: false).toList();
+    return entries.whereType<File>().where((f) => f.path.endsWith('.json')).map((f) => p.basenameWithoutExtension(f.path)).toSet();
+  }
+
+  /// Deletes [relativeDir] and everything under it, e.g. a remote workspace's
+  /// entire local cache on sign-out. No-op if it doesn't exist.
+  Future<void> deleteDirectory(String relativeDir) async {
+    final fullPath = await _resolve(relativeDir);
+    final dir = Directory(fullPath);
+    if (await dir.exists()) await dir.delete(recursive: true);
+  }
 }

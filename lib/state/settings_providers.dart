@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _themeModeKey = 'settings.themeMode';
 const _activeEnvironmentKey = 'settings.activeEnvironmentId';
+const _remoteBaseUrlKey = 'settings.remoteBaseUrl';
 
 /// Overridden in main() once SharedPreferences.getInstance() resolves.
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -56,3 +57,26 @@ class ActiveEnvironmentNotifier extends Notifier<String?> {
 }
 
 final activeEnvironmentIdProvider = NotifierProvider<ActiveEnvironmentNotifier, String?>(ActiveEnvironmentNotifier.new);
+
+/// The role-node instance this install talks to, e.g. `https://role.example.com`.
+/// Defaults to unset (null): online mode isn't offered until a user explicitly
+/// points the app at a self-hosted or hosted role-node instance in Settings.
+class RemoteBaseUrlNotifier extends Notifier<String?> {
+  @override
+  String? build() {
+    final raw = ref.watch(sharedPreferencesProvider).getString(_remoteBaseUrlKey);
+    return (raw == null || raw.isEmpty) ? null : raw;
+  }
+
+  Future<void> setRemoteBaseUrl(String? baseUrl) async {
+    state = (baseUrl == null || baseUrl.isEmpty) ? null : baseUrl;
+    final prefs = ref.read(sharedPreferencesProvider);
+    if (state == null) {
+      await prefs.remove(_remoteBaseUrlKey);
+    } else {
+      await prefs.setString(_remoteBaseUrlKey, state!);
+    }
+  }
+}
+
+final remoteBaseUrlProvider = NotifierProvider<RemoteBaseUrlNotifier, String?>(RemoteBaseUrlNotifier.new);
