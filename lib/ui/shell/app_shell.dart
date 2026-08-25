@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
+import '../../state/auth_notifier.dart';
 import '../../state/workbench_notifier.dart';
 import 'import_export_actions.dart';
 import 'inspector_panel.dart';
@@ -23,6 +24,15 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   double _sidebarWidth = AppSizes.sidebarWidthDefault;
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-hydrates a previously signed-in session, if any. No-op with no
+    // network/UI effect for the large majority of users who never signed in
+    // — see AuthNotifier.restore().
+    Future.microtask(() => ref.read(authNotifierProvider.notifier).restore());
+  }
 
   @override
   Widget build(BuildContext context) {
