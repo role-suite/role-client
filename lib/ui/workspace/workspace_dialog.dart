@@ -6,13 +6,13 @@ import '../../core/models/remote_workspace.dart';
 import '../../core/models/workspace_invitation.dart';
 import '../../core/models/workspace_member.dart';
 import '../../core/remote/auth/auth_state.dart';
-import '../../core/remote/remote_api_exception.dart';
+import '../../core/remote/remote_validation.dart';
 import '../../core/remote/workspace/workspace_service.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/auth_notifier.dart';
+import '../remote_error.dart';
 import '../widgets/widgets.dart';
-import 'workspace_import_export_actions.dart';
 
 /// Workspace switcher, members + roles, invitations, "convert to team" (§10
 /// of docs/08-ONLINE-MODE-INTEGRATION.md). Reachable only from the account
@@ -50,8 +50,6 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
     _membersFuture = auth.activeWorkspace.type == 'team' ? _service.listMembers(auth.activeWorkspaceId) : null;
   }
 
-  String _messageFor(Object error) => error is RemoteApiException ? error.message : error.toString();
-
   /// Runs [action], then refreshes the member list and clears/reports the
   /// error banner — shared by every mutating action below.
   Future<void> _run(Future<void> Function() action) async {
@@ -63,7 +61,7 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
       await action();
       if (mounted) setState(_reloadMembers);
     } catch (error) {
-      if (mounted) setState(() => _error = _messageFor(error));
+      if (mounted) setState(() => _error = remoteErrorMessage(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -75,6 +73,7 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
     final name = await _promptText(context, title: 'Create workspace', label: 'Name');
     if (name == null || name.trim().isEmpty) return;
     await _run(() async {
+      validateRemoteName('name', name);
       final workspace = await _service.createWorkspace(name.trim());
       await ref.read(authNotifierProvider.notifier).switchWorkspace(workspace.id);
     });
@@ -116,7 +115,7 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
       final invitation = await _service.createInvitation(_auth.activeWorkspaceId, email: email.trim());
       if (mounted) await _showInvitationToken(invitation);
     } catch (error) {
-      if (mounted) setState(() => _error = _messageFor(error));
+      if (mounted) setState(() => _error = remoteErrorMessage(error));
     }
   }
 
@@ -187,15 +186,6 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
                   busy: _busy,
                   onSwitch: () => _switchTo(workspace.id),
                   onLeave: workspace.type == 'team' ? () => _leave(workspace.id) : null,
-                  // role-node only lets owner/admin run import/export
-                  // (IMPORT_EXPORT_RUN_FORBIDDEN for member) — hide rather
-                  // than let the request fail.
-                  onExport: workspace.role == 'member'
-                      ? null
-                      : () => runExportRemoteWorkspace(context, ref, workspaceId: workspace.id, workspaceName: workspace.name),
-                  onImport: workspace.role == 'member'
-                      ? null
-                      : () => runImportRemoteWorkspace(context, ref, workspaceId: workspace.id, workspaceName: workspace.name),
                 ),
               const SizedBox(height: AppSpacing.xs),
               Column(
@@ -223,7 +213,7 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
                     if (snapshot.hasError) {
                       return Padding(
                         padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Text('Could not load members: ${snapshot.error}', style: context.type.body),
+                        child: Text('Could not load members: ${remoteErrorMessage(snapshot.error!)}', style: context.type.body),
                       );
                     }
                     final members = snapshot.data ?? const [];
@@ -259,31 +249,19 @@ class _WorkspaceDialogState extends ConsumerState<_WorkspaceDialog> {
 }
 
 class _WorkspaceRow extends StatelessWidget {
-  const _WorkspaceRow({
-    required this.workspace,
-    required this.isActive,
-    required this.busy,
-    required this.onSwitch,
-    this.onLeave,
-    this.onExport,
-    this.onImport,
-  });
+  const _WorkspaceRow({required this.workspace, required this.isActive, required this.busy, required this.onSwitch, this.onLeave});
 
   final RemoteWorkspace workspace;
   final bool isActive;
   final bool busy;
   final VoidCallback onSwitch;
   final VoidCallback? onLeave;
-  final VoidCallback? onExport;
-  final VoidCallback? onImport;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final actions = [
       if (!isActive) _WorkspaceActionButton(icon: Icons.swap_horiz, label: 'Switch', onTap: busy ? null : onSwitch),
-      if (onExport != null) _WorkspaceActionButton(icon: Icons.file_download_outlined, label: 'Export', onTap: onExport),
-      if (onImport != null) _WorkspaceActionButton(icon: Icons.file_upload_outlined, label: 'Import', onTap: onImport),
       if (onLeave != null) _WorkspaceActionButton(icon: Icons.exit_to_app, label: 'Leave', onTap: busy ? null : onLeave),
     ];
 

@@ -3,10 +3,85 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/io/workspace_io.dart';
 import '../../core/models/workspace_bundle.dart';
+import '../../core/remote/auth/auth_state.dart';
+import '../../core/remote/workspace_permissions.dart';
 import '../../core/utils/iterable_ext.dart';
+import '../../state/auth_notifier.dart';
 import '../../state/environments_notifier.dart';
 import '../../state/workspace_notifier.dart';
+import '../remote_error.dart';
+import '../workspace/workspace_import_export_actions.dart';
 import 'import_export_dialogs.dart';
+
+enum _ImportExportTarget { local, remote }
+
+Future<void> runImportWorkspaceChoice(BuildContext context, WidgetRef ref) async {
+  final target = await _chooseImportExportTarget(context, ref, action: 'Import');
+  if (target == null || !context.mounted) return;
+
+  switch (target) {
+    case _ImportExportTarget.local:
+      await runImportWorkspace(context, ref);
+    case _ImportExportTarget.remote:
+      final auth = ref.read(authNotifierProvider);
+      if (auth is! AuthSignedIn) return;
+      await runImportRemoteWorkspace(context, ref, workspaceId: auth.activeWorkspaceId, workspaceName: auth.activeWorkspace.name);
+  }
+}
+
+Future<void> runExportWorkspaceChoice(BuildContext context, WidgetRef ref) async {
+  final target = await _chooseImportExportTarget(context, ref, action: 'Export');
+  if (target == null || !context.mounted) return;
+
+  switch (target) {
+    case _ImportExportTarget.local:
+      await runExportWorkspace(context, ref);
+    case _ImportExportTarget.remote:
+      final auth = ref.read(authNotifierProvider);
+      if (auth is! AuthSignedIn) return;
+      await runExportRemoteWorkspace(context, ref, workspaceId: auth.activeWorkspaceId, workspaceName: auth.activeWorkspace.name);
+  }
+}
+
+Future<_ImportExportTarget?> _chooseImportExportTarget(BuildContext context, WidgetRef ref, {required String action}) {
+  final auth = ref.read(authNotifierProvider);
+  final signedIn = auth is AuthSignedIn;
+  final canUseRemote = signedIn && canWriteRemoteWorkspaceRole(auth.activeWorkspace.role);
+  final remoteSubtitle = !signedIn
+      ? 'Sign in to use role-node import/export.'
+      : canUseRemote
+      ? '${auth.activeWorkspace.name} (${auth.activeWorkspace.role})'
+      : remoteWorkspaceReadOnlyMessage;
+
+  return showDialog<_ImportExportTarget>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('$action workspace'),
+      content: SizedBox(
+        width: 380,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.computer_outlined),
+              title: Text('$action local workspace'),
+              subtitle: const Text('Use this device\'s local Röle/Postman workspace data.'),
+              onTap: () => Navigator.of(dialogContext).pop(_ImportExportTarget.local),
+            ),
+            ListTile(
+              enabled: canUseRemote,
+              leading: const Icon(Icons.cloud_outlined),
+              title: Text(action == 'Import' ? 'Import into remote workspace' : 'Export remote workspace'),
+              subtitle: Text(remoteSubtitle),
+              onTap: canUseRemote ? () => Navigator.of(dialogContext).pop(_ImportExportTarget.remote) : null,
+            ),
+          ],
+        ),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel'))],
+    ),
+  );
+}
 
 Future<void> runExportWorkspace(BuildContext context, WidgetRef ref) async {
   final workspace = ref.read(workspaceProvider).value;
@@ -18,7 +93,7 @@ Future<void> runExportWorkspace(BuildContext context, WidgetRef ref) async {
 
   final path = await WorkspaceIo.exportToFile(json);
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(path != null ? 'Exported workspace to $path' : 'Export cancelled')));
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(path != null ? 'Exported local workspace to $path' : 'Local export cancelled')));
 }
 
 const _skip = '__skip__';
@@ -29,13 +104,13 @@ Future<void> runImportWorkspace(BuildContext context, WidgetRef ref) async {
     data = await WorkspaceIo.pickAndParse();
   } catch (error) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Import failed: $error')));
+    showRemoteErrorSnackBar(context, 'Import failed', error);
     return;
   }
   if (data == null) return;
   if (data.collections.isEmpty && data.environments.isEmpty) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('That file is not a Röle or Postman export Röle understands.')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('That file is not a local Röle or Postman export Röle understands.')));
     return;
   }
 
@@ -84,5 +159,5 @@ Future<void> runImportWorkspace(BuildContext context, WidgetRef ref) async {
   }
 
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Import complete')));
+  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Local import complete')));
 }

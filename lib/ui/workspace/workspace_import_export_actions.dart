@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/io/workspace_io.dart';
-import '../../core/remote/remote_api_exception.dart';
 import '../../core/remote/workspace/workspace_import_export_service.dart';
+import '../remote_error.dart';
 import '../widgets/widgets.dart';
 
 /// role-node's own import/export (§8 of docs/08-ONLINE-MODE-INTEGRATION.md),
@@ -25,10 +25,12 @@ Future<void> runExportRemoteWorkspace(BuildContext context, WidgetRef ref, {requ
     final fileName = '${_sanitizeFileName(workspaceName)}-export.json';
     final path = await WorkspaceIo.exportToFile(json, fileName: fileName);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(path != null ? 'Exported "$workspaceName" to $path' : 'Export cancelled')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(path != null ? 'Exported remote workspace "$workspaceName" to $path' : 'Remote export cancelled')));
   } catch (error) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: ${_messageFor(error)}')));
+    showRemoteErrorSnackBar(context, 'Export failed', error);
   }
 }
 
@@ -57,14 +59,14 @@ Future<void> runImportRemoteWorkspace(BuildContext context, WidgetRef ref, {requ
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: const Text('Import into workspace?'),
+      title: const Text('Import into remote workspace?'),
       content: Text(
         'Import $collectionCount collection(s) and $environmentCount environment(s) into "$workspaceName"? '
-        "This runs as one all-or-nothing operation on role-node and can't be partially undone.",
+        "This writes to the remote role-node workspace as one all-or-nothing operation and can't be partially undone.",
       ),
       actions: [
         TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
-        AppButton(label: 'Import', variant: AppButtonVariant.primary, onPressed: () => Navigator.of(dialogContext).pop(true)),
+        AppButton(label: 'Import into remote workspace', variant: AppButtonVariant.primary, onPressed: () => Navigator.of(dialogContext).pop(true)),
       ],
     ),
   );
@@ -83,10 +85,8 @@ Future<void> runImportRemoteWorkspace(BuildContext context, WidgetRef ref, {requ
     );
   } catch (error) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Import failed: ${_messageFor(error)}')));
+    showRemoteErrorSnackBar(context, 'Import failed', error);
   }
 }
-
-String _messageFor(Object error) => error is RemoteApiException ? error.message : error.toString();
 
 String _sanitizeFileName(String name) => name.replaceAll(RegExp(r'[^A-Za-z0-9-_ ]'), '_');

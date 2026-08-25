@@ -77,8 +77,16 @@ class _MobileShellState extends ConsumerState<MobileShell> {
         elevation: 0,
         actions: [
           const EnvironmentSwitcher(),
-          IconButton(icon: const Icon(Icons.file_upload_outlined), tooltip: 'Import', onPressed: () => runImportWorkspace(context, ref)),
-          IconButton(icon: const Icon(Icons.file_download_outlined), tooltip: 'Export', onPressed: () => runExportWorkspace(context, ref)),
+          IconButton(
+            icon: const Icon(Icons.file_upload_outlined),
+            tooltip: 'Import workspace',
+            onPressed: () => runImportWorkspaceChoice(context, ref),
+          ),
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Export workspace',
+            onPressed: () => runExportWorkspaceChoice(context, ref),
+          ),
           IconButton(
             icon: Icon(themeModeIcon(themeMode)),
             tooltip: 'Theme: ${themeMode.name}',

@@ -48,7 +48,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       backgroundColor: colors.bg,
       body: Column(
         children: [
-          TopBar(onImport: () => runImportWorkspace(context, ref), onExport: () => runExportWorkspace(context, ref)),
+          TopBar(onImport: () => runImportWorkspaceChoice(context, ref), onExport: () => runExportWorkspaceChoice(context, ref)),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
