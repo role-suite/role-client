@@ -9,15 +9,19 @@ import '../../core/models/workspace_origin.dart';
 import '../../core/network/assertion_evaluator.dart';
 import '../../core/network/body_size.dart';
 import '../../core/network/template_resolver.dart';
+import '../../core/remote/remote_request_limitations.dart';
+import '../../core/remote/workspace_permissions.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../core/utils/id.dart';
+import '../../state/auth_notifier.dart';
 import '../../state/environments_notifier.dart';
 import '../../state/history_notifier.dart';
 import '../../state/network_providers.dart';
 import '../../state/workbench_notifier.dart';
 import '../../state/workbench_state.dart';
 import '../../state/workspace_notifier.dart';
+import '../remote_error.dart';
 import '../widgets/widgets.dart';
 import 'method_url_bar.dart';
 import 'request_editor_panel.dart';
@@ -63,11 +67,15 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
   Future<void> _save() async {
     final draft = _draft;
     if (draft == null) return;
-    await ref.read(workspaceProvider.notifier).updateRequest(draft);
-    setState(() => _saved = draft);
-    ref.read(workbenchProvider.notifier)
-      ..setTabDirty(_tabId, false)
-      ..renameTab(_tabId, draft.name);
+    try {
+      await ref.read(workspaceProvider.notifier).updateRequest(draft);
+      setState(() => _saved = draft);
+      ref.read(workbenchProvider.notifier)
+        ..setTabDirty(_tabId, false)
+        ..renameTab(_tabId, draft.name);
+    } catch (error) {
+      if (mounted) showRemoteErrorSnackBar(context, 'Could not save request', error);
+    }
   }
 
   Future<void> _send() async {
@@ -141,6 +149,8 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
     final variables = ref.watch(activeVariablesProvider);
     final unresolved = TemplateResolver.unresolvedIn(draft.url, variables);
     final bodyTooLarge = estimatedWireBytes(draft.requestBody) > bodySizeWarningThresholdBytes;
+    final canWrite = draft.origin != WorkspaceOrigin.remote || ref.watch(activeRemoteWorkspaceCanWriteProvider);
+    final localOnlyFields = draft.origin == WorkspaceOrigin.remote ? remoteRequestLocalOnlyFields(draft) : const <String>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -158,6 +168,7 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
                   initialValue: draft.name,
                   style: context.type.bodyStrong,
                   decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'Request name'),
+                  enabled: canWrite,
                   onChanged: (v) => _updateDraft(draft.copyWith(name: v)),
                 ),
               ),
@@ -183,10 +194,44 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
                   ),
                 ),
               const SizedBox(width: AppSpacing.sm),
-              AppButton(label: 'Save', icon: Icons.save_outlined, onPressed: _save),
+              Tooltip(
+                message: canWrite ? 'Save request' : remoteWorkspaceReadOnlyMessage,
+                child: AppButton(label: 'Save', icon: Icons.save_outlined, onPressed: canWrite ? _save : null),
+              ),
             ],
           ),
         ),
+        if (!canWrite)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+            color: colors.surfaceRaised,
+            child: Row(
+              children: [
+                Icon(Icons.lock_outline, size: 14, color: colors.textMuted),
+                const SizedBox(width: AppSpacing.xs),
+                Text(remoteWorkspaceReadOnlyMessage, style: context.type.caption.copyWith(color: colors.textMuted)),
+              ],
+            ),
+          ),
+        if (localOnlyFields.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+            color: colors.surfaceRaised,
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 14, color: colors.warning),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    '$remoteRequestLocalOnlyWarning Active local-only fields: ${localOnlyFields.join(', ')}.',
+                    style: context.type.caption.copyWith(color: colors.textMuted),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Expanded(
           child: SplitView(
             top: Column(
@@ -200,9 +245,10 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
                   onMethodChanged: (m) => _updateDraft(draft.copyWith(method: m)),
                   onUrlChanged: (v) => _updateDraft(draft.copyWith(url: v)),
                   onSend: _send,
+                  enabled: canWrite,
                 ),
                 Expanded(
-                  child: RequestEditorPanel(request: draft, onChanged: _updateDraft),
+                  child: RequestEditorPanel(request: draft, enabled: canWrite, onChanged: _updateDraft),
                 ),
               ],
             ),

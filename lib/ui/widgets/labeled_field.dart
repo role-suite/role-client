@@ -29,7 +29,7 @@ class AppDropdown<T> extends StatelessWidget {
   final T value;
   final List<T> items;
   final String Function(T) itemLabel;
-  final ValueChanged<T> onChanged;
+  final ValueChanged<T>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +50,11 @@ class AppDropdown<T> extends StatelessWidget {
           dropdownColor: colors.surfaceRaised,
           style: context.type.body,
           items: items.map((item) => DropdownMenuItem(value: item, child: Text(itemLabel(item)))).toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
+          onChanged: onChanged == null
+              ? null
+              : (v) {
+                  if (v != null) onChanged!(v);
+                },
         ),
       ),
     );

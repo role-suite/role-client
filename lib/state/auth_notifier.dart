@@ -9,6 +9,7 @@ import '../core/remote/api_client.dart';
 import '../core/remote/auth/auth_interceptor.dart';
 import '../core/remote/auth/auth_state.dart';
 import '../core/remote/auth/token_store.dart';
+import '../core/remote/workspace_permissions.dart';
 import '../core/utils/logger.dart';
 
 /// Wraps `POST /api/v1/auth/{register,login,refresh,logout}` and
@@ -196,4 +197,15 @@ final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotif
 final activeRemoteWorkspaceIdProvider = Provider<int?>((ref) {
   final auth = ref.watch(authNotifierProvider);
   return auth is AuthSignedIn ? auth.activeWorkspaceId : null;
+});
+
+final activeRemoteWorkspaceRoleProvider = Provider<String?>((ref) {
+  final auth = ref.watch(authNotifierProvider);
+  return auth is AuthSignedIn ? auth.activeWorkspace.role : null;
+});
+
+final activeRemoteWorkspaceCanWriteProvider = Provider<bool>((ref) {
+  final auth = ref.watch(authNotifierProvider);
+  if (auth is! AuthSignedIn) return true;
+  return canWriteRemoteWorkspaceRole(auth.activeWorkspace.role);
 });

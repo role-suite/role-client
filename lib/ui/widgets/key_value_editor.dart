@@ -10,12 +10,20 @@ import 'app_button.dart';
 /// it. Rows are emitted in order, including disabled and duplicate-key rows
 /// — the whole point of [KeyValueEntry] over a `Map<String, String>`.
 class KeyValueEditor extends StatefulWidget {
-  const KeyValueEditor({super.key, required this.initial, required this.onChanged, this.keyHint = 'Key', this.valueHint = 'Value'});
+  const KeyValueEditor({
+    super.key,
+    required this.initial,
+    required this.onChanged,
+    this.keyHint = 'Key',
+    this.valueHint = 'Value',
+    this.enabled = true,
+  });
 
   final List<KeyValueEntry> initial;
   final ValueChanged<List<KeyValueEntry>> onChanged;
   final String keyHint;
   final String valueHint;
+  final bool enabled;
 
   @override
   State<KeyValueEditor> createState() => _KeyValueEditorState();
@@ -61,12 +69,13 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                 Checkbox(
                   value: _rows[i].enabled,
                   visualDensity: VisualDensity.compact,
-                  onChanged: (v) => _updateRow(i, _rows[i].copyWith(enabled: v ?? true)),
+                  onChanged: widget.enabled ? (v) => _updateRow(i, _rows[i].copyWith(enabled: v ?? true)) : null,
                 ),
                 Expanded(
                   child: _RowField(
                     hint: widget.keyHint,
                     initialValue: _rows[i].key,
+                    enabled: widget.enabled,
                     onChanged: (v) => _updateRow(i, _rows[i].copyWith(key: v)),
                   ),
                 ),
@@ -75,6 +84,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                   child: _RowField(
                     hint: widget.valueHint,
                     initialValue: _rows[i].value,
+                    enabled: widget.enabled,
                     onChanged: (v) => _updateRow(i, _rows[i].copyWith(value: v)),
                   ),
                 ),
@@ -82,7 +92,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                 AppIconButton(
                   icon: Icons.close,
                   tooltip: 'Remove',
-                  onPressed: _rows.length == 1
+                  onPressed: !widget.enabled || _rows.length == 1
                       ? null
                       : () {
                           setState(() => _rows.removeAt(i));
@@ -98,11 +108,12 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
 }
 
 class _RowField extends StatefulWidget {
-  const _RowField({required this.hint, required this.initialValue, required this.onChanged});
+  const _RowField({required this.hint, required this.initialValue, required this.onChanged, required this.enabled});
 
   final String hint;
   final String initialValue;
   final ValueChanged<String> onChanged;
+  final bool enabled;
 
   @override
   State<_RowField> createState() => _RowFieldState();
@@ -117,6 +128,7 @@ class _RowFieldState extends State<_RowField> {
       height: AppSizes.controlHeightSm + 4,
       child: TextField(
         controller: _controller,
+        enabled: widget.enabled,
         style: context.type.monoSmall.copyWith(color: context.colors.textPrimary),
         decoration: InputDecoration(hintText: widget.hint, isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6)),
         onChanged: widget.onChanged,

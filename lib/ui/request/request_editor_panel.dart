@@ -40,10 +40,11 @@ enum _EditorTab { params, headers, body, auth, tests, description }
 
 /// Params / Headers / Body / Auth / Description sub-editors for a request draft.
 class RequestEditorPanel extends StatefulWidget {
-  const RequestEditorPanel({super.key, required this.request, required this.onChanged});
+  const RequestEditorPanel({super.key, required this.request, required this.onChanged, this.enabled = true});
 
   final ApiRequest request;
   final ValueChanged<ApiRequest> onChanged;
+  final bool enabled;
 
   @override
   State<RequestEditorPanel> createState() => _RequestEditorPanelState();
@@ -107,6 +108,7 @@ class _RequestEditorPanelState extends State<RequestEditorPanel> {
           key: ValueKey('params-${widget.request.id}'),
           initial: widget.request.queryParams,
           keyHint: 'Param',
+          enabled: widget.enabled,
           onChanged: (v) => widget.onChanged(widget.request.copyWith(queryParams: v)),
         );
       case _EditorTab.headers:
@@ -114,22 +116,24 @@ class _RequestEditorPanelState extends State<RequestEditorPanel> {
           key: ValueKey('headers-${widget.request.id}'),
           initial: widget.request.headers,
           keyHint: 'Header',
+          enabled: widget.enabled,
           onChanged: (v) => widget.onChanged(widget.request.copyWith(headers: v)),
         );
       case _EditorTab.body:
-        return _BodyEditor(request: widget.request, onChanged: widget.onChanged);
+        return _BodyEditor(request: widget.request, enabled: widget.enabled, onChanged: widget.onChanged);
       case _EditorTab.auth:
-        return _AuthEditor(request: widget.request, onChanged: widget.onChanged);
+        return _AuthEditor(request: widget.request, enabled: widget.enabled, onChanged: widget.onChanged);
       case _EditorTab.tests:
         return AssertionsEditor(
           key: ValueKey('tests-${widget.request.id}'),
           initial: widget.request.assertions,
-          onChanged: (v) => widget.onChanged(widget.request.copyWith(assertions: v)),
+          onChanged: widget.enabled ? (v) => widget.onChanged(widget.request.copyWith(assertions: v)) : (_) {},
         );
       case _EditorTab.description:
         return TextFormField(
           key: ValueKey('desc-${widget.request.id}'),
           initialValue: widget.request.description ?? '',
+          enabled: widget.enabled,
           minLines: 4,
           maxLines: 12,
           style: context.type.body,
@@ -165,9 +169,10 @@ class _TabButton extends StatelessWidget {
 }
 
 class _BodyEditor extends StatelessWidget {
-  const _BodyEditor({required this.request, required this.onChanged});
+  const _BodyEditor({required this.request, required this.enabled, required this.onChanged});
 
   final ApiRequest request;
+  final bool enabled;
   final ValueChanged<ApiRequest> onChanged;
 
   void _changeKind(_BodyKind kind) {
@@ -187,13 +192,14 @@ class _BodyEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppDropdown<_BodyKind>(value: _kindOf(body), items: _BodyKind.values, itemLabel: (k) => k.label, onChanged: _changeKind),
+        AppDropdown<_BodyKind>(value: _kindOf(body), items: _BodyKind.values, itemLabel: (k) => k.label, onChanged: enabled ? _changeKind : null),
         const SizedBox(height: AppSpacing.md),
         switch (body) {
           NoneBody() => Text('This request has no body.', style: context.type.caption),
           RawBody(:final raw) => TextFormField(
             key: ValueKey('body-${request.id}'),
             initialValue: raw,
+            enabled: enabled,
             minLines: 10,
             maxLines: 24,
             style: context.type.mono,
@@ -207,16 +213,19 @@ class _BodyEditor extends StatelessWidget {
           UrlEncodedBody(:final entries) => KeyValueEditor(
             key: ValueKey('urlencoded-${request.id}'),
             initial: entries,
+            enabled: enabled,
             onChanged: (v) => onChanged(request.copyWith(requestBody: UrlEncodedBody(entries: v))),
           ),
           FormDataBody(:final parts) => _FormDataEditor(
             key: ValueKey('formdata-${request.id}'),
             parts: parts,
+            enabled: enabled,
             onChanged: (v) => onChanged(request.copyWith(requestBody: FormDataBody(parts: v))),
           ),
           BinaryBody() => _BinaryEditor(
             key: ValueKey('binary-${request.id}'),
             body: body,
+            enabled: enabled,
             onChanged: (v) => onChanged(request.copyWith(requestBody: v)),
           ),
         },
@@ -229,9 +238,10 @@ class _BodyEditor extends StatelessWidget {
 /// picker (already a dependency, used by workspace import/export) and stored
 /// base64-encoded, matching role-node's `endpointBodySchema`.
 class _FormDataEditor extends StatelessWidget {
-  const _FormDataEditor({super.key, required this.parts, required this.onChanged});
+  const _FormDataEditor({super.key, required this.parts, required this.enabled, required this.onChanged});
 
   final List<FormPart> parts;
+  final bool enabled;
   final ValueChanged<List<FormPart>> onChanged;
 
   Future<void> _addFile(BuildContext context) async {
@@ -263,6 +273,7 @@ class _FormDataEditor extends StatelessWidget {
         KeyValueEditor(
           initial: textEntries,
           keyHint: 'Field',
+          enabled: enabled,
           onChanged: (updated) {
             final next = [...updated.map((e) => FormTextPart(key: e.key, value: e.value, enabled: e.enabled)), ...filePartsList];
             onChanged(next);
@@ -277,20 +288,30 @@ class _FormDataEditor extends StatelessWidget {
                 const Icon(Icons.attach_file, size: 16),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(child: Text(filePart.fileName, style: context.type.monoSmall)),
-                AppIconButton(icon: Icons.close, tooltip: 'Remove', onPressed: () => onChanged([...parts.where((p) => p != filePart)])),
+                AppIconButton(
+                  icon: Icons.close,
+                  tooltip: 'Remove',
+                  onPressed: enabled ? () => onChanged([...parts.where((p) => p != filePart)]) : null,
+                ),
               ],
             ),
           ),
-        AppButton(label: 'Add file', icon: Icons.attach_file, variant: AppButtonVariant.secondary, onPressed: () => _addFile(context)),
+        AppButton(
+          label: 'Add file',
+          icon: Icons.attach_file,
+          variant: AppButtonVariant.secondary,
+          onPressed: enabled ? () => _addFile(context) : null,
+        ),
       ],
     );
   }
 }
 
 class _BinaryEditor extends StatelessWidget {
-  const _BinaryEditor({super.key, required this.body, required this.onChanged});
+  const _BinaryEditor({super.key, required this.body, required this.enabled, required this.onChanged});
 
   final BinaryBody body;
+  final bool enabled;
   final ValueChanged<RequestBody> onChanged;
 
   Future<void> _pickFile(BuildContext context) async {
@@ -313,16 +334,22 @@ class _BinaryEditor extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: Text(body.fileName ?? 'No file selected.', style: body.fileName == null ? context.type.caption : context.type.monoSmall)),
-        AppButton(label: 'Choose file', icon: Icons.attach_file, variant: AppButtonVariant.secondary, onPressed: () => _pickFile(context)),
+        AppButton(
+          label: 'Choose file',
+          icon: Icons.attach_file,
+          variant: AppButtonVariant.secondary,
+          onPressed: enabled ? () => _pickFile(context) : null,
+        ),
       ],
     );
   }
 }
 
 class _AuthEditor extends StatelessWidget {
-  const _AuthEditor({required this.request, required this.onChanged});
+  const _AuthEditor({required this.request, required this.enabled, required this.onChanged});
 
   final ApiRequest request;
+  final bool enabled;
   final ValueChanged<ApiRequest> onChanged;
 
   void _setConfig(String key, String value) {
@@ -338,14 +365,18 @@ class _AuthEditor extends StatelessWidget {
           value: request.authType,
           items: AuthType.values,
           itemLabel: (t) => t.label,
-          onChanged: (t) => onChanged(request.copyWith(authType: t)),
+          onChanged: enabled ? (t) => onChanged(request.copyWith(authType: t)) : null,
         ),
         const SizedBox(height: AppSpacing.md),
         switch (request.authType) {
           AuthType.none => Text('No authentication for this request.', style: context.type.caption),
           AuthType.bearer => LabeledField(
             label: 'Token',
-            child: _AuthField(initial: request.authConfig[AuthConfigKeys.token] ?? '', onChanged: (v) => _setConfig(AuthConfigKeys.token, v)),
+            child: _AuthField(
+              initial: request.authConfig[AuthConfigKeys.token] ?? '',
+              enabled: enabled,
+              onChanged: (v) => _setConfig(AuthConfigKeys.token, v),
+            ),
           ),
           AuthType.basic => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,6 +385,7 @@ class _AuthEditor extends StatelessWidget {
                 label: 'Username',
                 child: _AuthField(
                   initial: request.authConfig[AuthConfigKeys.username] ?? '',
+                  enabled: enabled,
                   onChanged: (v) => _setConfig(AuthConfigKeys.username, v),
                 ),
               ),
@@ -362,6 +394,7 @@ class _AuthEditor extends StatelessWidget {
                 label: 'Password',
                 child: _AuthField(
                   initial: request.authConfig[AuthConfigKeys.password] ?? '',
+                  enabled: enabled,
                   obscure: true,
                   onChanged: (v) => _setConfig(AuthConfigKeys.password, v),
                 ),
@@ -373,12 +406,20 @@ class _AuthEditor extends StatelessWidget {
             children: [
               LabeledField(
                 label: 'Key',
-                child: _AuthField(initial: request.authConfig[AuthConfigKeys.key] ?? '', onChanged: (v) => _setConfig(AuthConfigKeys.key, v)),
+                child: _AuthField(
+                  initial: request.authConfig[AuthConfigKeys.key] ?? '',
+                  enabled: enabled,
+                  onChanged: (v) => _setConfig(AuthConfigKeys.key, v),
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               LabeledField(
                 label: 'Value',
-                child: _AuthField(initial: request.authConfig[AuthConfigKeys.value] ?? '', onChanged: (v) => _setConfig(AuthConfigKeys.value, v)),
+                child: _AuthField(
+                  initial: request.authConfig[AuthConfigKeys.value] ?? '',
+                  enabled: enabled,
+                  onChanged: (v) => _setConfig(AuthConfigKeys.value, v),
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               LabeledField(
@@ -387,7 +428,7 @@ class _AuthEditor extends StatelessWidget {
                   value: request.authConfig[AuthConfigKeys.addTo] ?? 'header',
                   items: const ['header', 'query'],
                   itemLabel: (v) => v == 'header' ? 'Header' : 'Query Param',
-                  onChanged: (v) => _setConfig(AuthConfigKeys.addTo, v),
+                  onChanged: enabled ? (v) => _setConfig(AuthConfigKeys.addTo, v) : null,
                 ),
               ),
             ],
@@ -399,9 +440,10 @@ class _AuthEditor extends StatelessWidget {
 }
 
 class _AuthField extends StatelessWidget {
-  const _AuthField({required this.initial, required this.onChanged, this.obscure = false});
+  const _AuthField({required this.initial, required this.enabled, required this.onChanged, this.obscure = false});
 
   final String initial;
+  final bool enabled;
   final ValueChanged<String> onChanged;
   final bool obscure;
 
@@ -411,6 +453,7 @@ class _AuthField extends StatelessWidget {
       height: AppSizes.controlHeight,
       child: TextFormField(
         initialValue: initial,
+        enabled: enabled,
         obscureText: obscure,
         style: context.type.mono.copyWith(fontSize: 13),
         decoration: const InputDecoration(isDense: true),

@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/api_request.dart';
 import '../../core/models/collection.dart';
 import '../../core/models/workspace_origin.dart';
+import '../../core/remote/workspace_permissions.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
+import '../../state/auth_notifier.dart';
 import '../../state/workbench_notifier.dart';
 import '../../state/workbench_state.dart';
 import '../../state/workspace_notifier.dart';
+import '../remote_error.dart';
 import '../widgets/widgets.dart';
 import 'collection_dialogs.dart';
 
@@ -19,6 +22,7 @@ class RequestsSidebarPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workspace = ref.watch(workspaceProvider);
     final query = ref.watch(workbenchProvider.select((s) => s.searchQuery)).toLowerCase();
+    final canWriteRemoteWorkspace = ref.watch(activeRemoteWorkspaceCanWriteProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -27,8 +31,8 @@ class RequestsSidebarPanel extends ConsumerWidget {
           'Requests',
           trailing: AppIconButton(
             icon: Icons.create_new_folder_outlined,
-            tooltip: 'New collection',
-            onPressed: () => showCreateCollectionDialog(context, ref),
+            tooltip: canWriteRemoteWorkspace ? 'New collection' : remoteWorkspaceReadOnlyMessage,
+            onPressed: canWriteRemoteWorkspace ? () => showCreateCollectionDialog(context, ref) : null,
           ),
         ),
         Expanded(
@@ -79,6 +83,7 @@ class _CollectionSectionState extends ConsumerState<_CollectionSection> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final isRemote = widget.collection.origin == WorkspaceOrigin.remote;
+    final canWrite = !isRemote || ref.watch(activeRemoteWorkspaceCanWriteProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -103,59 +108,61 @@ class _CollectionSectionState extends ConsumerState<_CollectionSection> {
                   ),
                 AppIconButton(
                   icon: Icons.add,
-                  tooltip: 'New request',
-                  onPressed: () async {
-                    try {
-                      final request = await ref
-                          .read(workspaceProvider.notifier)
-                          .createRequest(collectionId: widget.collection.id, name: 'New Request');
-                      if (!context.mounted) return;
-                      ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.request, title: request.name, payloadId: request.id);
-                    } catch (error) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not create request: $error')));
-                    }
-                  },
+                  tooltip: canWrite ? 'New request' : remoteWorkspaceReadOnlyMessage,
+                  onPressed: canWrite
+                      ? () async {
+                          try {
+                            final request = await ref
+                                .read(workspaceProvider.notifier)
+                                .createRequest(collectionId: widget.collection.id, name: 'New Request');
+                            if (!context.mounted) return;
+                            ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.request, title: request.name, payloadId: request.id);
+                          } catch (error) {
+                            if (!context.mounted) return;
+                            showRemoteErrorSnackBar(context, 'Could not create request', error);
+                          }
+                        }
+                      : null,
                 ),
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.more_horiz, size: 16, color: colors.textMuted),
-                  color: colors.surfaceRaised,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.mdRadius,
-                    side: BorderSide(color: colors.border),
+                if (canWrite)
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_horiz, size: 16, color: colors.textMuted),
+                    color: colors.surfaceRaised,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.mdRadius,
+                      side: BorderSide(color: colors.border),
+                    ),
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'rename', child: Text('Rename')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                    onSelected: (action) {
+                      if (action == 'rename') {
+                        showRenameCollectionDialog(context, ref, widget.collection);
+                      } else if (action == 'delete') {
+                        showDeleteCollectionDialog(context, ref, widget.collection);
+                      }
+                    },
                   ),
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'rename', child: Text('Rename')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
-                  onSelected: (action) {
-                    if (action == 'rename') {
-                      showRenameCollectionDialog(context, ref, widget.collection);
-                    } else if (action == 'delete') {
-                      showDeleteCollectionDialog(context, ref, widget.collection);
-                    }
-                  },
-                ),
               ],
             ),
           ),
         ),
         if (_expanded)
-          for (final request in widget.requests) _RequestRow(request: request, isRemote: isRemote),
+          for (final request in widget.requests) _RequestRow(request: request, isRemote: isRemote, canWrite: canWrite),
       ],
     );
   }
 }
 
 class _RequestRow extends ConsumerWidget {
-  const _RequestRow({required this.request, this.isRemote = false});
+  const _RequestRow({required this.request, required this.canWrite, this.isRemote = false});
 
   final ApiRequest request;
 
-  /// Whether this request's parent collection is remote-origin. Duplicating
-  /// a synced request is out of scope this phase — see the "New request"
-  /// comment above — so only Delete is offered.
+  /// Whether this request's parent collection is remote-origin.
   final bool isRemote;
+  final bool canWrite;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -177,28 +184,34 @@ class _RequestRow extends ConsumerWidget {
               Expanded(
                 child: Text(request.name, style: context.type.body, overflow: TextOverflow.ellipsis),
               ),
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_horiz, size: 14, color: colors.textMuted),
-                color: colors.surfaceRaised,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppRadius.mdRadius,
-                  side: BorderSide(color: colors.border),
+              if (canWrite)
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_horiz, size: 14, color: colors.textMuted),
+                  color: colors.surfaceRaised,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.mdRadius,
+                    side: BorderSide(color: colors.border),
+                  ),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
+                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
+                  onSelected: (action) async {
+                    try {
+                      if (action == 'duplicate') {
+                        final copy = await ref.read(workspaceProvider.notifier).duplicateRequest(request);
+                        if (!context.mounted) return;
+                        ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.request, title: copy.name, payloadId: copy.id);
+                      } else if (action == 'delete') {
+                        ref.read(workbenchProvider.notifier).closeTab(tabId);
+                        await ref.read(workspaceProvider.notifier).deleteRequest(request);
+                      }
+                    } catch (error) {
+                      if (!context.mounted) return;
+                      showRemoteErrorSnackBar(context, action == 'duplicate' ? 'Could not duplicate request' : 'Could not delete request', error);
+                    }
+                  },
                 ),
-                itemBuilder: (context) => [
-                  if (!isRemote) const PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
-                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                ],
-                onSelected: (action) async {
-                  if (action == 'duplicate') {
-                    final copy = await ref.read(workspaceProvider.notifier).duplicateRequest(request);
-                    if (!context.mounted) return;
-                    ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.request, title: copy.name, payloadId: copy.id);
-                  } else if (action == 'delete') {
-                    ref.read(workbenchProvider.notifier).closeTab(tabId);
-                    await ref.read(workspaceProvider.notifier).deleteRequest(request);
-                  }
-                },
-              ),
             ],
           ),
         ),

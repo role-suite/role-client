@@ -10,10 +10,11 @@ import 'app_button.dart';
 /// the list as soon as you type into it. `position` is re-derived from row
 /// order on every emit.
 class EnvironmentVariableEditor extends StatefulWidget {
-  const EnvironmentVariableEditor({super.key, required this.initial, required this.onChanged});
+  const EnvironmentVariableEditor({super.key, required this.initial, required this.onChanged, this.enabled = true});
 
   final List<EnvironmentVariable> initial;
   final ValueChanged<List<EnvironmentVariable>> onChanged;
+  final bool enabled;
 
   @override
   State<EnvironmentVariableEditor> createState() => _EnvironmentVariableEditorState();
@@ -66,12 +67,13 @@ class _EnvironmentVariableEditorState extends State<EnvironmentVariableEditor> {
                 Checkbox(
                   value: _rows[i].enabled,
                   visualDensity: VisualDensity.compact,
-                  onChanged: (v) => _updateRow(i, _rows[i].copyWith(enabled: v ?? true)),
+                  onChanged: widget.enabled ? (v) => _updateRow(i, _rows[i].copyWith(enabled: v ?? true)) : null,
                 ),
                 Expanded(
                   child: _RowField(
                     hint: 'Variable',
                     initialValue: _rows[i].key,
+                    enabled: widget.enabled,
                     onChanged: (v) => _updateRow(i, _rows[i].copyWith(key: v)),
                   ),
                 ),
@@ -81,13 +83,14 @@ class _EnvironmentVariableEditorState extends State<EnvironmentVariableEditor> {
                     hint: 'Value',
                     initialValue: _rows[i].value,
                     obscure: _rows[i].isSecret && !_revealed.contains(i),
+                    enabled: widget.enabled,
                     onChanged: (v) => _updateRow(i, _rows[i].copyWith(value: v)),
                   ),
                 ),
                 AppIconButton(
                   icon: _rows[i].isSecret ? Icons.lock_outline : Icons.lock_open_outlined,
                   tooltip: _rows[i].isSecret ? 'Secret' : 'Mark as secret',
-                  onPressed: () => _updateRow(i, _rows[i].copyWith(isSecret: !_rows[i].isSecret)),
+                  onPressed: widget.enabled ? () => _updateRow(i, _rows[i].copyWith(isSecret: !_rows[i].isSecret)) : null,
                 ),
                 if (_rows[i].isSecret)
                   AppIconButton(
@@ -99,7 +102,7 @@ class _EnvironmentVariableEditorState extends State<EnvironmentVariableEditor> {
                 AppIconButton(
                   icon: Icons.close,
                   tooltip: 'Remove',
-                  onPressed: _rows.length == 1
+                  onPressed: !widget.enabled || _rows.length == 1
                       ? null
                       : () {
                           setState(() => _rows.removeAt(i));
@@ -115,11 +118,12 @@ class _EnvironmentVariableEditorState extends State<EnvironmentVariableEditor> {
 }
 
 class _RowField extends StatefulWidget {
-  const _RowField({required this.hint, required this.initialValue, required this.onChanged, this.obscure = false});
+  const _RowField({required this.hint, required this.initialValue, required this.onChanged, required this.enabled, this.obscure = false});
 
   final String hint;
   final String initialValue;
   final ValueChanged<String> onChanged;
+  final bool enabled;
   final bool obscure;
 
   @override
@@ -135,6 +139,7 @@ class _RowFieldState extends State<_RowField> {
       height: AppSizes.controlHeightSm + 4,
       child: TextField(
         controller: _controller,
+        enabled: widget.enabled,
         obscureText: widget.obscure,
         style: context.type.monoSmall.copyWith(color: context.colors.textPrimary),
         decoration: InputDecoration(hintText: widget.hint, isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6)),
