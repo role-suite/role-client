@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants.dart';
 import '../core/models/api_request.dart';
 import '../core/models/collection.dart';
+import '../core/models/enums.dart';
 import '../core/models/outbox_entry.dart';
+import '../core/models/request_body.dart';
 import '../core/models/workspace_bundle.dart';
 import '../core/models/workspace_origin.dart';
 import '../core/remote/api_client.dart';
+import '../core/remote/remote_validation.dart';
 import '../core/remote/sync/outbox_flusher.dart';
 import '../core/remote/sync/outbox_store.dart';
 import '../core/remote/sync/workspace_push_service.dart';
@@ -94,6 +97,7 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   Future<Collection> createCollection({required String name, String description = ''}) async {
     final remoteWorkspaceId = ref.read(activeRemoteWorkspaceIdProvider);
     if (remoteWorkspaceId != null) {
+      validateRemoteCollectionInput(name: name, description: description);
       final client = ref.read(remoteApiClientProvider);
       if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
       final collection = await WorkspacePushService(client).createCollection(remoteWorkspaceId, name: name, description: description);
@@ -113,6 +117,7 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   }
 
   Future<void> updateCollection(Collection updated) async {
+    if (updated.origin == WorkspaceOrigin.remote) validateRemoteCollection(updated);
     final current = state.value ?? const WorkspaceState();
     final collections = current.collections.map((c) => c.id == updated.id ? updated : c).toList();
     final next = current.copyWith(collections: collections);
@@ -162,20 +167,37 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
     }
   }
 
-  Future<ApiRequest> createRequest({required String collectionId, required String name}) async {
+  Future<ApiRequest> createRequest({required String collectionId, required String name, ApiRequest? template}) async {
     final current = state.value ?? const WorkspaceState();
     final collection = current.collections.firstWhere((c) => c.id == collectionId);
     final now = DateTime.now();
-    final request = ApiRequest(id: generateId('req'), collectionId: collectionId, name: name, createdAt: now, updatedAt: now);
+    final request = ApiRequest(
+      id: generateId('req'),
+      collectionId: collectionId,
+      name: name,
+      method: template?.method ?? HttpMethod.get,
+      url: template?.url ?? '',
+      headers: template?.headers ?? const [],
+      queryParams: template?.queryParams ?? const [],
+      requestBody: template?.requestBody ?? const NoneBody(),
+      authType: template?.authType ?? AuthType.none,
+      authConfig: template?.authConfig ?? const {},
+      assertions: template?.assertions ?? const [],
+      description: template?.description,
+      createdAt: now,
+      updatedAt: now,
+    );
 
     if (collection.origin == WorkspaceOrigin.remote) {
+      validateRemoteRequest(request, allowEmptyUrlAsDraft: true);
       final client = ref.read(remoteApiClientProvider);
       if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
       final remoteId = collection.remoteId;
       if (remoteId == null) throw StateError('Remote collection is missing its server id.');
-      final remoteRequest = await WorkspacePushService(
+      final createdRemoteRequest = await WorkspacePushService(
         client,
       ).createEndpoint(collection.remoteWorkspaceId!, remoteId, collectionLocalId: collection.id, request: request);
+      final remoteRequest = createdRemoteRequest.copyWith(description: request.description, assertions: request.assertions);
       final next = current.copyWith(requests: [...current.requests, remoteRequest]);
       await _persist(_bundleFor(next, collectionId));
       state = AsyncData(next);
@@ -189,6 +211,7 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   }
 
   Future<void> updateRequest(ApiRequest updated) async {
+    if (updated.origin == WorkspaceOrigin.remote) validateRemoteRequest(updated);
     final current = state.value ?? const WorkspaceState();
     final requests = current.requests.map((r) => r.id == updated.id ? updated : r).toList();
     final next = current.copyWith(requests: requests);
@@ -232,22 +255,7 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   }
 
   Future<ApiRequest> duplicateRequest(ApiRequest request) async {
-    final now = DateTime.now();
-    return createRequest(collectionId: request.collectionId, name: '${request.name} copy').then((created) async {
-      final duplicated = created.copyWith(
-        method: request.method,
-        url: request.url,
-        headers: request.headers,
-        queryParams: request.queryParams,
-        requestBody: request.requestBody,
-        authType: request.authType,
-        authConfig: request.authConfig,
-        description: request.description,
-        updatedAt: now,
-      );
-      await updateRequest(duplicated);
-      return duplicated;
-    });
+    return createRequest(collectionId: request.collectionId, name: '${request.name} copy', template: request);
   }
 
   /// Imports whole collections+requests, e.g. from a workspace/Postman bundle.

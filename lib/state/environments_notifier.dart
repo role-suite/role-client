@@ -5,6 +5,7 @@ import '../core/models/environment_variable.dart';
 import '../core/models/outbox_entry.dart';
 import '../core/models/workspace_origin.dart';
 import '../core/remote/api_client.dart';
+import '../core/remote/remote_validation.dart';
 import '../core/remote/sync/outbox_flusher.dart';
 import '../core/remote/sync/outbox_store.dart';
 import '../core/remote/sync/workspace_push_service.dart';
@@ -41,6 +42,7 @@ class EnvironmentsNotifier extends AsyncNotifier<List<Environment>> {
   Future<Environment> create({required String name, List<EnvironmentVariable> variables = const []}) async {
     final remoteWorkspaceId = ref.read(activeRemoteWorkspaceIdProvider);
     if (remoteWorkspaceId != null) {
+      validateRemoteEnvironmentInput(name: name, variables: variables);
       final client = ref.read(remoteApiClientProvider);
       if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
       final service = WorkspacePushService(client);
@@ -76,6 +78,7 @@ class EnvironmentsNotifier extends AsyncNotifier<List<Environment>> {
     // Remote-origin environments write to their workspace's cache subtree
     // instead of the local `environments/` directory — never mixed, per §7.
     if (updated.origin == WorkspaceOrigin.remote) {
+      validateRemoteEnvironment(updated);
       await JsonStore.instance.write(WorkspacePaths.remoteEnvironmentFile(updated.remoteWorkspaceId!, updated.id), updated.toJson());
     } else {
       await JsonStore.instance.write(WorkspacePaths.environmentFile(updated.id), updated.toJson());
