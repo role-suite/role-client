@@ -13,12 +13,14 @@ This folder contains technical documentation for maintaining and operating the *
 | [05-DEPLOYMENT.md](05-DEPLOYMENT.md) | Building for release and distribution |
 | [06-DEVELOPMENT.md](06-DEVELOPMENT.md) | Local setup, running, and code layout |
 | [07-MAINTENANCE.md](07-MAINTENANCE.md) | Extending the app and troubleshooting |
+| [08-ONLINE-MODE-INTEGRATION.md](08-ONLINE-MODE-INTEGRATION.md) | Integrating role-node as an optional, additive team-sync layer |
 
 ## Quick Links by Task
 
 - **Run locally:** [06-DEVELOPMENT.md](06-DEVELOPMENT.md)
 - **Build release:** [05-DEPLOYMENT.md](05-DEPLOYMENT.md)
 - **Add a new feature:** [07-MAINTENANCE.md](07-MAINTENANCE.md)
+- **Build online/team-sync mode (role-node integration):** [08-ONLINE-MODE-INTEGRATION.md](08-ONLINE-MODE-INTEGRATION.md)
 
 ## Conventions
 
