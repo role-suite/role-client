@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/auth_session.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/auth_notifier.dart';
+import '../remote_error.dart';
 import '../widgets/widgets.dart';
 
 /// "Manage devices": lists the caller's active sessions
@@ -37,7 +38,7 @@ class _SessionsDialogState extends ConsumerState<_SessionsDialog> {
       await ref.read(authNotifierProvider.notifier).revokeSession(sessionId);
       _reload();
     } catch (error) {
-      setState(() => _error = error.toString());
+      setState(() => _error = remoteErrorMessage(error));
     }
   }
 
@@ -46,7 +47,7 @@ class _SessionsDialogState extends ConsumerState<_SessionsDialog> {
       await ref.read(authNotifierProvider.notifier).revokeOtherSessions();
       _reload();
     } catch (error) {
-      setState(() => _error = error.toString());
+      setState(() => _error = remoteErrorMessage(error));
     }
   }
 
@@ -71,7 +72,7 @@ class _SessionsDialogState extends ConsumerState<_SessionsDialog> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text('Could not load sessions: ${snapshot.error}', style: context.type.body));
+                    return Center(child: Text('Could not load sessions: ${remoteErrorMessage(snapshot.error!)}', style: context.type.body));
                   }
                   final sessions = snapshot.data ?? const [];
                   if (sessions.isEmpty) {

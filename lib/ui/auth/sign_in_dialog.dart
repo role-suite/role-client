@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/remote/remote_api_exception.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/auth_notifier.dart';
+import '../remote_error.dart';
 import '../widgets/widgets.dart';
 
 /// Sign in / create account. Reachable only from the account menu — never a
@@ -61,13 +61,11 @@ class _SignInDialogState extends ConsumerState<_SignInDialog> {
       }
       if (mounted) Navigator.of(context).pop();
     } catch (error) {
-      if (mounted) setState(() => _error = _messageFor(error));
+      if (mounted) setState(() => _error = remoteErrorMessage(error));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
-
-  String _messageFor(Object error) => error is RemoteApiException ? error.message : error.toString();
 
   @override
   Widget build(BuildContext context) {

@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
 import '../../core/remote/api_client.dart';
 import '../../core/remote/auth/auth_state.dart';
-import '../../core/remote/remote_api_exception.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/auth_notifier.dart';
 import '../../state/settings_providers.dart';
+import '../remote_error.dart';
 import '../widgets/widgets.dart';
 
 /// Where to point this install at a role-node instance (§9 of
@@ -46,8 +46,6 @@ class _ServerSettingsDialogState extends ConsumerState<_ServerSettingsDialog> {
     super.dispose();
   }
 
-  String _messageFor(Object error) => error is RemoteApiException ? error.message : error.toString();
-
   Future<void> _save() async {
     final raw = _controller.text.trim();
     if (raw.isEmpty) {
@@ -77,7 +75,7 @@ class _ServerSettingsDialogState extends ConsumerState<_ServerSettingsDialog> {
       await ref.read(remoteBaseUrlProvider.notifier).setRemoteBaseUrl(normalized);
       if (mounted) Navigator.of(context).pop();
     } catch (error) {
-      if (mounted) setState(() => _error = 'Could not reach $normalized: ${_messageFor(error)}');
+      if (mounted) setState(() => _error = 'Could not reach $normalized: ${remoteErrorMessage(error)}');
     } finally {
       if (mounted) setState(() => _checking = false);
     }
