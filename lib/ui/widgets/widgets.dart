@@ -1,6 +1,7 @@
 export 'app_button.dart';
 export 'assertions_editor.dart';
 export 'empty_state.dart';
+export 'environment_variable_editor.dart';
 export 'key_value_editor.dart';
 export 'labeled_field.dart';
 export 'method_badge.dart';

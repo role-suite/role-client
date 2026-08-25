@@ -1,10 +1,40 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/models/api_request.dart';
 import '../../core/models/enums.dart';
+import '../../core/models/key_value_entry.dart';
+import '../../core/models/request_body.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../widgets/widgets.dart';
+
+/// Warn once an encoded form-data/binary payload nears role-node's overall
+/// request body cap — overflow currently surfaces as a bare 500, not a clean
+/// 413 (role-node/docs/guides/client-integration.md).
+const _largePayloadWarningBytes = 700 * 1024;
+
+enum _BodyKind { none, raw, urlEncoded, formData, binary }
+
+extension on _BodyKind {
+  String get label => switch (this) {
+    _BodyKind.none => 'None',
+    _BodyKind.raw => 'Raw',
+    _BodyKind.urlEncoded => 'URL-encoded',
+    _BodyKind.formData => 'Form Data',
+    _BodyKind.binary => 'Binary',
+  };
+}
+
+_BodyKind _kindOf(RequestBody body) => switch (body) {
+  NoneBody() => _BodyKind.none,
+  RawBody() => _BodyKind.raw,
+  UrlEncodedBody() => _BodyKind.urlEncoded,
+  FormDataBody() => _BodyKind.formData,
+  BinaryBody() => _BodyKind.binary,
+};
 
 enum _EditorTab { params, headers, body, auth, tests, description }
 
@@ -140,35 +170,150 @@ class _BodyEditor extends StatelessWidget {
   final ApiRequest request;
   final ValueChanged<ApiRequest> onChanged;
 
+  void _changeKind(_BodyKind kind) {
+    final next = switch (kind) {
+      _BodyKind.none => const NoneBody(),
+      _BodyKind.raw => const RawBody(),
+      _BodyKind.urlEncoded => const UrlEncodedBody(),
+      _BodyKind.formData => const FormDataBody(),
+      _BodyKind.binary => const BinaryBody(),
+    };
+    onChanged(request.copyWith(requestBody: next));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final body = request.requestBody;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppDropdown<BodyType>(
-          value: request.bodyType,
-          items: BodyType.values,
-          itemLabel: (t) => t.label,
-          onChanged: (t) => onChanged(request.copyWith(bodyType: t)),
-        ),
+        AppDropdown<_BodyKind>(value: _kindOf(body), items: _BodyKind.values, itemLabel: (k) => k.label, onChanged: _changeKind),
         const SizedBox(height: AppSpacing.md),
-        switch (request.bodyType) {
-          BodyType.none => Text('This request has no body.', style: context.type.caption),
-          BodyType.raw || BodyType.binary => TextFormField(
+        switch (body) {
+          NoneBody() => Text('This request has no body.', style: context.type.caption),
+          RawBody(:final raw) => TextFormField(
             key: ValueKey('body-${request.id}'),
-            initialValue: request.body ?? '',
+            initialValue: raw,
             minLines: 10,
             maxLines: 24,
             style: context.type.mono,
             decoration: const InputDecoration(hintText: '{\n  "key": "value"\n}'),
-            onChanged: (v) => onChanged(request.copyWith(body: v)),
+            onChanged: (v) => onChanged(
+              request.copyWith(
+                requestBody: RawBody(contentType: body.contentType, raw: v),
+              ),
+            ),
           ),
-          BodyType.formData || BodyType.urlEncoded => KeyValueEditor(
-            key: ValueKey('form-${request.id}'),
-            initial: request.formFields,
-            onChanged: (v) => onChanged(request.copyWith(formFields: v)),
+          UrlEncodedBody(:final entries) => KeyValueEditor(
+            key: ValueKey('urlencoded-${request.id}'),
+            initial: entries,
+            onChanged: (v) => onChanged(request.copyWith(requestBody: UrlEncodedBody(entries: v))),
+          ),
+          FormDataBody(:final parts) => _FormDataEditor(
+            key: ValueKey('formdata-${request.id}'),
+            parts: parts,
+            onChanged: (v) => onChanged(request.copyWith(requestBody: FormDataBody(parts: v))),
+          ),
+          BinaryBody() => _BinaryEditor(
+            key: ValueKey('binary-${request.id}'),
+            body: body,
+            onChanged: (v) => onChanged(request.copyWith(requestBody: v)),
           ),
         },
+      ],
+    );
+  }
+}
+
+/// Text/file rows for a [FormDataBody]. File parts are added via the file
+/// picker (already a dependency, used by workspace import/export) and stored
+/// base64-encoded, matching role-node's `endpointBodySchema`.
+class _FormDataEditor extends StatelessWidget {
+  const _FormDataEditor({super.key, required this.parts, required this.onChanged});
+
+  final List<FormPart> parts;
+  final ValueChanged<List<FormPart>> onChanged;
+
+  Future<void> _addFile(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(withData: true);
+    final file = result?.files.firstOrNull;
+    if (file == null || file.bytes == null) return;
+
+    final dataBase64 = base64Encode(file.bytes!);
+    if (dataBase64.length > _largePayloadWarningBytes && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('"${file.name}" is large — role-node may reject it (over its request body limit).')));
+    }
+
+    onChanged([...parts, FormFilePart(key: file.name, fileName: file.name, dataBase64: dataBase64)]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textEntries = [
+      for (final p in parts)
+        if (p is FormTextPart) KeyValueEntry(key: p.key, value: p.value, enabled: p.enabled),
+    ];
+    final filePartsList = parts.whereType<FormFilePart>().toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        KeyValueEditor(
+          initial: textEntries,
+          keyHint: 'Field',
+          onChanged: (updated) {
+            final next = [...updated.map((e) => FormTextPart(key: e.key, value: e.value, enabled: e.enabled)), ...filePartsList];
+            onChanged(next);
+          },
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (final filePart in filePartsList)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Row(
+              children: [
+                const Icon(Icons.attach_file, size: 16),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(child: Text(filePart.fileName, style: context.type.monoSmall)),
+                AppIconButton(icon: Icons.close, tooltip: 'Remove', onPressed: () => onChanged([...parts.where((p) => p != filePart)])),
+              ],
+            ),
+          ),
+        AppButton(label: 'Add file', icon: Icons.attach_file, variant: AppButtonVariant.secondary, onPressed: () => _addFile(context)),
+      ],
+    );
+  }
+}
+
+class _BinaryEditor extends StatelessWidget {
+  const _BinaryEditor({super.key, required this.body, required this.onChanged});
+
+  final BinaryBody body;
+  final ValueChanged<RequestBody> onChanged;
+
+  Future<void> _pickFile(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(withData: true);
+    final file = result?.files.firstOrNull;
+    if (file == null || file.bytes == null) return;
+
+    final dataBase64 = base64Encode(file.bytes!);
+    if (dataBase64.length > _largePayloadWarningBytes && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('"${file.name}" is large — role-node may reject it (over its request body limit).')));
+    }
+
+    onChanged(BinaryBody(fileName: file.name, contentType: body.contentType, dataBase64: dataBase64));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Text(body.fileName ?? 'No file selected.', style: body.fileName == null ? context.type.caption : context.type.monoSmall)),
+        AppButton(label: 'Choose file', icon: Icons.attach_file, variant: AppButtonVariant.secondary, onPressed: () => _pickFile(context)),
       ],
     );
   }

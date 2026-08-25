@@ -5,7 +5,9 @@ import '../../core/models/api_request.dart';
 import '../../core/models/assertion.dart';
 import '../../core/models/request_result.dart';
 import '../../core/models/response_snapshot.dart';
+import '../../core/models/workspace_origin.dart';
 import '../../core/network/assertion_evaluator.dart';
+import '../../core/network/body_size.dart';
 import '../../core/network/template_resolver.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
@@ -49,11 +51,9 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
     return a.name == b.name &&
         a.method == b.method &&
         a.url == b.url &&
-        a.headers.toString() == b.headers.toString() &&
-        a.queryParams.toString() == b.queryParams.toString() &&
-        a.bodyType == b.bodyType &&
-        a.body == b.body &&
-        a.formFields.toString() == b.formFields.toString() &&
+        a.headers.map((e) => e.toJson()).toString() == b.headers.map((e) => e.toJson()).toString() &&
+        a.queryParams.map((e) => e.toJson()).toString() == b.queryParams.map((e) => e.toJson()).toString() &&
+        a.requestBody.toJson().toString() == b.requestBody.toJson().toString() &&
         a.authType == b.authType &&
         a.authConfig.toString() == b.authConfig.toString() &&
         a.assertions.map((x) => x.toJson()).toString() == b.assertions.map((x) => x.toJson()).toString() &&
@@ -140,6 +140,7 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
     final colors = context.colors;
     final variables = ref.watch(activeVariablesProvider);
     final unresolved = TemplateResolver.unresolvedIn(draft.url, variables);
+    final bodyTooLarge = estimatedWireBytes(draft.requestBody) > bodySizeWarningThresholdBytes;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -164,6 +165,22 @@ class _RequestTabViewState extends ConsumerState<RequestTabView> {
                 Tooltip(
                   message: 'Unresolved variables: ${unresolved.join(', ')}',
                   child: Icon(Icons.warning_amber_rounded, size: 16, color: colors.warning),
+                ),
+              if (bodyTooLarge)
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.sm),
+                  child: Tooltip(
+                    message: 'This body is large enough that role-node may reject it when syncing (>1MB cap).',
+                    child: Icon(Icons.warning_amber_rounded, size: 16, color: colors.warning),
+                  ),
+                ),
+              if (draft.origin == WorkspaceOrigin.remote)
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.sm),
+                  child: Tooltip(
+                    message: 'Synced with workspace — saving pushes your change upstream',
+                    child: Icon(Icons.cloud_outlined, size: 16, color: colors.textMuted),
+                  ),
                 ),
               const SizedBox(width: AppSpacing.sm),
               AppButton(label: 'Save', icon: Icons.save_outlined, onPressed: _save),

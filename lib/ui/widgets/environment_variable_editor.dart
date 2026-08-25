@@ -1,28 +1,27 @@
 import 'package:flutter/material.dart';
 
-import '../../core/models/key_value_entry.dart';
+import '../../core/models/environment_variable.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import 'app_button.dart';
 
-/// An editable key/value table (headers, query params, url-encoded fields)
-/// with a trailing empty row that grows the list as soon as you type into
-/// it. Rows are emitted in order, including disabled and duplicate-key rows
-/// — the whole point of [KeyValueEntry] over a `Map<String, String>`.
-class KeyValueEditor extends StatefulWidget {
-  const KeyValueEditor({super.key, required this.initial, required this.onChanged, this.keyHint = 'Key', this.valueHint = 'Value'});
+/// An editable environment-variable table: enable toggle, key, value (with a
+/// secret mask/reveal toggle), remove — plus a trailing empty row that grows
+/// the list as soon as you type into it. `position` is re-derived from row
+/// order on every emit.
+class EnvironmentVariableEditor extends StatefulWidget {
+  const EnvironmentVariableEditor({super.key, required this.initial, required this.onChanged});
 
-  final List<KeyValueEntry> initial;
-  final ValueChanged<List<KeyValueEntry>> onChanged;
-  final String keyHint;
-  final String valueHint;
+  final List<EnvironmentVariable> initial;
+  final ValueChanged<List<EnvironmentVariable>> onChanged;
 
   @override
-  State<KeyValueEditor> createState() => _KeyValueEditorState();
+  State<EnvironmentVariableEditor> createState() => _EnvironmentVariableEditorState();
 }
 
-class _KeyValueEditorState extends State<KeyValueEditor> {
-  final List<KeyValueEntry> _rows = [];
+class _EnvironmentVariableEditorState extends State<EnvironmentVariableEditor> {
+  final List<EnvironmentVariable> _rows = [];
+  final Set<int> _revealed = {};
 
   @override
   void initState() {
@@ -32,16 +31,22 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
   }
 
   void _emit() {
-    widget.onChanged(_rows.where((r) => r.key.isNotEmpty).toList());
+    final entries = <EnvironmentVariable>[];
+    var position = 0;
+    for (final row in _rows) {
+      if (row.key.isEmpty) continue;
+      entries.add(row.copyWith(position: position++));
+    }
+    widget.onChanged(entries);
   }
 
   void _ensureTrailingRow() {
     if (_rows.isEmpty || _rows.last.key.isNotEmpty || _rows.last.value.isNotEmpty) {
-      _rows.add(const KeyValueEntry(key: '', value: ''));
+      _rows.add(const EnvironmentVariable(key: '', value: ''));
     }
   }
 
-  void _updateRow(int index, KeyValueEntry next) {
+  void _updateRow(int index, EnvironmentVariable next) {
     setState(() {
       _rows[index] = next;
       _ensureTrailingRow();
@@ -65,7 +70,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                 ),
                 Expanded(
                   child: _RowField(
-                    hint: widget.keyHint,
+                    hint: 'Variable',
                     initialValue: _rows[i].key,
                     onChanged: (v) => _updateRow(i, _rows[i].copyWith(key: v)),
                   ),
@@ -73,11 +78,23 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: _RowField(
-                    hint: widget.valueHint,
+                    hint: 'Value',
                     initialValue: _rows[i].value,
+                    obscure: _rows[i].isSecret && !_revealed.contains(i),
                     onChanged: (v) => _updateRow(i, _rows[i].copyWith(value: v)),
                   ),
                 ),
+                AppIconButton(
+                  icon: _rows[i].isSecret ? Icons.lock_outline : Icons.lock_open_outlined,
+                  tooltip: _rows[i].isSecret ? 'Secret' : 'Mark as secret',
+                  onPressed: () => _updateRow(i, _rows[i].copyWith(isSecret: !_rows[i].isSecret)),
+                ),
+                if (_rows[i].isSecret)
+                  AppIconButton(
+                    icon: _revealed.contains(i) ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    tooltip: _revealed.contains(i) ? 'Hide value' : 'Reveal value',
+                    onPressed: () => setState(() => _revealed.contains(i) ? _revealed.remove(i) : _revealed.add(i)),
+                  ),
                 const SizedBox(width: AppSpacing.xs),
                 AppIconButton(
                   icon: Icons.close,
@@ -98,11 +115,12 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
 }
 
 class _RowField extends StatefulWidget {
-  const _RowField({required this.hint, required this.initialValue, required this.onChanged});
+  const _RowField({required this.hint, required this.initialValue, required this.onChanged, this.obscure = false});
 
   final String hint;
   final String initialValue;
   final ValueChanged<String> onChanged;
+  final bool obscure;
 
   @override
   State<_RowField> createState() => _RowFieldState();
@@ -117,6 +135,7 @@ class _RowFieldState extends State<_RowField> {
       height: AppSizes.controlHeightSm + 4,
       child: TextField(
         controller: _controller,
+        obscureText: widget.obscure,
         style: context.type.monoSmall.copyWith(color: context.colors.textPrimary),
         decoration: InputDecoration(hintText: widget.hint, isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6)),
         onChanged: widget.onChanged,

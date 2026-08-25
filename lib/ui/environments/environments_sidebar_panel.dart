@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/models/workspace_origin.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/environments_notifier.dart';
@@ -68,6 +69,14 @@ class EnvironmentsSidebarPanel extends ConsumerWidget {
                                 child: Text(env.name, style: context.type.body, overflow: TextOverflow.ellipsis),
                               ),
                               Text('${env.variables.length}', style: context.type.caption),
+                              if (env.origin == WorkspaceOrigin.remote)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: Tooltip(
+                                    message: 'Synced with workspace',
+                                    child: Icon(Icons.cloud_outlined, size: 14, color: colors.textMuted),
+                                  ),
+                                ),
                               PopupMenuButton<String>(
                                 icon: Icon(Icons.more_horiz, size: 14, color: colors.textMuted),
                                 color: colors.surfaceRaised,

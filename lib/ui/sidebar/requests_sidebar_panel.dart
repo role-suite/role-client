@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/api_request.dart';
 import '../../core/models/collection.dart';
+import '../../core/models/workspace_origin.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/workbench_notifier.dart';
@@ -77,6 +78,7 @@ class _CollectionSectionState extends ConsumerState<_CollectionSection> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final isRemote = widget.collection.origin == WorkspaceOrigin.remote;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -91,15 +93,31 @@ class _CollectionSectionState extends ConsumerState<_CollectionSection> {
                 Expanded(
                   child: Text(widget.collection.name, style: context.type.bodyStrong, overflow: TextOverflow.ellipsis),
                 ),
-                AppIconButton(
-                  icon: Icons.add,
-                  tooltip: 'New request',
-                  onPressed: () async {
-                    final request = await ref.read(workspaceProvider.notifier).createRequest(collectionId: widget.collection.id, name: 'New Request');
-                    if (!context.mounted) return;
-                    ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.request, title: request.name, payloadId: request.id);
-                  },
-                ),
+                if (isRemote)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Tooltip(
+                      message: 'Synced with workspace',
+                      child: Icon(Icons.cloud_outlined, size: 14, color: colors.textMuted),
+                    ),
+                  ),
+                // "New request" stays local-collections-only: creating a
+                // brand-new endpoint inside a remote collection needs an id
+                // reconciliation step (temp local id -> server id) this
+                // phase deliberately doesn't build — see docs/
+                // 08-ONLINE-MODE-INTEGRATION.md phase-4 scope note.
+                if (!isRemote)
+                  AppIconButton(
+                    icon: Icons.add,
+                    tooltip: 'New request',
+                    onPressed: () async {
+                      final request = await ref
+                          .read(workspaceProvider.notifier)
+                          .createRequest(collectionId: widget.collection.id, name: 'New Request');
+                      if (!context.mounted) return;
+                      ref.read(workbenchProvider.notifier).openTab(type: WorkbenchTabType.request, title: request.name, payloadId: request.id);
+                    },
+                  ),
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_horiz, size: 16, color: colors.textMuted),
                   color: colors.surfaceRaised,
@@ -124,16 +142,21 @@ class _CollectionSectionState extends ConsumerState<_CollectionSection> {
           ),
         ),
         if (_expanded)
-          for (final request in widget.requests) _RequestRow(request: request),
+          for (final request in widget.requests) _RequestRow(request: request, isRemote: isRemote),
       ],
     );
   }
 }
 
 class _RequestRow extends ConsumerWidget {
-  const _RequestRow({required this.request});
+  const _RequestRow({required this.request, this.isRemote = false});
 
   final ApiRequest request;
+
+  /// Whether this request's parent collection is remote-origin. Duplicating
+  /// a synced request is out of scope this phase — see the "New request"
+  /// comment above — so only Delete is offered.
+  final bool isRemote;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -162,9 +185,9 @@ class _RequestRow extends ConsumerWidget {
                   borderRadius: AppRadius.mdRadius,
                   side: BorderSide(color: colors.border),
                 ),
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                itemBuilder: (context) => [
+                  if (!isRemote) const PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
+                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
                 onSelected: (action) async {
                   if (action == 'duplicate') {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/environment.dart';
+import '../../core/models/workspace_origin.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/environments_notifier.dart';
@@ -27,7 +28,10 @@ class _EnvironmentTabViewState extends ConsumerState<EnvironmentTabView> {
 
   void _update(Environment next) {
     setState(() => _draft = next);
-    final dirty = _saved == null || _saved!.name != next.name || _saved!.variables.toString() != next.variables.toString();
+    final dirty =
+        _saved == null ||
+        _saved!.name != next.name ||
+        _saved!.variables.map((v) => v.toJson()).toString() != next.variables.map((v) => v.toJson()).toString();
     ref.read(workbenchProvider.notifier).setTabDirty(_tabId, dirty);
   }
 
@@ -69,10 +73,24 @@ class _EnvironmentTabViewState extends ConsumerState<EnvironmentTabView> {
     final colors = context.colors;
     final activeId = ref.watch(activeEnvironmentIdProvider);
     final isActive = activeId == draft.id;
+    final isRemote = draft.origin == WorkspaceOrigin.remote;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (isRemote)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+            color: colors.surfaceRaised,
+            child: Row(
+              children: [
+                Icon(Icons.cloud_outlined, size: 14, color: colors.textMuted),
+                const SizedBox(width: AppSpacing.xs),
+                Text('Synced with workspace — saving pushes your change upstream', style: context.type.caption.copyWith(color: colors.textMuted)),
+              ],
+            ),
+          ),
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
@@ -103,10 +121,9 @@ class _EnvironmentTabViewState extends ConsumerState<EnvironmentTabView> {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: KeyValueEditor(
+            child: EnvironmentVariableEditor(
               key: ValueKey('env-vars-${draft.id}'),
               initial: draft.variables,
-              keyHint: 'Variable',
               onChanged: (v) => _update(draft.copyWith(variables: v)),
             ),
           ),
