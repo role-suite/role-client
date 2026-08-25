@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/remote/auth/auth_state.dart';
+import '../../core/remote/workspace_permissions.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/auth_notifier.dart';
@@ -23,6 +24,7 @@ class OnlineModePanel extends ConsumerWidget {
     final sync = ref.watch(syncNotifierProvider);
     final baseUrl = ref.watch(remoteBaseUrlProvider);
     final status = onlineModeStatus(context, auth, sync);
+    final lastSyncedAt = syncLastSyncedAt(sync);
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -84,6 +86,20 @@ class OnlineModePanel extends ConsumerWidget {
                 title: auth.activeWorkspace.name,
                 subtitle: '${auth.activeWorkspace.type} · ${auth.activeWorkspace.role}',
               ),
+              const SizedBox(height: AppSpacing.sm),
+              _InfoRow(
+                icon: canWriteRemoteWorkspaceRole(auth.activeWorkspace.role) ? Icons.edit_outlined : Icons.visibility_outlined,
+                title: 'Access',
+                subtitle: canWriteRemoteWorkspaceRole(auth.activeWorkspace.role)
+                    ? 'Can modify remote workspace'
+                    : 'Read-only: owners and admins can modify',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _InfoRow(
+                icon: Icons.schedule_outlined,
+                title: 'Last sync',
+                subtitle: lastSyncedAt == null ? 'Not synced yet' : _relativeTime(lastSyncedAt),
+              ),
             ],
           ),
         ],
@@ -116,6 +132,14 @@ OnlineModeStatus onlineModeStatus(BuildContext context, AuthState auth, SyncStat
     ),
     SyncOffline() => OnlineModeStatus(icon: Icons.cloud_off_outlined, color: colors.warning, label: 'Remote mode · offline, pending sync'),
     SyncError(:final message) => OnlineModeStatus(icon: Icons.error_outline, color: colors.danger, label: message),
+  };
+}
+
+DateTime? syncLastSyncedAt(SyncState sync) {
+  return switch (sync) {
+    SyncSynced(:final lastSyncedAt) => lastSyncedAt,
+    SyncOffline(:final lastSyncedAt) => lastSyncedAt,
+    _ => null,
   };
 }
 
