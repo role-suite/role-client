@@ -144,7 +144,7 @@ CI (`.github/workflows/`) enforces these automatically, so it's worth checking t
 - [ ] `dart format --output=none --set-exit-if-changed .` reports no changes
 - [ ] `flutter analyze` passes with no issues (this includes `riverpod_lint`)
 - [ ] `flutter test` passes
-- [ ] The macOS/Windows/Linux build-check workflow would still compile (no platform-specific breakage)
+- [ ] The Windows/Linux build-check workflow would still compile (no platform-specific breakage)
 - [ ] The PR title follows [Conventional Commits](https://www.conventionalcommits.org/) (see below) — checked by `pr-title.yml`
 - [ ] New features include appropriate tests (when applicable)
 - [ ] Documentation in [`docs/`](docs/) is updated if the change affects architecture, data model, or setup

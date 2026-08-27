@@ -138,7 +138,7 @@ flutter build ios --release
 
 ### Pre-built Releases
 
-macOS, Windows, and Linux builds are published automatically to [GitHub Releases](https://github.com/role-suite/role-client/releases) on every version tag. Android and iOS are distributed through their respective app stores rather than through this repository.
+Windows and Linux builds are published automatically to [GitHub Releases](https://github.com/role-suite/role-client/releases) on every version tag. macOS can still be built locally from source (see above); it is not currently part of the automated release pipeline. Android and iOS are distributed through their respective app stores rather than through this repository.
 
 > [!TIP]
 > Grab the latest build straight from the [Releases page](https://github.com/role-suite/role-client/releases/latest) — no build tooling required.
