@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../core/utils/iterable_ext.dart';
+import '../../state/auth_notifier.dart';
 import '../../state/environments_notifier.dart';
 import '../../state/settings_providers.dart';
+import '../../state/sync_notifier.dart';
+import 'online_mode_panel.dart';
 
 class StatusBar extends ConsumerWidget {
   const StatusBar({super.key});
@@ -16,6 +19,8 @@ class StatusBar extends ConsumerWidget {
     final activeId = ref.watch(activeEnvironmentIdProvider);
     final environments = ref.watch(environmentsProvider).value ?? const [];
     final activeName = environments.where((e) => e.id == activeId).map((e) => e.name).firstOrNull;
+    final auth = ref.watch(authNotifierProvider);
+    final sync = ref.watch(syncNotifierProvider);
 
     return Container(
       height: AppSizes.statusBarHeight,
@@ -26,9 +31,7 @@ class StatusBar extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.lock_outline, size: 11, color: colors.success),
-          const SizedBox(width: 4),
-          Text('Local-only', style: context.type.caption),
+          ..._syncIndicator(context, onlineModeStatus(context, auth, sync)),
           const SizedBox(width: AppSpacing.lg),
           Text('Environment: ${activeName ?? 'none'}', style: context.type.caption),
           const Spacer(),
@@ -37,4 +40,12 @@ class StatusBar extends ConsumerWidget {
       ),
     );
   }
+
+  /// Shows the current mode first: local when signed out, remote when a
+  /// role-node workspace is active. Remote mode keeps the sync detail.
+  List<Widget> _syncIndicator(BuildContext context, OnlineModeStatus status) => [
+    Icon(status.icon, size: 11, color: status.color),
+    const SizedBox(width: 4),
+    Text(status.label, style: context.type.caption),
+  ];
 }

@@ -2,6 +2,9 @@ import '../models/api_request.dart';
 import '../models/collection.dart';
 import '../models/enums.dart';
 import '../models/environment.dart';
+import '../models/environment_variable.dart';
+import '../models/key_value_entry.dart';
+import '../models/request_body.dart';
 import '../models/workspace_bundle.dart';
 import '../utils/id.dart';
 
@@ -29,10 +32,18 @@ class PostmanImport {
 
   static Environment parseEnvironment(Map<String, dynamic> json) {
     final now = DateTime.now();
-    final variables = <String, String>{};
+    final variables = <EnvironmentVariable>[];
+    var position = 0;
     for (final entry in (json['values'] as List? ?? const [])) {
-      if (entry is Map && entry['enabled'] != false && entry['key'] != null) {
-        variables[entry['key'].toString()] = entry['value']?.toString() ?? '';
+      if (entry is Map && entry['key'] != null) {
+        variables.add(
+          EnvironmentVariable(
+            key: entry['key'].toString(),
+            value: entry['value']?.toString() ?? '',
+            enabled: entry['enabled'] != false,
+            position: position++,
+          ),
+        );
       }
     }
     return Environment(
@@ -61,10 +72,10 @@ class PostmanImport {
     final now = DateTime.now();
     final method = HttpMethodX.fromString((request['method'] as String?) ?? 'GET');
 
-    final headers = <String, String>{};
+    final headers = <KeyValueEntry>[];
     for (final h in (request['header'] as List? ?? const [])) {
-      if (h is Map && h['disabled'] != true && h['key'] != null) {
-        headers[h['key'].toString()] = h['value']?.toString() ?? '';
+      if (h is Map && h['key'] != null) {
+        headers.add(KeyValueEntry(key: h['key'].toString(), value: h['value']?.toString() ?? '', enabled: h['disabled'] != true));
       }
     }
 
@@ -76,34 +87,37 @@ class PostmanImport {
       url = rawUrl['raw']?.toString() ?? '';
     }
 
-    final queryParams = <String, String>{};
+    final queryParams = <KeyValueEntry>[];
     if (rawUrl is Map) {
       for (final q in (rawUrl['query'] as List? ?? const [])) {
-        if (q is Map && q['disabled'] != true && q['key'] != null) {
-          queryParams[q['key'].toString()] = q['value']?.toString() ?? '';
+        if (q is Map && q['key'] != null) {
+          queryParams.add(KeyValueEntry(key: q['key'].toString(), value: q['value']?.toString() ?? '', enabled: q['disabled'] != true));
         }
       }
     }
 
-    var bodyType = BodyType.none;
-    String? body;
-    final formFields = <String, String>{};
+    RequestBody requestBody = const NoneBody();
     final rawBody = request['body'];
     if (rawBody is Map) {
       switch (rawBody['mode']) {
         case 'raw':
-          bodyType = BodyType.raw;
-          body = rawBody['raw']?.toString();
+          requestBody = RawBody(raw: rawBody['raw']?.toString() ?? '');
         case 'urlencoded':
-          bodyType = BodyType.urlEncoded;
+          final entries = <KeyValueEntry>[];
           for (final f in (rawBody['urlencoded'] as List? ?? const [])) {
-            if (f is Map && f['disabled'] != true && f['key'] != null) formFields[f['key'].toString()] = f['value']?.toString() ?? '';
+            if (f is Map && f['key'] != null) {
+              entries.add(KeyValueEntry(key: f['key'].toString(), value: f['value']?.toString() ?? '', enabled: f['disabled'] != true));
+            }
           }
+          requestBody = UrlEncodedBody(entries: entries);
         case 'formdata':
-          bodyType = BodyType.formData;
+          final parts = <FormPart>[];
           for (final f in (rawBody['formdata'] as List? ?? const [])) {
-            if (f is Map && f['disabled'] != true && f['key'] != null) formFields[f['key'].toString()] = f['value']?.toString() ?? '';
+            if (f is Map && f['key'] != null) {
+              parts.add(FormTextPart(key: f['key'].toString(), value: f['value']?.toString() ?? '', enabled: f['disabled'] != true));
+            }
           }
+          requestBody = FormDataBody(parts: parts);
       }
     }
 
@@ -144,9 +158,7 @@ class PostmanImport {
       url: url,
       headers: headers,
       queryParams: queryParams,
-      bodyType: bodyType,
-      body: body,
-      formFields: formFields,
+      requestBody: requestBody,
       authType: authType,
       authConfig: authConfig,
       createdAt: now,

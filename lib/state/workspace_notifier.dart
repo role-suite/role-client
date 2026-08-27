@@ -3,10 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants.dart';
 import '../core/models/api_request.dart';
 import '../core/models/collection.dart';
+import '../core/models/enums.dart';
+import '../core/models/outbox_entry.dart';
+import '../core/models/request_body.dart';
 import '../core/models/workspace_bundle.dart';
+import '../core/models/workspace_origin.dart';
+import '../core/remote/api_client.dart';
+import '../core/remote/remote_validation.dart';
+import '../core/remote/sync/outbox_flusher.dart';
+import '../core/remote/sync/outbox_store.dart';
+import '../core/remote/sync/workspace_push_service.dart';
 import '../core/storage/json_store.dart';
 import '../core/storage/workspace_paths.dart';
 import '../core/utils/id.dart';
+import 'auth_notifier.dart';
 import 'history_notifier.dart';
 import 'run_history_notifier.dart';
 
@@ -29,14 +39,18 @@ class WorkspaceState {
 class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   @override
   Future<WorkspaceState> build() async {
-    return _loadAll();
+    // Only ever non-null once a user has explicitly signed in — see §7 of
+    // docs/08-ONLINE-MODE-INTEGRATION.md. Watched (not read) so switching or
+    // signing out of a remote workspace rebuilds this notifier automatically.
+    final remoteWorkspaceId = ref.watch(activeRemoteWorkspaceIdProvider);
+    return _loadAll(remoteWorkspaceId);
   }
 
-  Future<WorkspaceState> _loadAll() async {
+  Future<WorkspaceState> _loadAll(int? remoteWorkspaceId) async {
     final raw = await JsonStore.instance.readAll(WorkspacePaths.collections);
     final bundles = raw.map(CollectionBundle.fromJson).toList()..sort((a, b) => a.collection.createdAt.compareTo(b.collection.createdAt));
 
-    if (bundles.isEmpty) {
+    if (bundles.isEmpty && remoteWorkspaceId == null) {
       final defaultCollection = Collection(
         id: AppConstants.defaultCollectionId,
         name: 'My Requests',
@@ -44,14 +58,35 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
         updatedAt: DateTime.now(),
       );
       await _persist(CollectionBundle(collection: defaultCollection, requests: const []));
-      return WorkspaceState(collections: [defaultCollection], requests: const []);
+      bundles.add(CollectionBundle(collection: defaultCollection, requests: const []));
+    }
+
+    if (remoteWorkspaceId != null) {
+      final remoteRaw = await JsonStore.instance.readAll(WorkspacePaths.remoteCollections(remoteWorkspaceId));
+      bundles.addAll(remoteRaw.map(CollectionBundle.fromJson));
     }
 
     return WorkspaceState(collections: bundles.map((b) => b.collection).toList(), requests: bundles.expand((b) => b.requests).toList());
   }
 
+  /// Remote-origin collections write to their workspace's cache subtree
+  /// instead of the local `collections/` directory — never mixed, per §7.
   Future<void> _persist(CollectionBundle bundle) {
-    return JsonStore.instance.write(WorkspacePaths.collectionFile(bundle.collection.id), bundle.toJson());
+    final collection = bundle.collection;
+    if (collection.origin == WorkspaceOrigin.remote) {
+      return JsonStore.instance.write(WorkspacePaths.remoteCollectionFile(collection.remoteWorkspaceId!, collection.id), bundle.toJson());
+    }
+    return JsonStore.instance.write(WorkspacePaths.collectionFile(collection.id), bundle.toJson());
+  }
+
+  /// Enqueues [entry] and makes a best-effort immediate push attempt (§5:
+  /// "enqueue → send now"), leaving it queued for `SyncNotifier`'s poll loop
+  /// to retry on failure.
+  Future<void> _pushRemoteEdit(OutboxEntry entry) async {
+    await OutboxStore.enqueue(entry.workspaceId, entry);
+    final client = ref.read(remoteApiClientProvider);
+    if (client == null) return;
+    await flushOutboxEntry(WorkspacePushService(client), entry);
   }
 
   CollectionBundle _bundleFor(WorkspaceState state, String collectionId) {
@@ -60,6 +95,18 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   }
 
   Future<Collection> createCollection({required String name, String description = ''}) async {
+    final remoteWorkspaceId = ref.read(activeRemoteWorkspaceIdProvider);
+    if (remoteWorkspaceId != null) {
+      validateRemoteCollectionInput(name: name, description: description);
+      final client = ref.read(remoteApiClientProvider);
+      if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
+      final collection = await WorkspacePushService(client).createCollection(remoteWorkspaceId, name: name, description: description);
+      await _persist(CollectionBundle(collection: collection, requests: const []));
+      final current = state.value ?? const WorkspaceState();
+      state = AsyncData(current.copyWith(collections: [...current.collections, collection]));
+      return collection;
+    }
+
     final current = state.value ?? const WorkspaceState();
     final now = DateTime.now();
     final collection = Collection(id: generateId('col'), name: name, description: description, createdAt: now, updatedAt: now);
@@ -70,16 +117,34 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   }
 
   Future<void> updateCollection(Collection updated) async {
+    if (updated.origin == WorkspaceOrigin.remote) validateRemoteCollection(updated);
     final current = state.value ?? const WorkspaceState();
     final collections = current.collections.map((c) => c.id == updated.id ? updated : c).toList();
     final next = current.copyWith(collections: collections);
     await _persist(_bundleFor(next, updated.id));
     state = AsyncData(next);
+    if (updated.origin == WorkspaceOrigin.remote) {
+      await _pushRemoteEdit(
+        OutboxEntry(
+          kind: OutboxKind.collection,
+          operation: OutboxOperation.upsert,
+          workspaceId: updated.remoteWorkspaceId!,
+          localId: updated.id,
+          enqueuedAt: DateTime.now(),
+        ),
+      );
+    }
   }
 
   Future<void> deleteCollection(String collectionId) async {
     final current = state.value ?? const WorkspaceState();
-    await JsonStore.instance.delete(WorkspacePaths.collectionFile(collectionId));
+    final collection = current.collections.firstWhere((c) => c.id == collectionId);
+
+    if (collection.origin == WorkspaceOrigin.remote) {
+      await JsonStore.instance.delete(WorkspacePaths.remoteCollectionFile(collection.remoteWorkspaceId!, collectionId));
+    } else {
+      await JsonStore.instance.delete(WorkspacePaths.collectionFile(collectionId));
+    }
     state = AsyncData(
       current.copyWith(
         collections: current.collections.where((c) => c.id != collectionId).toList(),
@@ -87,12 +152,57 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
       ),
     );
     await ref.read(runHistoryProvider.notifier).clearForCollection(collectionId);
+
+    if (collection.origin == WorkspaceOrigin.remote) {
+      await _pushRemoteEdit(
+        OutboxEntry(
+          kind: OutboxKind.collection,
+          operation: OutboxOperation.delete,
+          workspaceId: collection.remoteWorkspaceId!,
+          localId: collectionId,
+          deletedRemoteId: collection.remoteId,
+          enqueuedAt: DateTime.now(),
+        ),
+      );
+    }
   }
 
-  Future<ApiRequest> createRequest({required String collectionId, required String name}) async {
+  Future<ApiRequest> createRequest({required String collectionId, required String name, ApiRequest? template}) async {
     final current = state.value ?? const WorkspaceState();
+    final collection = current.collections.firstWhere((c) => c.id == collectionId);
     final now = DateTime.now();
-    final request = ApiRequest(id: generateId('req'), collectionId: collectionId, name: name, createdAt: now, updatedAt: now);
+    final request = ApiRequest(
+      id: generateId('req'),
+      collectionId: collectionId,
+      name: name,
+      method: template?.method ?? HttpMethod.get,
+      url: template?.url ?? '',
+      headers: template?.headers ?? const [],
+      queryParams: template?.queryParams ?? const [],
+      requestBody: template?.requestBody ?? const NoneBody(),
+      authType: template?.authType ?? AuthType.none,
+      authConfig: template?.authConfig ?? const {},
+      assertions: template?.assertions ?? const [],
+      description: template?.description,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    if (collection.origin == WorkspaceOrigin.remote) {
+      validateRemoteRequest(request, allowEmptyUrlAsDraft: true);
+      final client = ref.read(remoteApiClientProvider);
+      if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
+      final remoteId = collection.remoteId;
+      if (remoteId == null) throw StateError('Remote collection is missing its server id.');
+      final createdRemoteRequest = await WorkspacePushService(
+        client,
+      ).createEndpoint(collection.remoteWorkspaceId!, remoteId, collectionLocalId: collection.id, request: request);
+      final remoteRequest = createdRemoteRequest.copyWith(description: request.description, assertions: request.assertions);
+      final next = current.copyWith(requests: [...current.requests, remoteRequest]);
+      await _persist(_bundleFor(next, collectionId));
+      state = AsyncData(next);
+      return remoteRequest;
+    }
 
     final next = current.copyWith(requests: [...current.requests, request]);
     await _persist(_bundleFor(next, collectionId));
@@ -101,11 +211,24 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
   }
 
   Future<void> updateRequest(ApiRequest updated) async {
+    if (updated.origin == WorkspaceOrigin.remote) validateRemoteRequest(updated);
     final current = state.value ?? const WorkspaceState();
     final requests = current.requests.map((r) => r.id == updated.id ? updated : r).toList();
     final next = current.copyWith(requests: requests);
     await _persist(_bundleFor(next, updated.collectionId));
     state = AsyncData(next);
+    if (updated.origin == WorkspaceOrigin.remote) {
+      await _pushRemoteEdit(
+        OutboxEntry(
+          kind: OutboxKind.request,
+          operation: OutboxOperation.upsert,
+          workspaceId: updated.remoteWorkspaceId!,
+          localId: updated.id,
+          collectionLocalId: updated.collectionId,
+          enqueuedAt: DateTime.now(),
+        ),
+      );
+    }
   }
 
   Future<void> deleteRequest(ApiRequest request) async {
@@ -114,27 +237,25 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
     await _persist(_bundleFor(next, request.collectionId));
     state = AsyncData(next);
     await ref.read(historyProvider.notifier).clearForRequest(request.id);
+
+    if (request.origin == WorkspaceOrigin.remote) {
+      final collection = current.collections.firstWhere((c) => c.id == request.collectionId);
+      await _pushRemoteEdit(
+        OutboxEntry(
+          kind: OutboxKind.request,
+          operation: OutboxOperation.delete,
+          workspaceId: request.remoteWorkspaceId!,
+          localId: request.id,
+          deletedRemoteId: request.remoteId,
+          deletedParentRemoteId: collection.remoteId,
+          enqueuedAt: DateTime.now(),
+        ),
+      );
+    }
   }
 
   Future<ApiRequest> duplicateRequest(ApiRequest request) async {
-    final now = DateTime.now();
-    return createRequest(collectionId: request.collectionId, name: '${request.name} copy').then((created) async {
-      final duplicated = created.copyWith(
-        method: request.method,
-        url: request.url,
-        headers: request.headers,
-        queryParams: request.queryParams,
-        bodyType: request.bodyType,
-        body: request.body,
-        formFields: request.formFields,
-        authType: request.authType,
-        authConfig: request.authConfig,
-        description: request.description,
-        updatedAt: now,
-      );
-      await updateRequest(duplicated);
-      return duplicated;
-    });
+    return createRequest(collectionId: request.collectionId, name: '${request.name} copy', template: request);
   }
 
   /// Imports whole collections+requests, e.g. from a workspace/Postman bundle.
@@ -169,7 +290,7 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = AsyncData(await _loadAll());
+    state = AsyncData(await _loadAll(ref.read(activeRemoteWorkspaceIdProvider)));
   }
 }
 

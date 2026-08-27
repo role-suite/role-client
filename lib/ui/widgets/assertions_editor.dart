@@ -11,10 +11,11 @@ import 'labeled_field.dart';
 /// expected value, enabled toggle, remove — plus an "Add assertion" button.
 /// Follows the same row-list editing shape as [KeyValueEditor].
 class AssertionsEditor extends StatefulWidget {
-  const AssertionsEditor({super.key, required this.initial, required this.onChanged});
+  const AssertionsEditor({super.key, required this.initial, required this.onChanged, this.enabled = true});
 
   final List<Assertion> initial;
   final ValueChanged<List<Assertion>> onChanged;
+  final bool enabled;
 
   @override
   State<AssertionsEditor> createState() => _AssertionsEditorState();
@@ -60,24 +61,26 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
                       Checkbox(
                         value: _assertions[i].enabled,
                         visualDensity: VisualDensity.compact,
-                        onChanged: (v) => _update(i, _assertions[i].copyWith(enabled: v ?? true)),
+                        onChanged: widget.enabled ? (v) => _update(i, _assertions[i].copyWith(enabled: v ?? true)) : null,
                       ),
                       Expanded(
                         child: AppDropdown<AssertionType>(
                           value: _assertions[i].type,
                           items: AssertionType.values,
                           itemLabel: (t) => t.label,
-                          onChanged: (t) => _update(i, _assertions[i].copyWith(type: t)),
+                          onChanged: widget.enabled ? (t) => _update(i, _assertions[i].copyWith(type: t)) : null,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       AppIconButton(
                         icon: Icons.close,
                         tooltip: 'Remove assertion',
-                        onPressed: () {
-                          setState(() => _assertions.removeAt(i));
-                          _emit();
-                        },
+                        onPressed: widget.enabled
+                            ? () {
+                                setState(() => _assertions.removeAt(i));
+                                _emit();
+                              }
+                            : null,
                       ),
                     ],
                   ),
@@ -89,6 +92,7 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
                           child: _AssertionField(
                             hint: _assertions[i].type == AssertionType.headerEquals ? 'Header name' : 'JSON path (e.g. data.id)',
                             initialValue: _assertions[i].target ?? '',
+                            enabled: widget.enabled,
                             onChanged: (v) => _update(i, _assertions[i].copyWith(target: v)),
                           ),
                         ),
@@ -98,6 +102,7 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
                         child: _AssertionField(
                           hint: 'Expected value',
                           initialValue: _assertions[i].expected,
+                          enabled: widget.enabled,
                           onChanged: (v) => _update(i, _assertions[i].copyWith(expected: v)),
                         ),
                       ),
@@ -112,10 +117,12 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
           icon: Icons.add,
           variant: AppButtonVariant.secondary,
           dense: true,
-          onPressed: () {
-            setState(() => _assertions.add(Assertion(id: generateId('assert'), type: AssertionType.statusEquals, expected: '200')));
-            _emit();
-          },
+          onPressed: widget.enabled
+              ? () {
+                  setState(() => _assertions.add(Assertion(id: generateId('assert'), type: AssertionType.statusEquals, expected: '200')));
+                  _emit();
+                }
+              : null,
         ),
       ],
     );
@@ -123,10 +130,11 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
 }
 
 class _AssertionField extends StatefulWidget {
-  const _AssertionField({required this.hint, required this.initialValue, required this.onChanged});
+  const _AssertionField({required this.hint, required this.initialValue, required this.enabled, required this.onChanged});
 
   final String hint;
   final String initialValue;
+  final bool enabled;
   final ValueChanged<String> onChanged;
 
   @override
@@ -142,6 +150,7 @@ class _AssertionFieldState extends State<_AssertionField> {
       height: AppSizes.controlHeightSm + 4,
       child: TextField(
         controller: _controller,
+        enabled: widget.enabled,
         style: context.type.monoSmall.copyWith(color: context.colors.textPrimary),
         decoration: InputDecoration(hintText: widget.hint, isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6)),
         onChanged: widget.onChanged,

@@ -15,6 +15,7 @@ class MethodUrlBar extends StatelessWidget {
     required this.onUrlChanged,
     required this.onSend,
     this.sending = false,
+    this.enabled = true,
   });
 
   final HttpMethod method;
@@ -23,6 +24,7 @@ class MethodUrlBar extends StatelessWidget {
   final ValueChanged<String> onUrlChanged;
   final VoidCallback? onSend;
   final bool sending;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -58,9 +60,11 @@ class MethodUrlBar extends StatelessWidget {
                       ),
                     )
                     .toList(),
-                onChanged: (m) {
-                  if (m != null) onMethodChanged(m);
-                },
+                onChanged: enabled
+                    ? (m) {
+                        if (m != null) onMethodChanged(m);
+                      }
+                    : null,
               ),
             ),
           ),
@@ -70,6 +74,7 @@ class MethodUrlBar extends StatelessWidget {
               height: AppSizes.controlHeight,
               child: TextFormField(
                 initialValue: url,
+                enabled: enabled,
                 style: context.type.mono.copyWith(fontSize: 13),
                 decoration: const InputDecoration(hintText: 'https://api.example.com/{{path}}', isDense: true),
                 onChanged: onUrlChanged,

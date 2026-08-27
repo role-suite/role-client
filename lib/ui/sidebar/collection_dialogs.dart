@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/collection.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../state/workspace_notifier.dart';
+import '../remote_error.dart';
 import '../widgets/widgets.dart';
 
 Future<void> showCreateCollectionDialog(BuildContext context, WidgetRef ref) async {
@@ -13,7 +14,11 @@ Future<void> showCreateCollectionDialog(BuildContext context, WidgetRef ref) asy
     builder: (context) => _NameDialog(title: 'New collection', controller: controller, confirmLabel: 'Create'),
   );
   if (name == null || name.trim().isEmpty) return;
-  await ref.read(workspaceProvider.notifier).createCollection(name: name.trim());
+  try {
+    await ref.read(workspaceProvider.notifier).createCollection(name: name.trim());
+  } catch (error) {
+    if (context.mounted) showRemoteErrorSnackBar(context, 'Could not create collection', error);
+  }
 }
 
 Future<void> showRenameCollectionDialog(BuildContext context, WidgetRef ref, Collection collection) async {
@@ -23,7 +28,11 @@ Future<void> showRenameCollectionDialog(BuildContext context, WidgetRef ref, Col
     builder: (context) => _NameDialog(title: 'Rename collection', controller: controller, confirmLabel: 'Save'),
   );
   if (name == null || name.trim().isEmpty) return;
-  await ref.read(workspaceProvider.notifier).updateCollection(collection.copyWith(name: name.trim(), updatedAt: DateTime.now()));
+  try {
+    await ref.read(workspaceProvider.notifier).updateCollection(collection.copyWith(name: name.trim(), updatedAt: DateTime.now()));
+  } catch (error) {
+    if (context.mounted) showRemoteErrorSnackBar(context, 'Could not rename collection', error);
+  }
 }
 
 Future<void> showDeleteCollectionDialog(BuildContext context, WidgetRef ref, Collection collection) async {
@@ -39,7 +48,11 @@ Future<void> showDeleteCollectionDialog(BuildContext context, WidgetRef ref, Col
     ),
   );
   if (confirmed != true) return;
-  await ref.read(workspaceProvider.notifier).deleteCollection(collection.id);
+  try {
+    await ref.read(workspaceProvider.notifier).deleteCollection(collection.id);
+  } catch (error) {
+    if (context.mounted) showRemoteErrorSnackBar(context, 'Could not delete collection', error);
+  }
 }
 
 class _NameDialog extends StatelessWidget {

@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
-import 'package:dio/dio.dart' show FormData;
+import 'package:dio/dio.dart' show FormData, MultipartFile;
+import 'package:http_parser/http_parser.dart' show MediaType;
 
 import '../models/api_request.dart';
 import '../models/enums.dart';
+import '../models/request_body.dart';
 import '../models/request_result.dart';
 import 'http_client.dart';
 import 'template_resolver.dart';
@@ -54,7 +57,7 @@ class RequestRunner {
     final resolvedUrl = resolver.resolve(request.url);
     var uri = Uri.parse(resolvedUrl.contains('://') ? resolvedUrl : 'https://$resolvedUrl');
 
-    final resolvedParams = resolver.resolveMap(request.queryParams);
+    final resolvedParams = resolver.resolveEntries(request.queryParams);
     if (resolvedParams.isNotEmpty) {
       final params = Map<String, String>.from(uri.queryParameters)..addAll(resolvedParams);
       uri = uri.replace(queryParameters: params);
@@ -73,7 +76,7 @@ class RequestRunner {
   }
 
   Map<String, String> _buildHeaders(ApiRequest request, TemplateResolver resolver) {
-    final headers = resolver.resolveMap(request.headers);
+    final headers = resolver.resolveEntries(request.headers);
 
     switch (request.authType) {
       case AuthType.bearer:
@@ -98,18 +101,37 @@ class RequestRunner {
   }
 
   dynamic _buildBody(ApiRequest request, TemplateResolver resolver, Map<String, String> headers) {
-    switch (request.bodyType) {
-      case BodyType.none:
+    switch (request.requestBody) {
+      case NoneBody():
         return null;
-      case BodyType.raw:
-      case BodyType.binary:
-        return resolver.resolve(request.body);
-      case BodyType.formData:
-        return FormData.fromMap(resolver.resolveMap(request.formFields));
-      case BodyType.urlEncoded:
+      case RawBody(:final raw, :final contentType):
+        if (contentType != null) headers.putIfAbsent('Content-Type', () => contentType);
+        return resolver.resolve(raw);
+      case UrlEncodedBody(:final entries):
         headers.putIfAbsent('Content-Type', () => 'application/x-www-form-urlencoded');
-        final fields = resolver.resolveMap(request.formFields);
+        final fields = resolver.resolveEntries(entries);
         return fields.entries.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&');
+      case FormDataBody(:final parts):
+        final fields = <String, dynamic>{};
+        for (final part in parts) {
+          switch (part) {
+            case FormTextPart(:final key, :final value, :final enabled):
+              if (enabled) fields[resolver.resolve(key)] = resolver.resolve(value);
+            case FormFilePart(:final key, :final fileName, :final contentType, :final dataBase64, :final enabled):
+              if (enabled) {
+                fields[resolver.resolve(key)] = MultipartFile.fromBytes(
+                  base64Decode(dataBase64),
+                  filename: fileName,
+                  contentType: contentType != null ? MediaType.parse(contentType) : null,
+                );
+              }
+          }
+        }
+        return FormData.fromMap(fields);
+      case BinaryBody(:final dataBase64, :final contentType, :final fileName):
+        if (contentType != null) headers.putIfAbsent('Content-Type', () => contentType);
+        if (fileName != null) headers.putIfAbsent('Content-Disposition', () => 'attachment; filename="$fileName"');
+        return Uint8List.fromList(base64Decode(dataBase64));
     }
   }
 

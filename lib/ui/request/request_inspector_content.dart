@@ -34,7 +34,7 @@ class RequestInspectorContent extends ConsumerWidget {
     final variables = ref.watch(activeVariablesProvider);
     final referenced = {
       ...TemplateResolver.unresolvedIn(request.url, variables).union(_resolvedIn(request.url, variables)),
-      for (final v in request.headers.values) ...TemplateResolver.unresolvedIn(v, variables).union(_resolvedIn(v, variables)),
+      for (final h in request.headers) ...TemplateResolver.unresolvedIn(h.value, variables).union(_resolvedIn(h.value, variables)),
     };
     final unresolved = referenced.where((name) => !variables.containsKey(name)).toSet();
     final history = ref.watch(historyProvider).value?.where((s) => s.requestId == requestId).take(5).toList() ?? const [];

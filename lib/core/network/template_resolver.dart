@@ -1,3 +1,5 @@
+import '../models/key_value_entry.dart';
+
 final _variablePattern = RegExp(r'\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}');
 
 /// Resolves `{{variableName}}` placeholders against an environment's
@@ -18,6 +20,20 @@ class TemplateResolver {
 
   Map<String, String> resolveMap(Map<String, String> input) {
     return input.map((key, value) => MapEntry(resolve(key), resolve(value)));
+  }
+
+  /// Resolves a list of [KeyValueEntry] (headers, query params, form fields)
+  /// into a plain map, skipping disabled and empty-key entries — the shape
+  /// the wire request actually needs.
+  Map<String, String> resolveEntries(List<KeyValueEntry> entries) {
+    final map = <String, String>{};
+    for (final entry in entries) {
+      if (!entry.enabled) continue;
+      final key = resolve(entry.key);
+      if (key.isEmpty) continue;
+      map[key] = resolve(entry.value);
+    }
+    return map;
   }
 
   /// Every `{{name}}` reference found in [input] that has no matching variable.
