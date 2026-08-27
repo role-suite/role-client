@@ -39,78 +39,6 @@ jobs:
             exit 1
           fi
 
-  macos:
-    name: macOS (signed + notarized if certificate present)
-    runs-on: macos-latest
-    needs: verify-version
-    env:
-      HAS_MACOS_CERT: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
-
-      - uses: ./.github/actions/setup-flutter
-
-      - name: Import signing certificate
-        if: env.HAS_MACOS_CERT == 'true'
-        env:
-          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
-          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-        run: |
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -t 3600 -u build.keychain
-          echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
-          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          rm certificate.p12
-
-      - name: Build macOS app
-        run: flutter build macos --release
-
-      - name: Verify universal binary
-        run: lipo -info "build/macos/Build/Products/Release/relay.app/Contents/MacOS/relay" | grep -q "x86_64 arm64"
-
-      - name: Codesign app
-        if: env.HAS_MACOS_CERT == 'true'
-        run: |
-          codesign --deep --force --options runtime \
-            --sign "${{ secrets.MACOS_CERTIFICATE_IDENTITY }}" \
-            "build/macos/Build/Products/Release/relay.app"
-
-      - name: Zip app
-        run: ditto -c -k --keepParent "build/macos/Build/Products/Release/relay.app" relay-macos.zip
-
-      - name: Notarize
-        if: env.HAS_MACOS_CERT == 'true'
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          xcrun notarytool submit relay-macos.zip \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_ID_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait
-          xcrun stapler staple "build/macos/Build/Products/Release/relay.app"
-
-      - name: Re-zip stapled app
-        if: env.HAS_MACOS_CERT == 'true'
-        run: |
-          rm relay-macos.zip
-          ditto -c -k --keepParent "build/macos/Build/Products/Release/relay.app" relay-macos.zip
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-release
-          path: relay-macos.zip
-          retention-days: 7
-
   windows:
     name: Windows (signed if certificate present)
     runs-on: windows-latest
@@ -163,7 +91,7 @@ jobs:
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
 
       - uses: ./.github/actions/setup-flutter
 
@@ -184,7 +112,7 @@ jobs:
 
   publish-release:
     name: Publish GitHub Release
-    needs: [macos, windows, linux]
+    needs: [windows, linux]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -196,7 +124,6 @@ jobs:
         run: |
           VERSION="${RELEASE_TAG#v}"
           mkdir -p release-assets
-          cp artifacts/macos-release/relay-macos.zip "release-assets/relay-${VERSION}-macos.zip"
           cp artifacts/windows-release/relay-windows.zip "release-assets/relay-${VERSION}-windows-x64.zip"
           cp artifacts/linux-release/relay-linux.tar.gz "release-assets/relay-${VERSION}-linux-x64.tar.gz"
 
