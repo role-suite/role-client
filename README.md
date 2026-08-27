@@ -5,7 +5,7 @@
 <h1 align="center">Röle</h1>
 
 <p align="center">
-  <strong>A modern, cross-platform, local-only API testing client built with Flutter</strong>
+  <strong>A modern, cross-platform API testing client built with Flutter</strong>
 </p>
 
 <p align="center">
@@ -32,9 +32,11 @@
 
 ## Overview
 
-**Röle** is a lightweight, local-only API client for testing REST endpoints across desktop and mobile platforms.
+**Röle** is a lightweight API client for testing REST endpoints across desktop and mobile platforms.
 
-All collections, requests, and environments are stored on your device. There is no account, no sign-in, and no backend server — Röle never talks to anything except the endpoints you point it at.
+By default, all collections, requests, and environments are stored on your device — no account,
+no sign-in, no backend server. Optionally, sign in and connect to a [`role-node`](https://github.com/role-suite/role-node)
+backend for team-synced workspaces; local-only usage is unaffected either way.
 
 ## Features
 
@@ -55,38 +57,24 @@ All collections, requests, and environments are stored on your device. There is 
       <sub><strong>Home Screen</strong></sub>
     </td>
     <td align="center" width="50%">
-      <img src="assets/screenshots/request-screen.png" alt="Röle Request List" width="100%"><br>
-      <sub><strong>Request List</strong></sub>
+      <img src="assets/screenshots/request-editor.png" alt="Röle Request Editor" width="100%"><br>
+      <sub><strong>Request Editor</strong></sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="assets/screenshots/request-detail-screen.png" alt="Röle Response Body Viewer" width="100%"><br>
-      <sub><strong>Readable Responses</strong></sub>
+      <img src="assets/screenshots/request-body.png" alt="Röle Request Body Editor" width="100%"><br>
+      <sub><strong>Request Body</strong></sub>
     </td>
     <td align="center" width="50%">
-      <img src="assets/screenshots/assertions-screen.png" alt="Röle Assertions" width="100%"><br>
-      <sub><strong>Built-in Assertions</strong></sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <img src="assets/screenshots/history-screen.png" alt="Röle Request History" width="100%"><br>
-      <sub><strong>Request History</strong></sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="assets/screenshots/environment-screen.png" alt="Röle Environment Variables" width="100%"><br>
-      <sub><strong>Environments</strong></sub>
+      <img src="assets/screenshots/response-body.png" alt="Röle Response Body Viewer" width="100%"><br>
+      <sub><strong>Response Viewer</strong></sub>
     </td>
   </tr>
   <tr>
-    <td align="center" width="50%">
-      <img src="assets/screenshots/run-collection-screen.png" alt="Röle Collection Runner" width="100%"><br>
-      <sub><strong>Collection Runner</strong></sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="assets/screenshots/chain-screen.png" alt="Röle Request Flows" width="100%"><br>
-      <sub><strong>Request Flows</strong></sub>
+    <td align="center" colspan="2">
+      <img src="assets/screenshots/response-headers.png" alt="Röle Response Headers Viewer" width="100%"><br>
+      <sub><strong>Response Headers</strong></sub>
     </td>
   </tr>
 </table>
@@ -195,7 +183,7 @@ Detailed technical docs live in [`docs/`](docs/):
 
 Röle is one persistent workbench shell — a top bar, left rail, contextual sidebar, tabbed
 center workbench, and inspector — built on Riverpod notifiers and local JSON storage. No
-usecase/repository layers: a local-only app's state notifiers *are* the data layer.
+usecase/repository layers: Röle's state notifiers *are* the data layer.
 
 ```text
 lib/
@@ -264,11 +252,13 @@ Additional guidelines:
 
 ### Where is data stored?
 
-Locally, on-device. Röle does not connect to any backend service.
+Locally, on-device by default. If you sign in and connect to a `role-node` backend, workspaces
+you join are also synced there — everything else stays local.
 
 ### Do I need an account?
 
-No. Röle has no accounts, sign-in, or sync — everything you create stays on your device.
+No. Accounts, sign-in, and sync are entirely optional — Röle works fully offline with no
+account, and everything you create stays on your device unless you opt into a synced workspace.
 
 ## License
 
