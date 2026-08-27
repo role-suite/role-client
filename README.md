@@ -55,24 +55,38 @@ All collections, requests, and environments are stored on your device. There is 
       <sub><strong>Home Screen</strong></sub>
     </td>
     <td align="center" width="50%">
-      <img src="assets/screenshots/request-editor.png" alt="Röle Request Editor" width="100%"><br>
-      <sub><strong>Request Editor</strong></sub>
+      <img src="assets/screenshots/request-screen.png" alt="Röle Request List" width="100%"><br>
+      <sub><strong>Request List</strong></sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="assets/screenshots/request-body.png" alt="Röle Request Body Editor" width="100%"><br>
-      <sub><strong>Request Body</strong></sub>
+      <img src="assets/screenshots/request-detail-screen.png" alt="Röle Response Body Viewer" width="100%"><br>
+      <sub><strong>Readable Responses</strong></sub>
     </td>
     <td align="center" width="50%">
-      <img src="assets/screenshots/response-body.png" alt="Röle Response Body Viewer" width="100%"><br>
-      <sub><strong>Response Viewer</strong></sub>
+      <img src="assets/screenshots/assertions-screen.png" alt="Röle Assertions" width="100%"><br>
+      <sub><strong>Built-in Assertions</strong></sub>
     </td>
   </tr>
   <tr>
-    <td align="center" colspan="2">
-      <img src="assets/screenshots/response-headers.png" alt="Röle Response Headers Viewer" width="100%"><br>
-      <sub><strong>Response Headers</strong></sub>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/history-screen.png" alt="Röle Request History" width="100%"><br>
+      <sub><strong>Request History</strong></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/environment-screen.png" alt="Röle Environment Variables" width="100%"><br>
+      <sub><strong>Environments</strong></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/run-collection-screen.png" alt="Röle Collection Runner" width="100%"><br>
+      <sub><strong>Collection Runner</strong></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/chain-screen.png" alt="Röle Request Flows" width="100%"><br>
+      <sub><strong>Request Flows</strong></sub>
     </td>
   </tr>
 </table>
