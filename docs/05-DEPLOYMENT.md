@@ -64,9 +64,11 @@ No secrets are required to cut a release — see `.github/workflows/README.md` f
 signing secrets and one-time setup steps.
 
 macOS is **not** part of this pipeline (it is compile-checked on PRs but distributed by building
-locally). Android and iOS are **not** built by this pipeline yet — they're currently submitted to
-the Play Store and App Store manually (see Code Signing and Store Submission below), so
-`flutter build apk`, `appbundle`, and `ios` remain local steps.
+locally). Android release builds (AAB) are uploaded automatically to the Google Play **internal**
+track when the Play service-account and upload-keystore secrets are configured — see
+`.github/workflows/README.md` — and are promoted to other tracks manually in the Play Console.
+iOS is **not** built by this pipeline yet; archives are still produced and uploaded manually (see
+Code Signing and Store Submission below), so `flutter build ipa` remains a local step.
 
 Every push/PR to `main` also runs `.github/workflows/ci.yml` (version policy, format, analyze,
 test with coverage) and `.github/workflows/build-check.yml` (compile-only builds for Windows,

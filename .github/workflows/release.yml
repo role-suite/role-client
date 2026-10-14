@@ -50,7 +50,7 @@ jobs:
     needs: verify-version
     uses: ./.github/workflows/build.yml
     with:
-      platforms: '["windows","linux"]'
+      platforms: '["windows","linux","android-aab"]'
       sign: true
       package: true
     secrets: inherit
@@ -109,3 +109,35 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: gh release edit "$RELEASE_TAG" --draft=false
+
+  play-upload:
+    name: Upload to Google Play (internal)
+    needs: publish-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HAS_PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+      HAS_ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - name: Check release signing prerequisites
+        if: env.HAS_PLAY_SERVICE_ACCOUNT == 'true' && env.HAS_ANDROID_KEYSTORE != 'true'
+        run: |
+          echo "::error::PLAY_SERVICE_ACCOUNT_JSON is configured but ANDROID_KEYSTORE_BASE64 is not; the AAB would be debug-signed and rejected by Google Play."
+          exit 1
+
+      - name: Download AAB
+        if: env.HAS_PLAY_SERVICE_ACCOUNT == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release
+          path: android
+
+      - name: Upload to Google Play internal track
+        if: env.HAS_PLAY_SERVICE_ACCOUNT == 'true'
+        uses: r0adkll/upload-google-play@v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.devora.relay
+          releaseFiles: android/relay-android.aab
+          track: internal
+          status: completed

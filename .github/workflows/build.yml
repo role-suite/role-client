@@ -27,6 +27,14 @@ on:
         required: false
       WINDOWS_CERTIFICATE_PASSWORD:
         required: false
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
 
 permissions:
   contents: read
@@ -38,6 +46,7 @@ jobs:
     timeout-minutes: 60
     env:
       HAS_WINDOWS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
+      HAS_ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +64,9 @@ jobs:
           - platform: android
             name: Android
             os: ubuntu-latest
+          - platform: android-aab
+            name: Android (AAB)
+            os: ubuntu-latest
           - platform: ios
             name: iOS (no codesign)
             os: macos-latest
@@ -68,7 +80,7 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
 
       - name: Cache Gradle
-        if: matrix.platform == 'android'
+        if: matrix.platform == 'android' || matrix.platform == 'android-aab'
         uses: actions/cache@v4
         with:
           path: |
@@ -101,6 +113,26 @@ jobs:
       - name: Build Android
         if: matrix.platform == 'android'
         run: flutter build apk --release
+
+      - name: Configure Android signing
+        if: inputs.sign && matrix.platform == 'android-aab' && env.HAS_ANDROID_KEYSTORE == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build Android App Bundle
+        if: matrix.platform == 'android-aab'
+        run: flutter build appbundle --release
 
       - name: Build iOS (no codesign)
         if: matrix.platform == 'ios'
@@ -144,4 +176,16 @@ jobs:
         with:
           name: linux-release
           path: relay-linux.tar.gz
+          retention-days: 7
+
+      - name: Package Android build
+        if: inputs.package && matrix.platform == 'android-aab'
+        run: cp build/app/outputs/bundle/release/app-release.aab relay-android.aab
+
+      - name: Upload Android artifact
+        if: inputs.package && matrix.platform == 'android-aab'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: relay-android.aab
           retention-days: 7

@@ -6,7 +6,7 @@
 | `build.yml` | called by `build-check.yml` / `release.yml` | Reusable build workflow: platform matrix, optional Windows signing, optional packaging + artifact upload |
 | `build-check.yml` | push/PR to `main` | Calls `build.yml` with all five platforms to catch build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
-| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` and is an ancestor of `main`, calls `build.yml` for Windows/Linux, attests provenance, creates a draft release, then publishes it after approval |
+| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` and is an ancestor of `main`, calls `build.yml` for Windows/Linux/Android, attests provenance, creates a draft release, then publishes it after approval and uploads the AAB to the Google Play internal track when configured |
 | `nightly.yml` | daily schedule (or manual dispatch) | Drift check: analyze + test against the latest stable Flutter SDK (ignoring the `.fvmrc` pin) and opens/updates a GitHub issue on failure |
 
 ## Coverage
@@ -59,6 +59,26 @@ If `WINDOWS_CERTIFICATE_BASE64` is not set, the workflow still builds and packag
 
 No signing secrets used — the `linux` job always builds and packages a `.tar.gz`.
 
+### Android (optional for the `android-aab` build and Play upload)
+
+The App Bundle is signed with the upload keystore when these are set. If
+`ANDROID_KEYSTORE_BASE64` is missing, the AAB is built debug-signed (the same fallback the PR
+build check uses) and the Play upload is skipped — unless `PLAY_SERVICE_ACCOUNT_JSON` is set,
+in which case the workflow fails fast rather than uploading a wrong-key bundle.
+
+| Secret | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | base64-encoded upload keystore (`.jks`) |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| `ANDROID_KEY_ALIAS` | key alias |
+| `ANDROID_KEY_PASSWORD` | key password |
+| `PLAY_SERVICE_ACCOUNT_JSON` | full JSON of a Play service account with release access |
+
+Uploads go to the **internal** track; promote releases to other tracks manually in the Play
+Console. The app (`com.devora.relay`) must already exist there and the service account must be
+granted access. Keep an offline backup of the upload keystore — losing it means you can no
+longer update the Play listing.
+
 ## Cutting a release
 
 See the release checklist in [docs/09-VERSIONING.md](../../docs/09-VERSIONING.md). In short:
@@ -73,10 +93,11 @@ git push origin v1.1.0
 This triggers `release.yml`, which:
 
 1. verifies the tag matches `pubspec.yaml` and is an ancestor of `main` (fails fast otherwise);
-2. calls `build.yml` to build, sign (if configured), and package Windows and Linux artifacts;
+2. calls `build.yml` to build, sign (if configured), and package Windows, Linux, and Android artifacts;
 3. creates build-provenance attestations and a `SHA256SUMS` file;
 4. creates a **draft** GitHub Release with auto-generated notes;
-5. publishes the draft after the `release` environment gate (if configured).
+5. publishes the draft after the `release` environment gate (if configured);
+6. uploads `relay-android.aab` to the Google Play internal track when `PLAY_SERVICE_ACCOUNT_JSON` is configured.
 
 | Asset | Contents |
 |---|---|
