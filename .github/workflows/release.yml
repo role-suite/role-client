@@ -25,23 +25,21 @@ jobs:
   verify-version:
     name: Verify tag matches pubspec version
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
 
+      - uses: ./.github/actions/setup-flutter
+
       - name: Check tag against pubspec.yaml
-        run: |
-          TAG_VERSION="${RELEASE_TAG#v}"
-          PUBSPEC_VERSION="$(awk '/^version:/ {print $2}' pubspec.yaml | cut -d+ -f1)"
-          if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
-            echo "::error::Tag ${RELEASE_TAG} does not match pubspec.yaml version ${PUBSPEC_VERSION} — bump pubspec.yaml or push the correct tag"
-            exit 1
-          fi
+        run: dart run tool/version.dart validate --tag "$RELEASE_TAG"
 
   windows:
     name: Windows (signed if certificate present)
     runs-on: windows-latest
+    timeout-minutes: 45
     needs: verify-version
     env:
       HAS_WINDOWS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
@@ -82,6 +80,7 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: verify-version
     steps:
       - uses: actions/checkout@v4
@@ -114,6 +113,7 @@ jobs:
     name: Publish GitHub Release
     needs: [windows, linux]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4

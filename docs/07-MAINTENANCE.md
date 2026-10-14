@@ -33,7 +33,7 @@ feature:
 ## Provider Regression Checks
 
 1. Run `dart format --output=none --set-exit-if-changed .`.
-2. Run `flutter analyze`.
+2. Run `dart analyze --fatal-infos`.
 3. Run `flutter test`.
 4. Verify collection/request/environment CRUD refresh behavior.
 
@@ -45,6 +45,6 @@ These same checks run in CI on every push/PR (`.github/workflows/ci.yml`).
 
 ```bash
 flutter pub get
-flutter analyze
+dart analyze --fatal-infos
 flutter test
 ```

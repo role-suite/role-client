@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,16 +17,20 @@ jobs:
   analyze-and-test:
     name: Analyze, format & test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: ./.github/actions/setup-flutter
 
+      - name: Validate version
+        run: dart run tool/version.dart validate
+
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze
-        run: flutter analyze
+        run: dart analyze --fatal-infos
 
       - name: Run tests
         run: flutter test

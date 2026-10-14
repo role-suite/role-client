@@ -12,7 +12,7 @@
   <a href="https://github.com/role-suite/role-client/actions/workflows/ci.yml"><img src="https://github.com/role-suite/role-client/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/role-suite/role-client/releases"><img src="https://img.shields.io/github/v/release/role-suite/role-client?label=release" alt="Latest Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <a href="https://docs.flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.44%2B-02569B?logo=flutter&logoColor=white" alt="Flutter"></a>
+  <a href="https://docs.flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.47.2-02569B?logo=flutter&logoColor=white" alt="Flutter"></a>
   <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-informational" alt="Platforms">
 </p>
 
@@ -97,7 +97,7 @@ backend for team-synced workspaces; local-only usage is unaffected either way.
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.44.0` or newer
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.47.2` — the exact version pinned in [`.fvmrc`](.fvmrc); run `fvm use` or install it directly so local tooling matches CI
 - Platform development tooling:
   - **Windows**: Visual Studio 2022 with C++ workload
   - **macOS**: Xcode 14+
@@ -192,6 +192,7 @@ Detailed technical docs live in [`docs/`](docs/):
 - [Architecture](docs/02-ARCHITECTURE.md)
 - [Development setup](docs/06-DEVELOPMENT.md)
 - [Maintenance guide](docs/07-MAINTENANCE.md)
+- [Versioning & releases](docs/09-VERSIONING.md)
 
 ## Architecture
 
@@ -239,7 +240,8 @@ Variable syntax (`{{name}}`) is defined in `lib/core/network/template_resolver.d
 ## Development
 
 ```bash
-flutter analyze
+dart format .
+dart analyze --fatal-infos
 flutter test
 ```
 

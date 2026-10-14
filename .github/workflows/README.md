@@ -2,10 +2,19 @@
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `ci.yml` | push/PR to `main` | `dart format` check, `flutter analyze` (incl. `riverpod_lint`), `flutter test` |
-| `build-check.yml` | push/PR to `main` | Compile-only build of Windows, Linux to catch platform build breakage early |
+| `ci.yml` | push/PR to `main` | version-policy check, `dart format` check, `dart analyze --fatal-infos` (incl. `riverpod_lint`), `flutter test` |
+| `build-check.yml` | push/PR to `main` | Compile-only build of Windows and Linux to catch platform build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
-| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml`, builds Windows (signed if cert provided) and Linux artifacts; publishes them to a GitHub Release with versioned filenames and a `SHA256SUMS` file |
+| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` via `tool/version.dart`, builds Windows (signed if cert provided) and Linux artifacts; publishes them to a GitHub Release with versioned filenames and a `SHA256SUMS` file |
+
+## Toolchain pinning
+
+- The Flutter SDK is pinned in [`.fvmrc`](../../.fvmrc) and installed by
+  `.github/actions/setup-flutter`; bump it deliberately rather than letting CI track `stable`.
+- The composite action runs `flutter pub get --enforce-lockfile`, so `pubspec.lock` must match
+  `pubspec.yaml` exactly. Run `flutter pub get` locally after changing dependencies.
+- App versions are governed by `pubspec.yaml` and [docs/09-VERSIONING.md](../../docs/09-VERSIONING.md);
+  `dart run tool/version.dart` bumps and validates them.
 
 ## Required secrets for `release.yml`
 
@@ -28,9 +37,13 @@ No signing secrets used — the `linux` job always builds and packages a `.tar.g
 
 ## Cutting a release
 
+See the release checklist in [docs/09-VERSIONING.md](../../docs/09-VERSIONING.md). In short:
+
 ```
-git tag v1.0.0
-git push origin v1.0.0
+dart run tool/version.dart bump patch   # or minor/major/build
+# update CHANGELOG.md, merge to main, then:
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
 This triggers `release.yml`, which first checks that the tag matches the `version:` in

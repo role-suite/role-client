@@ -25,9 +25,8 @@ Future<void> runExportRemoteWorkspace(BuildContext context, WidgetRef ref, {requ
     final fileName = '${_sanitizeFileName(workspaceName)}-export.json';
     final path = await WorkspaceIo.exportToFile(json, fileName: fileName);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(path != null ? 'Exported remote workspace "$workspaceName" to $path' : 'Remote export cancelled')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(path != null ? 'Exported remote workspace "$workspaceName" to $path' : 'Remote export cancelled')));
   } catch (error) {
     if (!context.mounted) return;
     showRemoteErrorSnackBar(context, 'Export failed', error);

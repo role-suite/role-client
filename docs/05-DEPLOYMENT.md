@@ -68,4 +68,9 @@ reaches `main`.
 
 ## Versioning
 
-- **Version** is set in `pubspec.yaml` (`version: 1.0.0+2`). The optional `+2` is the build number. Bump before release; Flutter uses this for the app version shown on device and in stores. The release workflow rejects tags that don't match this version.
+- **Version** is set in `pubspec.yaml` (`version: 1.1.0+3`). The optional `+3` is the build
+  number. Bump before release; Flutter uses this for the app version shown on device and in
+  stores. The release workflow rejects tags that don't match this version.
+- The full policy (which part to bump, store mappings, tagging rules, and the release
+  checklist) lives in [09-VERSIONING.md](09-VERSIONING.md). Use `dart run tool/version.dart`
+  to inspect or bump the version instead of editing `pubspec.yaml` by hand.

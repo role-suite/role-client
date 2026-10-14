@@ -39,10 +39,9 @@ class WorkspaceImportExportService {
   Future<ImportExportJob> createExport(int workspaceId, {bool includeCollections = true, bool includeEnvironments = true}) async {
     final data = Map<String, dynamic>.from(
       await _client.post(
-            '/workspaces/$workspaceId/import-export/exports',
-            data: {'format': 'json', 'includeCollections': includeCollections, 'includeEnvironments': includeEnvironments},
-          )
-          as Map,
+        '/workspaces/$workspaceId/import-export/exports',
+        data: {'format': 'json', 'includeCollections': includeCollections, 'includeEnvironments': includeEnvironments},
+      ) as Map,
     );
     return ImportExportJob.fromJson(data);
   }
