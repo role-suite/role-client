@@ -14,31 +14,61 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows:
-    name: Windows build
-    runs-on: windows-latest
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/setup-flutter
-
-      - name: Build Windows app
-        run: flutter build windows --release
-
-  linux:
-    name: Linux build
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            build: flutter build windows --release
+          - name: Linux
+            os: ubuntu-latest
+            build: flutter build linux --release
+          - name: macOS (unsigned)
+            os: macos-latest
+            build: flutter build macos --release
+          - name: Android
+            os: ubuntu-latest
+            build: flutter build apk --release
+          - name: iOS (no codesign)
+            os: macos-latest
+            build: flutter build ios --release --no-codesign
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Linux build dependencies
+        if: matrix.name == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
 
+      - name: Cache Gradle
+        if: matrix.name == 'Android'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
       - uses: ./.github/actions/setup-flutter
 
-      - name: Build Linux app
-        run: flutter build linux --release
+      # The Xcode project uses automatic signing with a development team, which is not
+      # available on CI runners. Flutter only disables signing itself for iOS, so force
+      # an unsigned build for the macOS compile check via xcodebuild settings.
+      - name: Build (unsigned)
+        if: matrix.name == 'macOS (unsigned)'
+        run: ${{ matrix.build }}
+        env:
+          FLUTTER_XCODE_CODE_SIGN_IDENTITY: "-"
+          FLUTTER_XCODE_CODE_SIGNING_REQUIRED: "NO"
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
+
+      - name: Build
+        if: matrix.name != 'macOS (unsigned)'
+        run: ${{ matrix.build }}

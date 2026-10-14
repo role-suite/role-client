@@ -41,6 +41,8 @@ These same checks run in CI on every push/PR (`.github/workflows/ci.yml`).
 
 ## Updating Dependencies
 
+- Renovate opens grouped PRs from [`renovate.json`](../renovate.json) (pub packages, GitHub
+  Actions, and the `.fvmrc` Flutter pin). Install the Renovate GitHub App once to enable it.
 - After dependency updates, run:
 
 ```bash
@@ -48,3 +50,7 @@ flutter pub get
 dart analyze --fatal-infos
 flutter test
 ```
+
+- The daily [`nightly.yml`](../.github/workflows/nightly.yml) check runs analyze + test against
+  the latest stable Flutter SDK; if it fails, it opens/updates a GitHub issue. Treat that as a
+  signal to bump `.fvmrc` and the affected dependencies deliberately.

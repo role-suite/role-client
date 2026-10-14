@@ -74,11 +74,17 @@ load analyzer plugins like `riverpod_lint`.
 
 Every push/PR to `main` runs (see `.github/workflows/`):
 
-- **`ci.yml`**: `dart format --set-exit-if-changed`, `dart analyze --fatal-infos`, `flutter test`
-- **`build-check.yml`**: compile-only builds for macOS, Windows, and Linux
-- **`pr-title.yml`**: enforces a Conventional Commit-style PR title
+- **`ci.yml`**: version-policy validation, `dart format --set-exit-if-changed`,
+  `dart analyze --fatal-infos`, and `flutter test` (with a `coverage-lcov` artifact).
+- **`build-check.yml`**: compile-only release builds for Windows, Linux, macOS (unsigned),
+  Android, and iOS (no codesign) in a fail-fast-disabled matrix.
+- **`pr-title.yml`**: enforces a Conventional Commit-style PR title.
 
-Pushing a `v*.*.*` tag triggers `release.yml`, which builds and publishes signed macOS,
-Windows, and Linux artifacts to a GitHub Release. Android and iOS are distributed through
-their app stores and are not built by this pipeline. See `.github/workflows/README.md` for
-required release secrets.
+`nightly.yml` additionally runs analyze + test against the latest stable Flutter SDK (ignoring
+the `.fvmrc` pin) and opens or updates a GitHub issue when it fails — that's the early warning
+for SDK drift. Dependency-update PRs are opened by Renovate (`renovate.json`).
+
+Pushing a `v*.*.*` tag triggers `release.yml`, which builds and publishes versioned Windows
+and Linux artifacts (signed when the signing secrets are configured) to a GitHub Release.
+Android and iOS are distributed through their app stores and are not built by this pipeline
+yet. See `.github/workflows/README.md` for required release secrets.

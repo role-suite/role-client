@@ -2,10 +2,24 @@
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `ci.yml` | push/PR to `main` | version-policy check, `dart format` check, `dart analyze --fatal-infos` (incl. `riverpod_lint`), `flutter test` |
-| `build-check.yml` | push/PR to `main` | Compile-only build of Windows and Linux to catch platform build breakage early |
+| `ci.yml` | push/PR to `main` | version-policy check, `dart format` check, `dart analyze --fatal-infos` (incl. `riverpod_lint`), `flutter test` with a coverage artifact |
+| `build-check.yml` | push/PR to `main` | Compile-only release builds for Windows, Linux, macOS (unsigned), Android and iOS (no codesign) to catch platform build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
 | `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` via `tool/version.dart`, builds Windows (signed if cert provided) and Linux artifacts; publishes them to a GitHub Release with versioned filenames and a `SHA256SUMS` file |
+| `nightly.yml` | daily schedule (or manual dispatch) | Drift check: analyze + test against the latest stable Flutter SDK (ignoring the `.fvmrc` pin) and opens/updates a GitHub issue on failure |
+
+## Coverage
+
+`ci.yml` writes `coverage/lcov.info`, posts a line-coverage summary on the run's Summary tab,
+and uploads the report as a `coverage-lcov` artifact (14 days). It is report-only — no coverage
+threshold is enforced, and no third-party coverage service is wired up.
+
+## Dependency updates
+
+[Renovate](../../renovate.json) opens grouped PRs for `pub` dependencies, GitHub Actions, and
+the `.fvmrc` Flutter pin (monthly). It needs the Renovate GitHub App installed on this
+repository — that is a one-time manual step in the GitHub UI, not something these files do.
+Renovate PRs run the same CI gates as any other PR, including `--enforce-lockfile`.
 
 ## Toolchain pinning
 

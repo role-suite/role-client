@@ -32,10 +32,14 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Environment variables now support per-row enable/disable, secret masking, and ordering.
 - Version tooling (`tool/version.dart`) and the versioning policy in
   [docs/09-VERSIONING.md](docs/09-VERSIONING.md).
-- CI/CD via GitHub Actions: format/analyze/test on every push and PR, compile-only build
-  checks for Windows and Linux, a Conventional-Commits PR title check, and a tag-triggered
+- CI/CD via GitHub Actions: version validation, format/analyze/test on every push and PR
+  (with a coverage artifact and run-summary coverage), compile-only release builds for Windows,
+  Linux, macOS, Android, and iOS, a Conventional-Commits PR title check, a nightly check
+  against the latest stable Flutter SDK that opens an issue on drift, and a tag-triggered
   release pipeline that publishes versioned Windows and Linux artifacts plus checksums to
   GitHub Releases (Windows signed when certificate secrets are configured, otherwise unsigned).
+- Renovate dependency-update PRs (`renovate.json`) for pub packages, GitHub Actions, and the
+  `.fvmrc` Flutter SDK pin.
 - `.editorconfig` for consistent formatting across editors.
 
 ### Changed
@@ -55,6 +59,8 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - `pubspec.lock`, `ios/Podfile.lock`, and `macos/Podfile.lock` are now committed (an app, unlike
   a published package, should pin its resolved dependency graph for reproducible builds) —
   `.gitignore` no longer blanket-excludes `*.lock`.
+- Android release builds fall back to debug signing when `android/key.properties` is absent, so
+  release builds compile locally and in PR checks without signing secrets.
 
 ### Removed
 
