@@ -6,7 +6,7 @@
 | `build.yml` | called by `build-check.yml` / `release.yml` | Reusable build workflow: platform matrix, optional Windows signing, optional packaging + artifact upload |
 | `build-check.yml` | push/PR to `main` | Calls `build.yml` with all five platforms to catch build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
-| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` and is an ancestor of `main`, calls `build.yml` for Windows/Linux/Android, attests provenance, creates a draft release, then publishes it after approval and uploads the AAB to the Google Play internal track when configured |
+| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` and is an ancestor of `main`, calls `build.yml` for Windows/Linux/Android, attests provenance, creates a draft release, publishes it after approval, and uploads to Google Play (internal) and TestFlight when configured |
 | `nightly.yml` | daily schedule (or manual dispatch) | Drift check: analyze + test against the latest stable Flutter SDK (ignoring the `.fvmrc` pin) and opens/updates a GitHub issue on failure |
 
 ## Coverage
@@ -79,6 +79,35 @@ Console. The app (`com.devora.relay`) must already exist there and the service a
 granted access. Keep an offline backup of the upload keystore — losing it means you can no
 longer update the Play listing.
 
+### iOS (optional for the TestFlight upload)
+
+CI signs with [fastlane match](https://docs.fastlane.tools/actions/match/) in readonly mode
+(`ios/fastlane/Matchfile`) and uploads to TestFlight for **internal** testers. If
+`MATCH_GIT_URL` is not set, the iOS step is skipped with a notice instead of failing the
+release — the same applies to the Android and Windows signing steps.
+
+| Secret | Value |
+|---|---|
+| `MATCH_GIT_URL` | URL of the private certificates repo (created by `fastlane match`) |
+| `MATCH_PASSWORD` | encryption password for the certificates repo |
+| `MATCH_GIT_BASIC_AUTHORIZATION` | base64 `username:token` for cloning the private repo (or use a deploy key) |
+| `MATCH_USERNAME` | optional Apple ID email, used only when running match locally |
+| `APP_STORE_CONNECT_API_KEY_KEY_ID` | App Store Connect API key ID |
+| `APP_STORE_CONNECT_API_KEY_ISSUER_ID` | App Store Connect API issuer ID |
+| `APP_STORE_CONNECT_API_KEY_KEY` | App Store Connect API private key (`.p8` contents, newlines included) |
+
+One-time setup (on a Mac with an Apple Developer account, from the repo root):
+
+```bash
+MATCH_GIT_URL=git@github.com:role-suite/role-certificates.git \
+MATCH_PASSWORD=<password> \
+bundle exec fastlane match appstore
+```
+
+This creates the App Store distribution certificate and profile and stores them encrypted in
+the certificates repo. The App Store Connect app record (`com.devora.relay`) must already
+exist.
+
 ## Cutting a release
 
 See the release checklist in [docs/09-VERSIONING.md](../../docs/09-VERSIONING.md). In short:
@@ -97,7 +126,8 @@ This triggers `release.yml`, which:
 3. creates build-provenance attestations and a `SHA256SUMS` file;
 4. creates a **draft** GitHub Release with auto-generated notes;
 5. publishes the draft after the `release` environment gate (if configured);
-6. uploads `relay-android.aab` to the Google Play internal track when `PLAY_SERVICE_ACCOUNT_JSON` is configured.
+6. uploads `relay-android.aab` to the Google Play internal track when `PLAY_SERVICE_ACCOUNT_JSON` is configured;
+7. builds and uploads the IPA to TestFlight (internal testers) when `MATCH_GIT_URL` is configured.
 
 | Asset | Contents |
 |---|---|

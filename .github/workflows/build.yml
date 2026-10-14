@@ -9,8 +9,13 @@ on:
   workflow_call:
     inputs:
       platforms:
-        description: JSON array of platforms to build (windows, linux, macos, android, ios)
+        description: JSON array of platforms to build (windows, linux, macos, android, android-aab, ios)
         required: true
+        type: string
+      ref:
+        description: Git ref to check out (defaults to the triggering commit)
+        required: false
+        default: ""
         type: string
       sign:
         description: Sign Windows builds when the certificate secret is configured
@@ -72,6 +77,8 @@ jobs:
             os: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Install Linux build dependencies
         if: matrix.platform == 'linux'

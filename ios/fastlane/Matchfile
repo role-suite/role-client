@@ -1,0 +1,9 @@
+# Certificates and provisioning profiles are stored, encrypted, in the private
+# repository referenced by MATCH_GIT_URL. See .github/workflows/README.md for the
+# required CI secrets and the one-time setup.
+git_url(ENV.fetch("MATCH_GIT_URL"))
+storage_mode("git")
+type("appstore")
+app_identifier("com.devora.relay")
+team_id("4VKLWUPBMR")
+username(ENV["MATCH_USERNAME"]) if ENV["MATCH_USERNAME"]

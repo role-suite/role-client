@@ -35,8 +35,8 @@ Replace `<platform>` with one of:
 
 - **Windows**: No code signing required for local distribution. For store (e.g. Microsoft Store), follow Flutter and store guidelines.
 - **macOS**: Sign and notarize the app for distribution outside the App Store; use Xcode or `codesign`/`notarytool`. For App Store, use Xcode archive and submit.
-- **Android**: Configure signing in `android/app/build.gradle` (keystore, key alias). For Play Store use the App Bundle and the Play Console.
-- **iOS**: Configure signing in Xcode (team, provisioning profile). Archive and upload to App Store Connect or distribute via TestFlight/Ad Hoc.
+- **Android**: Release signing uses `android/key.properties` + the upload keystore (or debug signing as a local fallback). The CI release pipeline signs the AAB and uploads it to the Play internal track when the secrets are configured — see `.github/workflows/README.md`.
+- **iOS**: CI signs with [fastlane match](https://docs.fastlane.tools/actions/match/) (`appstore` type, readonly in CI) and uploads to TestFlight for internal testers. Certificates/profiles live in a private certificates repo; see `.github/workflows/README.md` for the secrets and one-time setup.
 
 ## Automated Releases (GitHub Actions)
 
@@ -53,22 +53,22 @@ The workflow:
 1. Fails fast unless the tag matches the `version:` in `pubspec.yaml` **and** the tag is an
    ancestor of `main`.
 2. Calls the reusable `.github/workflows/build.yml` to build and package the Windows executable
-   (signed if a certificate secret is configured, otherwise unsigned) and the Linux tarball.
+   (signed if a certificate secret is configured, otherwise unsigned), the Linux tarball, and the
+   Android App Bundle.
 3. Attaches build-provenance attestations (`gh attestation verify`) and a `SHA256SUMS` file.
 4. Creates a **draft** GitHub Release with versioned assets
    (`relay-<version>-windows-x64.zip`, `relay-<version>-linux-x64.tar.gz`) and auto-generated
    notes, then publishes it through the `release` GitHub Environment — configure required
    reviewers there to make publishing a manual approval.
+5. After publishing, uploads the AAB to the Google Play **internal** track and the IPA to
+   TestFlight (internal testers) when the corresponding secrets are configured.
 
 No secrets are required to cut a release — see `.github/workflows/README.md` for the optional
-signing secrets and one-time setup steps.
+signing/store secrets and one-time setup steps.
 
 macOS is **not** part of this pipeline (it is compile-checked on PRs but distributed by building
-locally). Android release builds (AAB) are uploaded automatically to the Google Play **internal**
-track when the Play service-account and upload-keystore secrets are configured — see
-`.github/workflows/README.md` — and are promoted to other tracks manually in the Play Console.
-iOS is **not** built by this pipeline yet; archives are still produced and uploaded manually (see
-Code Signing and Store Submission below), so `flutter build ipa` remains a local step.
+locally). Android releases land on the Play **internal** track and are promoted to other tracks
+manually in the Play Console; iOS builds land with internal TestFlight testers.
 
 Every push/PR to `main` also runs `.github/workflows/ci.yml` (version policy, format, analyze,
 test with coverage) and `.github/workflows/build-check.yml` (compile-only builds for Windows,

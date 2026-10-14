@@ -82,7 +82,8 @@ dart run tool/version.dart validate --tag v1.1.0
 
 6. Watch the `release.yml` workflow: it verifies the tag, builds the artifacts, creates a draft
    release with checksums and build-provenance attestations, then publishes it after the
-   `release` environment gate (if configured). Verify the assets and, if desired, run
+   `release` environment gate (if configured). Verify the assets, check the Play internal track /
+   TestFlight build when those are configured, and if desired run
    `gh attestation verify relay-<version>-<platform> --repo role-suite/role-client`.
 
 ## History and the 1.1.0 baseline

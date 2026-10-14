@@ -39,8 +39,11 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
   release pipeline that verifies the tag is on `main`, reuses the build workflow, attests build
   provenance, publishes versioned Windows and Linux artifacts plus checksums from a draft
   release after the `release` environment gate (Windows signed when certificate secrets are
-  configured, otherwise unsigned), and uploads the Android App Bundle to the Google Play
-  internal track when the store secrets are configured.
+  configured, otherwise unsigned), uploads the Android App Bundle to the Google Play internal
+  track, and builds/uploads the iOS IPA to TestFlight (internal testers) when the store and
+  signing secrets are configured.
+- fastlane match configuration (`Gemfile`, `ios/fastlane/`) for reproducible iOS release
+  signing through a private certificates repository.
 - Renovate dependency-update PRs (`renovate.json`) for pub packages, GitHub Actions, and the
   `.fvmrc` Flutter SDK pin.
 - `.editorconfig` for consistent formatting across editors.

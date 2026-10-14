@@ -51,6 +51,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       platforms: '["windows","linux","android-aab"]'
+      ref: ${{ inputs.tag || github.ref }}
       sign: true
       package: true
     secrets: inherit
@@ -141,3 +142,42 @@ jobs:
           releaseFiles: android/relay-android.aab
           track: internal
           status: completed
+
+  ios-testflight:
+    name: Upload to TestFlight
+    needs: publish-release
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      HAS_IOS_SIGNING: ${{ secrets.MATCH_GIT_URL != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Note skipped upload
+        if: env.HAS_IOS_SIGNING != 'true'
+        run: echo "::notice::MATCH_GIT_URL is not configured; skipping the TestFlight upload."
+
+      - uses: ruby/setup-ruby@v1
+        if: env.HAS_IOS_SIGNING == 'true'
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - uses: ./.github/actions/setup-flutter
+        if: env.HAS_IOS_SIGNING == 'true'
+
+      - name: Build and upload to TestFlight
+        if: env.HAS_IOS_SIGNING == 'true'
+        working-directory: ios
+        env:
+          CI: "true"
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_USERNAME: ${{ secrets.MATCH_USERNAME }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+        run: bundle exec fastlane beta
