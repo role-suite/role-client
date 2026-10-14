@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing release tag to (re)build and publish, e.g. v1.0.0"
+        description: "Existing release tag to (re)build and publish, e.g. v1.1.0"
         required: true
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -23,97 +23,47 @@ env:
 
 jobs:
   verify-version:
-    name: Verify tag matches pubspec version
+    name: Verify tag matches pubspec and main
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
 
       - uses: ./.github/actions/setup-flutter
 
       - name: Check tag against pubspec.yaml
         run: dart run tool/version.dart validate --tag "$RELEASE_TAG"
 
-  windows:
-    name: Windows (signed if certificate present)
-    runs-on: windows-latest
-    timeout-minutes: 45
+      - name: Check tag is on main
+        run: |
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$RELEASE_TAG" origin/main; then
+            echo "::error::$RELEASE_TAG is not an ancestor of main; release tags must be created on main"
+            exit 1
+          fi
+
+  build:
+    name: Build release artifacts
     needs: verify-version
-    env:
-      HAS_WINDOWS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
+    uses: ./.github/workflows/build.yml
+    with:
+      platforms: '["windows","linux"]'
+      sign: true
+      package: true
+    secrets: inherit
 
-      - uses: ./.github/actions/setup-flutter
-
-      - name: Build Windows app
-        run: flutter build windows --release
-
-      - name: Sign executable
-        if: env.HAS_WINDOWS_CERT == 'true'
-        shell: pwsh
-        env:
-          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
-          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-        run: |
-          [IO.File]::WriteAllBytes("certificate.pfx", [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
-          $signtool = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" |
-            Where-Object { $_.FullName -match "x64" } | Select-Object -First 1).FullName
-          & $signtool sign /f certificate.pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td sha256 /fd sha256 "build\windows\x64\runner\Release\relay.exe"
-          Remove-Item certificate.pfx
-
-      - name: Zip build
-        shell: pwsh
-        run: Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath relay-windows.zip
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-release
-          path: relay-windows.zip
-          retention-days: 7
-
-  linux:
-    name: Linux
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    needs: verify-version
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
-
-      - name: Install Linux build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
-
-      - uses: ./.github/actions/setup-flutter
-
-      - name: Build Linux app
-        run: flutter build linux --release
-
-      - name: Package build
-        run: |
-          mv build/linux/x64/release/bundle build/linux/x64/release/relay
-          tar -czf relay-linux.tar.gz -C build/linux/x64/release relay
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-release
-          path: relay-linux.tar.gz
-          retention-days: 7
-
-  publish-release:
-    name: Publish GitHub Release
-    needs: [windows, linux]
+  create-release:
+    name: Create draft release
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -132,9 +82,30 @@ jobs:
           cd release-assets
           sha256sum relay-* > SHA256SUMS
 
-      - name: Create Release
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: release-assets/relay-*
+
+      - name: Create draft release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           files: release-assets/*
           generate_release_notes: true
+          draft: true
+
+  publish-release:
+    name: Publish release
+    needs: create-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "$RELEASE_TAG" --draft=false

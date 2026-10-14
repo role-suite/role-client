@@ -36,8 +36,10 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
   (with a coverage artifact and run-summary coverage), compile-only release builds for Windows,
   Linux, macOS, Android, and iOS, a Conventional-Commits PR title check, a nightly check
   against the latest stable Flutter SDK that opens an issue on drift, and a tag-triggered
-  release pipeline that publishes versioned Windows and Linux artifacts plus checksums to
-  GitHub Releases (Windows signed when certificate secrets are configured, otherwise unsigned).
+  release pipeline that verifies the tag is on `main`, reuses the build workflow, attests build
+  provenance, and publishes versioned Windows and Linux artifacts plus checksums from a draft
+  release after the `release` environment gate (Windows signed when certificate secrets are
+  configured, otherwise unsigned).
 - Renovate dependency-update PRs (`renovate.json`) for pub packages, GitHub Actions, and the
   `.fvmrc` Flutter SDK pin.
 - `.editorconfig` for consistent formatting across editors.

@@ -84,7 +84,9 @@ Every push/PR to `main` runs (see `.github/workflows/`):
 the `.fvmrc` pin) and opens or updates a GitHub issue when it fails — that's the early warning
 for SDK drift. Dependency-update PRs are opened by Renovate (`renovate.json`).
 
-Pushing a `v*.*.*` tag triggers `release.yml`, which builds and publishes versioned Windows
-and Linux artifacts (signed when the signing secrets are configured) to a GitHub Release.
-Android and iOS are distributed through their app stores and are not built by this pipeline
-yet. See `.github/workflows/README.md` for required release secrets.
+Pushing a `v*.*.*` tag triggers `release.yml`, which verifies the tag is on `main` and matches
+`pubspec.yaml`, builds Windows and Linux through the reusable `build.yml`, attests build
+provenance, and publishes versioned artifacts (signed when the signing secrets are configured)
+from a draft release after the `release` environment gate. Android and iOS are distributed
+through their app stores and are not built by this pipeline yet. See
+`.github/workflows/README.md` for required release secrets.

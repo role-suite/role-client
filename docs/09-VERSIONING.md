@@ -80,8 +80,10 @@ dart run tool/version.dart validate --tag v1.1.0
    git push origin main vX.Y.Z
    ```
 
-6. Watch the `release.yml` workflow; verify the GitHub Release artifacts, checksums, and store
-   uploads (where configured).
+6. Watch the `release.yml` workflow: it verifies the tag, builds the artifacts, creates a draft
+   release with checksums and build-provenance attestations, then publishes it after the
+   `release` environment gate (if configured). Verify the assets and, if desired, run
+   `gh attestation verify relay-<version>-<platform> --repo role-suite/role-client`.
 
 ## History and the 1.1.0 baseline
 

@@ -3,9 +3,10 @@
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | `ci.yml` | push/PR to `main` | version-policy check, `dart format` check, `dart analyze --fatal-infos` (incl. `riverpod_lint`), `flutter test` with a coverage artifact |
-| `build-check.yml` | push/PR to `main` | Compile-only release builds for Windows, Linux, macOS (unsigned), Android and iOS (no codesign) to catch platform build breakage early |
+| `build.yml` | called by `build-check.yml` / `release.yml` | Reusable build workflow: platform matrix, optional Windows signing, optional packaging + artifact upload |
+| `build-check.yml` | push/PR to `main` | Calls `build.yml` with all five platforms to catch build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
-| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` via `tool/version.dart`, builds Windows (signed if cert provided) and Linux artifacts; publishes them to a GitHub Release with versioned filenames and a `SHA256SUMS` file |
+| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` and is an ancestor of `main`, calls `build.yml` for Windows/Linux, attests provenance, creates a draft release, then publishes it after approval |
 | `nightly.yml` | daily schedule (or manual dispatch) | Drift check: analyze + test against the latest stable Flutter SDK (ignoring the `.fvmrc` pin) and opens/updates a GitHub issue on failure |
 
 ## Coverage
@@ -32,9 +33,18 @@ Renovate PRs run the same CI gates as any other PR, including `--enforce-lockfil
 
 ## Required secrets for `release.yml`
 
-None of these are needed for `ci.yml` or `build-check.yml`. Add them under **Settings → Secrets and variables → Actions** before pushing a release tag. Every secret below is optional — with none set, `release.yml` still builds and publishes unsigned artifacts for both platforms.
+None of these are needed for `ci.yml`, `build-check.yml`, or `nightly.yml`. Add them under
+**Settings → Secrets and variables → Actions** before pushing a release tag. Every secret below
+is optional — with none set, `release.yml` still builds and publishes unsigned artifacts.
 
-Android and iOS are distributed through their respective app stores, and macOS is not currently distributed through this pipeline, so `release.yml` does not build them.
+`release.yml` uses a GitHub Environment named `release` for its final publish job. Configure it
+under **Settings → Environments** with required reviewers if you want a manual approval between
+the draft release being prepared and it going live; without that, publishing happens
+automatically once the draft is ready.
+
+Android and iOS are distributed through their respective app stores, and macOS is not currently
+distributed through this pipeline, so `release.yml` does not build them (the PR build check does
+compile all five platforms).
 
 ### Windows (optional for the `windows` job)
 
@@ -60,9 +70,13 @@ git tag v1.1.0
 git push origin v1.1.0
 ```
 
-This triggers `release.yml`, which first checks that the tag matches the `version:` in
-`pubspec.yaml` (the workflow fails fast otherwise), then builds all platforms in parallel and
-publishes a GitHub Release with auto-generated notes and these assets:
+This triggers `release.yml`, which:
+
+1. verifies the tag matches `pubspec.yaml` and is an ancestor of `main` (fails fast otherwise);
+2. calls `build.yml` to build, sign (if configured), and package Windows and Linux artifacts;
+3. creates build-provenance attestations and a `SHA256SUMS` file;
+4. creates a **draft** GitHub Release with auto-generated notes;
+5. publishes the draft after the `release` environment gate (if configured).
 
 | Asset | Contents |
 |---|---|
@@ -70,5 +84,12 @@ publishes a GitHub Release with auto-generated notes and these assets:
 | `relay-<version>-linux-x64.tar.gz` | extracts to a `relay/` folder with the binary and libs |
 | `SHA256SUMS` | checksums for all of the above |
 
+Verify a downloaded artifact's provenance with:
+
+```bash
+gh attestation verify relay-<version>-windows-x64.zip --repo role-suite/role-client
+```
+
 You can also re-run a release from the **Actions → Release → Run workflow** dialog by entering
-an existing tag; the workflow checks out that tag and re-publishes its assets.
+an existing tag; the workflow checks out that tag, rebuilds and re-attaches its assets, and the
+draft goes through the same publish gate again.
