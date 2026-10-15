@@ -2,8 +2,9 @@
 
 ## Prerequisites
 
-- Flutter SDK 3.9+ ([flutter.dev](https://flutter.dev))
-- Dart 3.9+ (included with Flutter)
+- Flutter SDK 3.47.2 — the exact version pinned in [`.fvmrc`](../.fvmrc). Use `fvm use` (or
+  install that SDK directly) so local `dart format` output matches CI.
+- Dart 3.13+ (included with Flutter)
 
 ## Local Setup
 
@@ -59,24 +60,33 @@ See [02-ARCHITECTURE.md](02-ARCHITECTURE.md) for the full architecture writeup.
 
 ```bash
 dart format .
-flutter analyze
+dart analyze --fatal-infos
 flutter test
 ```
 
 Fix analyzer warnings before committing. Add or update tests when behavior changes.
 `.editorconfig` at the repo root keeps indentation/line-ending/charset consistent across
 editors; `analysis_options.yaml` configures the analyzer and linter (including
-`riverpod_lint`).
+`riverpod_lint`). Use `dart analyze`, not `flutter analyze` — the Flutter wrapper does not
+load analyzer plugins like `riverpod_lint`.
 
 ## Continuous Integration
 
 Every push/PR to `main` runs (see `.github/workflows/`):
 
-- **`ci.yml`**: `dart format --set-exit-if-changed`, `flutter analyze`, `flutter test`
-- **`build-check.yml`**: compile-only builds for macOS, Windows, and Linux
-- **`pr-title.yml`**: enforces a Conventional Commit-style PR title
+- **`ci.yml`**: version-policy validation, `dart format --set-exit-if-changed`,
+  `dart analyze --fatal-infos`, and `flutter test` (with a `coverage-lcov` artifact).
+- **`build-check.yml`**: compile-only release builds for Windows, Linux, macOS (unsigned),
+  Android, and iOS (no codesign) in a fail-fast-disabled matrix.
+- **`pr-title.yml`**: enforces a Conventional Commit-style PR title.
 
-Pushing a `v*.*.*` tag triggers `release.yml`, which builds and publishes signed macOS,
-Windows, and Linux artifacts to a GitHub Release. Android and iOS are distributed through
-their app stores and are not built by this pipeline. See `.github/workflows/README.md` for
-required release secrets.
+`nightly.yml` additionally runs analyze + test against the latest stable Flutter SDK (ignoring
+the `.fvmrc` pin) and opens or updates a GitHub issue when it fails — that's the early warning
+for SDK drift. Dependency-update PRs are opened by Renovate (`renovate.json`).
+
+Pushing a `v*.*.*` tag triggers `release.yml`, which verifies the tag is on `main` and matches
+`pubspec.yaml`, builds Windows/Linux/Android through the reusable `build.yml`, attests build
+provenance, and publishes versioned artifacts (signed when the signing secrets are configured)
+from a draft release after the `release` environment gate. When store secrets are configured it
+also uploads the AAB to the Google Play internal track and the IPA to TestFlight (internal
+testers). See `.github/workflows/README.md` for the secrets and one-time setup.

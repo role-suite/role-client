@@ -1,15 +1,16 @@
 name: Setup Flutter
-description: Install the stable Flutter SDK and fetch pub dependencies.
+description: Install the Flutter SDK pinned in .fvmrc and fetch pub dependencies.
 
 runs:
   using: composite
   steps:
-    - uses: subosito/flutter-action@v2
+    - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
       with:
-        flutter-version: '3.44.0'
+        flutter-version-file: .fvmrc
         channel: stable
         cache: true
+        pub-cache: true
 
     - name: Install dependencies
       shell: bash
-      run: flutter pub get
+      run: flutter pub get --enforce-lockfile

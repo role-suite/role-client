@@ -26,19 +26,18 @@ class WorkspacePushService {
   Future<ApiRequest> createEndpoint(int workspaceId, int remoteCollectionId, {required String collectionLocalId, required ApiRequest request}) async {
     final data = Map<String, dynamic>.from(
       await _client.post(
-            '/workspaces/$workspaceId/collections/$remoteCollectionId/endpoints',
-            data: {
-              'name': request.name,
-              'method': request.method.name.toUpperCase(),
-              // role-node requires a non-empty URL even for a draft endpoint.
-              'url': request.url.isEmpty ? '/' : request.url,
-              'headers': request.headers.map((e) => e.toJson()).toList(),
-              'queryParams': request.queryParams.map((e) => e.toJson()).toList(),
-              'body': requestBodyToWire(request.requestBody),
-              'auth': authToWire(request.authType, request.authConfig),
-            },
-          )
-          as Map,
+        '/workspaces/$workspaceId/collections/$remoteCollectionId/endpoints',
+        data: {
+          'name': request.name,
+          'method': request.method.name.toUpperCase(),
+          // role-node requires a non-empty URL even for a draft endpoint.
+          'url': request.url.isEmpty ? '/' : request.url,
+          'headers': request.headers.map((e) => e.toJson()).toList(),
+          'queryParams': request.queryParams.map((e) => e.toJson()).toList(),
+          'body': requestBodyToWire(request.requestBody),
+          'auth': authToWire(request.authType, request.authConfig),
+        },
+      ) as Map,
     );
     return apiRequestFromRemoteEndpoint(data, workspaceId: workspaceId, collectionId: collectionLocalId);
   }
@@ -51,16 +50,15 @@ class WorkspacePushService {
   Future<EnvironmentVariable> createEnvironmentVariable(int workspaceId, int remoteEnvironmentId, EnvironmentVariable variable) async {
     final data = Map<String, dynamic>.from(
       await _client.post(
-            '/workspaces/$workspaceId/environments/$remoteEnvironmentId/variables',
-            data: {
-              'key': variable.key,
-              'value': variable.value,
-              'enabled': variable.enabled,
-              'isSecret': variable.isSecret,
-              'position': variable.position,
-            },
-          )
-          as Map,
+        '/workspaces/$workspaceId/environments/$remoteEnvironmentId/variables',
+        data: {
+          'key': variable.key,
+          'value': variable.value,
+          'enabled': variable.enabled,
+          'isSecret': variable.isSecret,
+          'position': variable.position,
+        },
+      ) as Map,
     );
     return environmentVariableFromRemote(data);
   }

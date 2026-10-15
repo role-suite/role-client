@@ -251,9 +251,8 @@ class _FormDataEditor extends StatelessWidget {
 
     final dataBase64 = base64Encode(file.bytes!);
     if (dataBase64.length > _largePayloadWarningBytes && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('"${file.name}" is large — role-node may reject it (over its request body limit).')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('"${file.name}" is large — role-node may reject it (over its request body limit).')));
     }
 
     onChanged([...parts, FormFilePart(key: file.name, fileName: file.name, dataBase64: dataBase64)]);
@@ -321,9 +320,8 @@ class _BinaryEditor extends StatelessWidget {
 
     final dataBase64 = base64Encode(file.bytes!);
     if (dataBase64.length > _largePayloadWarningBytes && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('"${file.name}" is large — role-node may reject it (over its request body limit).')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('"${file.name}" is large — role-node may reject it (over its request body limit).')));
     }
 
     onChanged(BinaryBody(fileName: file.name, contentType: body.contentType, dataBase64: dataBase64));

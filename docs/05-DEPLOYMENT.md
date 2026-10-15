@@ -35,37 +35,51 @@ Replace `<platform>` with one of:
 
 - **Windows**: No code signing required for local distribution. For store (e.g. Microsoft Store), follow Flutter and store guidelines.
 - **macOS**: Sign and notarize the app for distribution outside the App Store; use Xcode or `codesign`/`notarytool`. For App Store, use Xcode archive and submit.
-- **Android**: Configure signing in `android/app/build.gradle` (keystore, key alias). For Play Store use the App Bundle and the Play Console.
-- **iOS**: Configure signing in Xcode (team, provisioning profile). Archive and upload to App Store Connect or distribute via TestFlight/Ad Hoc.
+- **Android**: Release signing uses `android/key.properties` + the upload keystore (or debug signing as a local fallback). The CI release pipeline signs the AAB and uploads it to the Play internal track when the secrets are configured — see `.github/workflows/README.md`.
+- **iOS**: CI signs with [fastlane match](https://docs.fastlane.tools/actions/match/) (`appstore` type, readonly in CI) and uploads to TestFlight for internal testers. Certificates/profiles live in a private certificates repo; see `.github/workflows/README.md` for the secrets and one-time setup.
 
 ## Automated Releases (GitHub Actions)
 
-macOS, Windows, and Linux are built and published automatically by `.github/workflows/release.yml`
-whenever a `v*.*.*` tag is pushed:
+Windows and Linux desktop builds are built and published automatically by
+`.github/workflows/release.yml` whenever a `v*.*.*` tag is pushed to `main`:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
-This builds a macOS app (universal arm64 + x86_64, signed + notarized if certificate secrets
-are configured, otherwise unsigned), a Windows executable (signed if a certificate secret is
-configured, otherwise unsigned), and a Linux tarball, then attaches versioned assets
-(`relay-<version>-macos.zip`, `relay-<version>-windows-x64.zip`,
-`relay-<version>-linux-x64.tar.gz`) plus a `SHA256SUMS` file to a GitHub Release with
-auto-generated notes. The workflow fails fast if the tag doesn't match the `version:` in
-`pubspec.yaml`. No secrets are required to cut a release — see
-`.github/workflows/README.md` for the full list of optional signing secrets and one-time
-setup steps.
+The workflow:
 
-Android and iOS are **not** built by this pipeline — they're submitted to the Play Store and
-App Store directly (see Code Signing and Store Submission below), so `flutter build apk`,
-`appbundle`, and `ios` remain manual, local steps.
+1. Fails fast unless the tag matches the `version:` in `pubspec.yaml` **and** the tag is an
+   ancestor of `main`.
+2. Calls the reusable `.github/workflows/build.yml` to build and package the Windows executable
+   (signed if a certificate secret is configured, otherwise unsigned), the Linux tarball, and the
+   Android App Bundle.
+3. Attaches build-provenance attestations (`gh attestation verify`) and a `SHA256SUMS` file.
+4. Creates a **draft** GitHub Release with versioned assets
+   (`relay-<version>-windows-x64.zip`, `relay-<version>-linux-x64.tar.gz`) and auto-generated
+   notes, then publishes it through the `release` GitHub Environment — configure required
+   reviewers there to make publishing a manual approval.
+5. After publishing, uploads the AAB to the Google Play **internal** track and the IPA to
+   TestFlight (internal testers) when the corresponding secrets are configured.
 
-Every push/PR to `main` also runs `.github/workflows/ci.yml` (format, analyze, test) and
-`.github/workflows/build-check.yml` (compile-only builds for macOS/Windows/Linux) before code
-reaches `main`.
+No secrets are required to cut a release — see `.github/workflows/README.md` for the optional
+signing/store secrets and one-time setup steps.
+
+macOS is **not** part of this pipeline (it is compile-checked on PRs but distributed by building
+locally). Android releases land on the Play **internal** track and are promoted to other tracks
+manually in the Play Console; iOS builds land with internal TestFlight testers.
+
+Every push/PR to `main` also runs `.github/workflows/ci.yml` (version policy, format, analyze,
+test with coverage) and `.github/workflows/build-check.yml` (compile-only builds for Windows,
+Linux, macOS, Android, and iOS) before code reaches `main`; `.github/workflows/nightly.yml`
+watches for Flutter SDK drift.
 
 ## Versioning
 
-- **Version** is set in `pubspec.yaml` (`version: 1.0.0+2`). The optional `+2` is the build number. Bump before release; Flutter uses this for the app version shown on device and in stores. The release workflow rejects tags that don't match this version.
+- **Version** is set in `pubspec.yaml` (`version: 1.1.0+3`). The optional `+3` is the build
+  number. Bump before release; Flutter uses this for the app version shown on device and in
+  stores. The release workflow rejects tags that don't match this version.
+- The full policy (which part to bump, store mappings, tagging rules, and the release
+  checklist) lives in [09-VERSIONING.md](09-VERSIONING.md). Use `dart run tool/version.dart`
+  to inspect or bump the version instead of editing `pubspec.yaml` by hand.

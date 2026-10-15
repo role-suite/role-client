@@ -69,7 +69,7 @@ We actively welcome pull requests! Here's how:
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (version 3.44.0 or higher)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.47.2` — the exact version pinned in [`.fvmrc`](.fvmrc). Run `fvm use` (or install that SDK directly) so `dart format` output matches CI.
 - An IDE with Flutter support (VS Code, Android Studio, or IntelliJ)
 - Git
 
@@ -121,7 +121,7 @@ git merge upstream/main
 3. **Format, analyze, and test your changes**
    ```bash
    dart format .
-   flutter analyze
+   dart analyze --fatal-infos
    flutter test
    ```
 
@@ -142,7 +142,7 @@ git merge upstream/main
 CI (`.github/workflows/`) enforces these automatically, so it's worth checking them locally first:
 
 - [ ] `dart format --output=none --set-exit-if-changed .` reports no changes
-- [ ] `flutter analyze` passes with no issues (this includes `riverpod_lint`)
+- [ ] `dart analyze --fatal-infos` passes with no issues (this includes `riverpod_lint`)
 - [ ] `flutter test` passes
 - [ ] The Windows/Linux build-check workflow would still compile (no platform-specific breakage)
 - [ ] The PR title follows [Conventional Commits](https://www.conventionalcommits.org/) (see below) — checked by `pr-title.yml`
@@ -155,7 +155,7 @@ CI (`.github/workflows/`) enforces these automatically, so it's worth checking t
 
 - Follow [Effective Dart](https://dart.dev/guides/language/effective-dart) guidelines
 - Use the project's `analysis_options.yaml` for linting rules; don't disable a rule locally without a good reason
-- Run `dart format .` and `flutter analyze` before committing
+- Run `dart format .` and `dart analyze --fatal-infos` before committing
 
 ### Commit Messages and PR Titles
 
@@ -183,8 +183,9 @@ lib/
                 # (shell/, sidebar/, request/, environments/, history/, runner/, flows/, widgets/)
 ```
 
-See [docs/02-ARCHITECTURE.md](docs/02-ARCHITECTURE.md) for the full picture, and
-[docs/07-MAINTENANCE.md](docs/07-MAINTENANCE.md) for how to add a new feature within it.
+See [docs/02-ARCHITECTURE.md](docs/02-ARCHITECTURE.md) for the full picture,
+[docs/07-MAINTENANCE.md](docs/07-MAINTENANCE.md) for how to add a new feature within it, and
+[docs/09-VERSIONING.md](docs/09-VERSIONING.md) for version bumps and releases.
 
 ## Questions?
 

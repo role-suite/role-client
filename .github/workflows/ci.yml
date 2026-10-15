@@ -6,24 +6,65 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  analyze-and-test:
-    name: Analyze, format & test
+  checks:
+    name: Version, format & analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-flutter
+
+      - name: Validate version policy
+        run: dart run tool/version.dart validate
 
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze
-        run: flutter analyze
+        run: dart analyze --fatal-infos
 
-      - name: Run tests
-        run: flutter test
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Summarize coverage
+        if: always()
+        run: |
+          if [ ! -f coverage/lcov.info ]; then
+            echo "No coverage file was produced (tests likely failed before it was written)."
+            exit 0
+          fi
+          total=$(grep '^LF:' coverage/lcov.info | awk -F: '{sum += $2} END {print sum}')
+          hit=$(grep '^LH:' coverage/lcov.info | awk -F: '{sum += $2} END {print sum}')
+          percent=$(awk -v hit="$hit" -v total="$total" 'BEGIN { if (total == 0) print "0.0"; else printf "%.1f", hit * 100 / total }')
+          {
+            echo "### Test coverage"
+            echo ""
+            echo "Line coverage: **${percent}%** (${hit} / ${total} lines)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 14

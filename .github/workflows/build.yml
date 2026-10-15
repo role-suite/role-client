@@ -1,0 +1,198 @@
+name: Build
+
+# Reusable build workflow. `build-check.yml` calls it with every platform to
+# verify compilation on PRs; `release.yml` calls it with the desktop platforms,
+# signing enabled, and packaging on. Keeping the platform build logic here means
+# the artifacts a release publishes are produced by the same steps CI verifies.
+
+on:
+  workflow_call:
+    inputs:
+      platforms:
+        description: JSON array of platforms to build (windows, linux, macos, android, android-aab, ios)
+        required: true
+        type: string
+      ref:
+        description: Git ref to check out (defaults to the triggering commit)
+        required: false
+        default: ""
+        type: string
+      sign:
+        description: Sign Windows builds when the certificate secret is configured
+        required: false
+        default: false
+        type: boolean
+      package:
+        description: Package and upload release archives
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      WINDOWS_CERTIFICATE_BASE64:
+        required: false
+      WINDOWS_CERTIFICATE_PASSWORD:
+        required: false
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      HAS_WINDOWS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
+      HAS_ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(inputs.platforms) }}
+        include:
+          - platform: windows
+            name: Windows
+            os: windows-latest
+          - platform: linux
+            name: Linux
+            os: ubuntu-latest
+          - platform: macos
+            name: macOS (unsigned)
+            os: macos-latest
+          - platform: android
+            name: Android
+            os: ubuntu-latest
+          - platform: android-aab
+            name: Android (AAB)
+            os: ubuntu-latest
+          - platform: ios
+            name: iOS (no codesign)
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
+
+      - name: Cache Gradle
+        if: matrix.platform == 'android' || matrix.platform == 'android-aab'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Build Windows
+        if: matrix.platform == 'windows'
+        run: flutter build windows --release
+
+      - name: Build Linux
+        if: matrix.platform == 'linux'
+        run: flutter build linux --release
+
+      # The Xcode project uses automatic signing with a development team, which
+      # is not available on CI runners. Flutter only disables signing itself for
+      # iOS, so force an unsigned build for the macOS compile check.
+      - name: Build macOS (unsigned)
+        if: matrix.platform == 'macos'
+        run: flutter build macos --release
+        env:
+          FLUTTER_XCODE_CODE_SIGN_IDENTITY: "-"
+          FLUTTER_XCODE_CODE_SIGNING_REQUIRED: "NO"
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
+
+      - name: Build Android
+        if: matrix.platform == 'android'
+        run: flutter build apk --release
+
+      - name: Configure Android signing
+        if: inputs.sign && matrix.platform == 'android-aab' && env.HAS_ANDROID_KEYSTORE == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build Android App Bundle
+        if: matrix.platform == 'android-aab'
+        run: flutter build appbundle --release
+
+      - name: Build iOS (no codesign)
+        if: matrix.platform == 'ios'
+        run: flutter build ios --release --no-codesign
+
+      - name: Sign Windows executable
+        if: inputs.sign && matrix.platform == 'windows' && env.HAS_WINDOWS_CERT == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          [IO.File]::WriteAllBytes("certificate.pfx", [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          $signtool = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" |
+            Where-Object { $_.FullName -match "x64" } | Select-Object -First 1).FullName
+          & $signtool sign /f certificate.pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td sha256 /fd sha256 "build\windows\x64\runner\Release\relay.exe"
+          Remove-Item certificate.pfx
+
+      - name: Package Windows build
+        if: inputs.package && matrix.platform == 'windows'
+        shell: pwsh
+        run: Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath relay-windows.zip
+
+      - name: Upload Windows artifact
+        if: inputs.package && matrix.platform == 'windows'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-release
+          path: relay-windows.zip
+          retention-days: 7
+
+      - name: Package Linux build
+        if: inputs.package && matrix.platform == 'linux'
+        run: |
+          mv build/linux/x64/release/bundle build/linux/x64/release/relay
+          tar -czf relay-linux.tar.gz -C build/linux/x64/release relay
+
+      - name: Upload Linux artifact
+        if: inputs.package && matrix.platform == 'linux'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: linux-release
+          path: relay-linux.tar.gz
+          retention-days: 7
+
+      - name: Package Android build
+        if: inputs.package && matrix.platform == 'android-aab'
+        run: cp build/app/outputs/bundle/release/app-release.aab relay-android.aab
+
+      - name: Upload Android artifact
+        if: inputs.package && matrix.platform == 'android-aab'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-release
+          path: relay-android.aab
+          retention-days: 7

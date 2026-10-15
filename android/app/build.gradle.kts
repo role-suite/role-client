@@ -21,8 +21,8 @@ val localProperties = Properties().apply {
 val flutterVersionCode = localProperties.getProperty("flutter.versionCode")?.toString() ?: "1"
 val flutterVersionName = localProperties.getProperty("flutter.versionName")?.toString() ?: "1.0"
 
+val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties().apply {
-    val keystorePropertiesFile = rootProject.file("key.properties")
     if (keystorePropertiesFile.exists()) {
         FileInputStream(keystorePropertiesFile).use { stream ->
             load(stream)
@@ -65,7 +65,15 @@ android {
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            // Signed with the upload key when android/key.properties is present (release
+            // pipeline); falls back to debug signing so release builds still compile locally
+            // and in PR build checks, which never receive signing secrets.
+            signingConfig =
+                if (keystorePropertiesFile.exists()) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
         }
     }
 

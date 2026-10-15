@@ -194,9 +194,8 @@ class WorkspaceNotifier extends AsyncNotifier<WorkspaceState> {
       if (client == null) throw StateError('No remote base URL configured; online mode is unavailable.');
       final remoteId = collection.remoteId;
       if (remoteId == null) throw StateError('Remote collection is missing its server id.');
-      final createdRemoteRequest = await WorkspacePushService(
-        client,
-      ).createEndpoint(collection.remoteWorkspaceId!, remoteId, collectionLocalId: collection.id, request: request);
+      final createdRemoteRequest = await WorkspacePushService(client)
+          .createEndpoint(collection.remoteWorkspaceId!, remoteId, collectionLocalId: collection.id, request: request);
       final remoteRequest = createdRemoteRequest.copyWith(description: request.description, assertions: request.assertions);
       final next = current.copyWith(requests: [...current.requests, remoteRequest]);
       await _persist(_bundleFor(next, collectionId));

@@ -33,7 +33,7 @@ feature:
 ## Provider Regression Checks
 
 1. Run `dart format --output=none --set-exit-if-changed .`.
-2. Run `flutter analyze`.
+2. Run `dart analyze --fatal-infos`.
 3. Run `flutter test`.
 4. Verify collection/request/environment CRUD refresh behavior.
 
@@ -41,10 +41,16 @@ These same checks run in CI on every push/PR (`.github/workflows/ci.yml`).
 
 ## Updating Dependencies
 
+- Renovate opens grouped PRs from [`renovate.json`](../renovate.json) (pub packages, GitHub
+  Actions, and the `.fvmrc` Flutter pin). Install the Renovate GitHub App once to enable it.
 - After dependency updates, run:
 
 ```bash
 flutter pub get
-flutter analyze
+dart analyze --fatal-infos
 flutter test
 ```
+
+- The daily [`nightly.yml`](../.github/workflows/nightly.yml) check runs analyze + test against
+  the latest stable Flutter SDK; if it fails, it opens/updates a GitHub issue. Treat that as a
+  signal to bump `.fvmrc` and the affected dependencies deliberately.
