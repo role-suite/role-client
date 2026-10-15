@@ -62,6 +62,9 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Third-party GitHub Actions are pinned to full commit SHAs (with Renovate-maintained `# vX.Y.Z`
   comments) and upgraded to their current major versions; the release concurrency group now
   keys off the dispatched tag.
+- The CI build matrix now honors the requested platform list (a matrix `include` quirk
+  previously built every platform regardless of the input), and the Android NDK is
+  preinstalled with retries to absorb corrupted SDK downloads.
 - GitHub Actions workflows deduplicated into a shared `.github/actions/setup-flutter` composite
   action; the Flutter SDK is now pinned via `.fvmrc` and CI fetches dependencies with
   `flutter pub get --enforce-lockfile`.

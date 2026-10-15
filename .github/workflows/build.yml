@@ -46,8 +46,20 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+    # `include` entries in a matrix create their own combinations, so the
+    # platform list has to drive name/os via expressions — otherwise every
+    # platform would always build regardless of the requested list.
+    name: >-
+      ${{ matrix.platform == 'windows' && 'Windows'
+      || matrix.platform == 'linux' && 'Linux'
+      || matrix.platform == 'macos' && 'macOS (unsigned)'
+      || matrix.platform == 'android' && 'Android'
+      || matrix.platform == 'android-aab' && 'Android (AAB)'
+      || 'iOS (no codesign)' }}
+    runs-on: >-
+      ${{ matrix.platform == 'windows' && 'windows-latest'
+      || (matrix.platform == 'macos' || matrix.platform == 'ios') && 'macos-latest'
+      || 'ubuntu-latest' }}
     timeout-minutes: 60
     env:
       HAS_WINDOWS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
@@ -56,25 +68,6 @@ jobs:
       fail-fast: false
       matrix:
         platform: ${{ fromJSON(inputs.platforms) }}
-        include:
-          - platform: windows
-            name: Windows
-            os: windows-latest
-          - platform: linux
-            name: Linux
-            os: ubuntu-latest
-          - platform: macos
-            name: macOS (unsigned)
-            os: macos-latest
-          - platform: android
-            name: Android
-            os: ubuntu-latest
-          - platform: android-aab
-            name: Android (AAB)
-            os: ubuntu-latest
-          - platform: ios
-            name: iOS (no codesign)
-            os: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -97,6 +90,31 @@ jobs:
           restore-keys: gradle-${{ runner.os }}-
 
       - uses: ./.github/actions/setup-flutter
+
+      # Gradle installs the NDK on first use, and a single corrupted download
+      # fails the whole build during configuration (seen in practice). Install
+      # it up front with retries, reading the exact version Flutter expects.
+      - name: Preinstall Android NDK
+        if: matrix.platform == 'android' || matrix.platform == 'android-aab'
+        run: |
+          ndk_version=$(grep -oP 'val ndkVersion: String = "\K[0-9.]+' "$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/kotlin/FlutterExtension.kt" | head -1)
+          if [ -z "$ndk_version" ]; then
+            echo "Could not determine the NDK version from the Flutter SDK; letting Gradle install it."
+            exit 0
+          fi
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          for attempt in 1 2 3; do
+            if yes | "$sdkmanager" --install "ndk;$ndk_version" > /tmp/ndk-install.log 2>&1; then
+              echo "Installed Android NDK $ndk_version."
+              exit 0
+            fi
+            echo "Attempt $attempt to install NDK $ndk_version failed; clearing the partial download and retrying."
+            rm -rf "$ANDROID_HOME/ndk/$ndk_version" "$ANDROID_HOME/.temp"
+            sleep 5
+          done
+          echo "::error::Failed to install Android NDK $ndk_version after 3 attempts."
+          tail -50 /tmp/ndk-install.log
+          exit 1
 
       - name: Build Windows
         if: matrix.platform == 'windows'
