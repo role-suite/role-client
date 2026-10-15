@@ -85,8 +85,8 @@ the `.fvmrc` pin) and opens or updates a GitHub issue when it fails — that's t
 for SDK drift. Dependency-update PRs are opened by Renovate (`renovate.json`).
 
 Pushing a `v*.*.*` tag triggers `release.yml`, which verifies the tag is on `main` and matches
-`pubspec.yaml`, builds Windows/Linux/Android through the reusable `build.yml`, attests build
-provenance, and publishes versioned artifacts (signed when the signing secrets are configured)
-from a draft release after the `release` environment gate. When store secrets are configured it
-also uploads the AAB to the Google Play internal track and the IPA to TestFlight (internal
-testers). See `.github/workflows/README.md` for the secrets and one-time setup.
+`pubspec.yaml`, builds every platform (Windows, Linux, macOS, Android, iOS) through the reusable
+`build.yml`, attests build provenance, and publishes versioned artifacts from a draft release
+after the `release` environment gate. When store secrets are configured it also uploads the AAB
+to the Google Play internal track and the IPA to TestFlight (internal testers). See
+`.github/workflows/README.md` for the secrets and one-time setup.

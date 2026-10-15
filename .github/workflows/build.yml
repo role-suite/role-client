@@ -185,14 +185,56 @@ jobs:
           path: relay-linux.tar.gz
           retention-days: 7
 
-      - name: Package Android build
+      - name: Package Android AAB
         if: inputs.package && matrix.platform == 'android-aab'
         run: cp build/app/outputs/bundle/release/app-release.aab relay-android.aab
 
-      - name: Upload Android artifact
+      - name: Upload Android AAB artifact
         if: inputs.package && matrix.platform == 'android-aab'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: android-release
+          name: android-aab-release
           path: relay-android.aab
+          retention-days: 7
+
+      - name: Package Android APK
+        if: inputs.package && matrix.platform == 'android'
+        run: cp build/app/outputs/flutter-apk/app-release.apk relay-android.apk
+
+      - name: Upload Android APK artifact
+        if: inputs.package && matrix.platform == 'android'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-apk-release
+          path: relay-android.apk
+          retention-days: 7
+
+      - name: Package macOS build (unsigned)
+        if: inputs.package && matrix.platform == 'macos'
+        run: |
+          cd build/macos/Build/Products/Release
+          app=$(ls -d *.app)
+          zip -qry "$GITHUB_WORKSPACE/relay-macos.zip" "$app"
+
+      - name: Upload macOS artifact
+        if: inputs.package && matrix.platform == 'macos'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos-release
+          path: relay-macos.zip
+          retention-days: 7
+
+      - name: Package iOS build (unsigned)
+        if: inputs.package && matrix.platform == 'ios'
+        run: |
+          cd build/ios/iphoneos
+          app=$(ls -d *.app)
+          zip -qry "$GITHUB_WORKSPACE/relay-ios-unsigned.zip" "$app"
+
+      - name: Upload iOS artifact
+        if: inputs.package && matrix.platform == 'ios'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ios-release
+          path: relay-ios-unsigned.zip
           retention-days: 7

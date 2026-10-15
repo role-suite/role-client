@@ -37,11 +37,11 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
   Linux, macOS, Android, and iOS, a Conventional-Commits PR title check, a nightly check
   against the latest stable Flutter SDK that opens an issue on drift, and a tag-triggered
   release pipeline that verifies the tag is on `main`, reuses the build workflow, attests build
-  provenance, publishes versioned Windows and Linux artifacts plus checksums from a draft
-  release after the `release` environment gate (Windows signed when certificate secrets are
-  configured, otherwise unsigned), uploads the Android App Bundle to the Google Play internal
-  track, and builds/uploads the iOS IPA to TestFlight (internal testers) when the store and
-  signing secrets are configured.
+  provenance, publishes versioned artifacts for Windows, Linux, macOS, Android (APK), and iOS
+  (unsigned) plus checksums from a draft release after the `release` environment gate (Windows
+  signed when certificate secrets are configured, otherwise unsigned), uploads the Android App
+  Bundle to the Google Play internal track, and builds/uploads the iOS IPA to TestFlight
+  (internal testers) when the store and signing secrets are configured.
 - fastlane match configuration (`Gemfile`, `ios/fastlane/`) for reproducible iOS release
   signing through a private certificates repository.
 - Renovate dependency-update PRs (`renovate.json`) for pub packages, GitHub Actions, and the

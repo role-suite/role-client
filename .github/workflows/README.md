@@ -6,7 +6,7 @@
 | `build.yml` | called by `build-check.yml` / `release.yml` | Reusable build workflow: platform matrix, optional Windows signing, optional packaging + artifact upload |
 | `build-check.yml` | push/PR to `main` | Calls `build.yml` with all five platforms to catch build breakage early |
 | `pr-title.yml` | PR opened/edited | Enforces Conventional Commit-style PR titles (`feat:`, `fix:`, `chore:`, ...) |
-| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` and is an ancestor of `main`, calls `build.yml` for Windows/Linux/Android, attests provenance, creates a draft release, publishes it after approval, and uploads to Google Play (internal) and TestFlight when configured |
+| `release.yml` | push tag `v*.*.*` (or manual dispatch) | Verifies the tag matches `pubspec.yaml` and is an ancestor of `main`, calls `build.yml` for all platforms, attests provenance, creates a draft release, publishes it after approval, and uploads to Google Play (internal) and TestFlight when configured |
 | `nightly.yml` | daily schedule (or manual dispatch) | Drift check: analyze + test against the latest stable Flutter SDK (ignoring the `.fvmrc` pin) and opens/updates a GitHub issue on failure |
 
 ## Coverage
@@ -126,7 +126,8 @@ git push origin v1.1.0
 This triggers `release.yml`, which:
 
 1. verifies the tag matches `pubspec.yaml` and is an ancestor of `main` (fails fast otherwise);
-2. calls `build.yml` to build, sign (if configured), and package Windows, Linux, and Android artifacts;
+2. calls `build.yml` to build, sign (if configured), and package Windows, Linux, macOS, the
+   Android APK, and iOS — plus the Android AAB when the Play service account is configured;
 3. creates build-provenance attestations and a `SHA256SUMS` file;
 4. creates a **draft** GitHub Release with auto-generated notes;
 5. publishes the draft after the `release` environment gate (if configured);
@@ -137,7 +138,15 @@ This triggers `release.yml`, which:
 |---|---|
 | `relay-<version>-windows-x64.zip` | `relay.exe` and runtime DLLs |
 | `relay-<version>-linux-x64.tar.gz` | extracts to a `relay/` folder with the binary and libs |
+| `relay-<version>-macos.zip` | unsigned `Runner.app` (no signing/notarization) |
+| `relay-<version>-android.apk` | release APK; debug-signed unless the Android keystore secrets are set |
+| `relay-<version>-ios-unsigned.zip` | unsigned `Runner.app` for developers; not installable on devices as-is |
 | `SHA256SUMS` | checksums for all of the above |
+
+The Android **AAB** is built only when `PLAY_SERVICE_ACCOUNT_JSON` is configured (its only use
+is the Play upload) and is kept as a workflow artifact named `android-aab-release` rather than
+attached to the GitHub release, since users cannot install an AAB directly. GitHub Releases
+always carry the installable **APK** instead.
 
 Verify a downloaded artifact's provenance with:
 

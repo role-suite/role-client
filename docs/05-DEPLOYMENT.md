@@ -40,7 +40,7 @@ Replace `<platform>` with one of:
 
 ## Automated Releases (GitHub Actions)
 
-Windows and Linux desktop builds are built and published automatically by
+All platform builds are produced and published automatically by
 `.github/workflows/release.yml` whenever a `v*.*.*` tag is pushed to `main`:
 
 ```bash
@@ -52,23 +52,25 @@ The workflow:
 
 1. Fails fast unless the tag matches the `version:` in `pubspec.yaml` **and** the tag is an
    ancestor of `main`.
-2. Calls the reusable `.github/workflows/build.yml` to build and package the Windows executable
-   (signed if a certificate secret is configured, otherwise unsigned), the Linux tarball, and the
-   Android App Bundle.
+2. Calls the reusable `.github/workflows/build.yml` to build and package every platform:
+   Windows (signed if a certificate secret is configured, otherwise unsigned), Linux, macOS
+   (unsigned), Android APK and AAB, and an unsigned iOS app bundle.
 3. Attaches build-provenance attestations (`gh attestation verify`) and a `SHA256SUMS` file.
-4. Creates a **draft** GitHub Release with versioned assets
-   (`relay-<version>-windows-x64.zip`, `relay-<version>-linux-x64.tar.gz`) and auto-generated
-   notes, then publishes it through the `release` GitHub Environment — configure required
-   reviewers there to make publishing a manual approval.
+4. Creates a **draft** GitHub Release with versioned assets and auto-generated notes, then
+   publishes it through the `release` GitHub Environment — configure required reviewers there to
+   make publishing a manual approval.
 5. After publishing, uploads the AAB to the Google Play **internal** track and the IPA to
    TestFlight (internal testers) when the corresponding secrets are configured.
 
-No secrets are required to cut a release — see `.github/workflows/README.md` for the optional
-signing/store secrets and one-time setup steps.
+No secrets are required to cut a release — see `.github/workflows/README.md` for the asset list
+and the optional signing/store secrets. Without secrets the release still goes out with unsigned
+Windows/macOS/iOS builds and a debug-signed Android APK. The Android AAB is only built when the
+Play service account is configured (its sole purpose is the Play upload), while the installable
+APK is always attached to the GitHub release.
 
-macOS is **not** part of this pipeline (it is compile-checked on PRs but distributed by building
-locally). Android releases land on the Play **internal** track and are promoted to other tracks
-manually in the Play Console; iOS builds land with internal TestFlight testers.
+macOS is compile-checked on PRs and attached to releases as an unsigned zip (no signing or
+notarization yet). Android releases land on the Play **internal** track and are promoted to other
+tracks manually in the Play Console; iOS builds land with internal TestFlight testers.
 
 Every push/PR to `main` also runs `.github/workflows/ci.yml` (version policy, format, analyze,
 test with coverage) and `.github/workflows/build-check.yml` (compile-only builds for Windows,
