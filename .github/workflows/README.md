@@ -126,7 +126,8 @@ git push origin v1.1.0
 This triggers `release.yml`, which:
 
 1. verifies the tag matches `pubspec.yaml` and is an ancestor of `main` (fails fast otherwise);
-2. calls `build.yml` to build, sign (if configured), and package every platform;
+2. calls `build.yml` to build, sign (if configured), and package Windows, Linux, macOS, the
+   Android APK, and iOS — plus the Android AAB when the Play service account is configured;
 3. creates build-provenance attestations and a `SHA256SUMS` file;
 4. creates a **draft** GitHub Release with auto-generated notes;
 5. publishes the draft after the `release` environment gate (if configured);
@@ -142,9 +143,10 @@ This triggers `release.yml`, which:
 | `relay-<version>-ios-unsigned.zip` | unsigned `Runner.app` for developers; not installable on devices as-is |
 | `SHA256SUMS` | checksums for all of the above |
 
-The Android **AAB** is built and kept as a workflow artifact (`android-aab-release`) for the Play
-upload and is intentionally not attached to the GitHub release, since users cannot install an
-AAB directly.
+The Android **AAB** is built only when `PLAY_SERVICE_ACCOUNT_JSON` is configured (its only use
+is the Play upload) and is kept as a workflow artifact named `android-aab-release` rather than
+attached to the GitHub release, since users cannot install an AAB directly. GitHub Releases
+always carry the installable **APK** instead.
 
 Verify a downloaded artifact's provenance with:
 

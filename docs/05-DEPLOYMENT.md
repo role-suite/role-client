@@ -64,8 +64,9 @@ The workflow:
 
 No secrets are required to cut a release — see `.github/workflows/README.md` for the asset list
 and the optional signing/store secrets. Without secrets the release still goes out with unsigned
-Windows/macOS/iOS builds and a debug-signed Android APK; the Android AAB is kept as a workflow
-artifact for the future Play upload rather than attached to the release.
+Windows/macOS/iOS builds and a debug-signed Android APK. The Android AAB is only built when the
+Play service account is configured (its sole purpose is the Play upload), while the installable
+APK is always attached to the GitHub release.
 
 macOS is compile-checked on PRs and attached to releases as an unsigned zip (no signing or
 notarization yet). Android releases land on the Play **internal** track and are promoted to other

@@ -45,12 +45,33 @@ jobs:
             exit 1
           fi
 
+  preflight:
+    name: Determine platforms
+    needs: verify-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      platforms: ${{ steps.platforms.outputs.platforms }}
+    steps:
+      - name: Decide platform list
+        id: platforms
+        env:
+          HAS_PLAY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+        run: |
+          # GitHub Releases get an installable APK; the AAB is only built when the
+          # Google Play service account is configured, since that is its only use.
+          platforms='["windows","linux","macos","android","ios"'
+          if [ "$HAS_PLAY" = "true" ]; then
+            platforms="$platforms"',"android-aab"'
+          fi
+          echo "platforms=$platforms]" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build release artifacts
-    needs: verify-version
+    needs: preflight
     uses: ./.github/workflows/build.yml
     with:
-      platforms: '["windows","linux","macos","android","android-aab","ios"]'
+      platforms: ${{ needs.preflight.outputs.platforms }}
       ref: ${{ inputs.tag || github.ref }}
       sign: true
       package: true
