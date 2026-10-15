@@ -13,6 +13,7 @@ import '../auth/sessions_dialog.dart';
 import '../auth/sign_in_dialog.dart';
 import '../widgets/widgets.dart';
 import '../workspace/workspace_dialog.dart';
+import 'about_dialog.dart';
 import 'responsive.dart';
 import 'server_settings_dialog.dart';
 
@@ -89,6 +90,7 @@ class _AccountMenu extends ConsumerWidget {
         itemBuilder: (context) => const [
           PopupMenuItem(value: 'sign-in', child: Text('Sign in')),
           PopupMenuItem(value: 'server-settings', child: Text('Server settings')),
+          PopupMenuItem(value: 'about', child: Text('About Röle')),
         ],
         onSelected: (value) {
           switch (value) {
@@ -96,6 +98,8 @@ class _AccountMenu extends ConsumerWidget {
               showSignInDialog(context);
             case 'server-settings':
               showServerSettingsDialog(context);
+            case 'about':
+              showAppAboutDialog(context);
           }
         },
         child: const AppIconButton(icon: Icons.account_circle_outlined, tooltip: 'Sign in'),
@@ -116,6 +120,7 @@ class _AccountMenu extends ConsumerWidget {
         const PopupMenuItem(value: 'workspace', child: Text('Workspace')),
         const PopupMenuItem(value: 'devices', child: Text('Manage devices')),
         const PopupMenuItem(value: 'server-settings', child: Text('Server settings')),
+        const PopupMenuItem(value: 'about', child: Text('About Röle')),
         const PopupMenuItem(value: 'sign-out', child: Text('Sign out')),
       ],
       onSelected: (value) {
@@ -126,6 +131,8 @@ class _AccountMenu extends ConsumerWidget {
             showSessionsDialog(context);
           case 'server-settings':
             showServerSettingsDialog(context);
+          case 'about':
+            showAppAboutDialog(context);
           case 'sign-out':
             ref.read(authNotifierProvider.notifier).logout();
         }

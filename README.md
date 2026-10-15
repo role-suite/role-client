@@ -46,7 +46,7 @@ backend for team-synced workspaces; local-only usage is unaffected either way.
 | 🗂 **Organization & Reuse** | Collections to group requests · environment variables with `{{variableName}}` substitution · active collection/environment selectors · request search & filter |
 | 🔁 **Import & Export** | Import Röle or Postman-style workspace JSON · conflict handling (`Skip`, `Keep both`, `Overwrite`) · export your workspace as JSON |
 | ⚙️ **Execution & Automation** | **Collection Runner** — run a full collection sequentially · **Run History** — pass/fail summaries for past runs · **Flows** — chain multi-step requests with delays and previous-response passing |
-| 🎨 **UX & Platform** | Material 3 UI, responsive desktop/mobile layout · light, dark, and system theme modes · Windows, macOS, Linux, Android, and iOS |
+| 🎨 **UX & Platform** | Material 3 UI, responsive desktop/mobile layout · light, dark, and system theme modes · Windows, macOS, Linux, Android, and iOS · in-app About dialog with version info and an update check (manual; optional daily automatic check, off by default) |
 
 ## Screenshots
 
@@ -207,10 +207,11 @@ lib/
 │   ├── storage/      # JsonStore — local JSON persistence
 │   ├── network/      # HttpClient, TemplateResolver, RequestRunner
 │   ├── io/           # Workspace export + Röle/Postman import
+│   ├── updates/      # GitHub release check (manual + opt-in automatic)
 │   ├── theme/        # Design tokens, colors, typography, ThemeData
 │   └── utils/
 ├── state/            # Riverpod notifiers (workspace, environments, history,
-│                      # runs, flows, settings, workbench UI state)
+│                      # runs, flows, settings, updates, workbench UI state)
 ├── ui/
 │   ├── shell/          # Persistent shell: top bar, rail, sidebar, workbench, inspector
 │   ├── sidebar/         # Requests/collections sidebar panel
@@ -275,6 +276,13 @@ you join are also synced there — everything else stays local.
 
 No. Accounts, sign-in, and sync are entirely optional — Röle works fully offline with no
 account, and everything you create stays on your device unless you opt into a synced workspace.
+
+### Does Röle phone home?
+
+No. There is no telemetry. The only outbound traffic is the requests you compose, the
+role-node server you optionally configure, and — only when you click **Check for updates** in
+About, or enable the off-by-default daily automatic check — a request to GitHub's public
+releases API.
 
 ## License
 

@@ -44,6 +44,11 @@ not in the widgets themselves.
   request's assertion pass/fail summary; capped at `AppConstants.maxRunHistoryEntries`.
 - `lib/state/chains_notifier.dart`: saved Flows.
 - `lib/state/settings_providers.dart`: theme mode + active environment id, persisted via `SharedPreferences`.
+- `lib/state/update_notifier.dart`: app version (via `package_info_plus`), last known newer
+  GitHub release, the opt-in automatic check setting, and dismissed versions — persisted via
+  `SharedPreferences`. `lib/core/updates/` holds the release fetch and version comparison. This
+  is the only non-user-initiated network call in the app, and it only runs when the user enables
+  automatic checks (off by default); see the README FAQ.
 
 There are no repository/usecase layers on top of these — a local-only app's "business logic"
 is the notifier itself, reading and writing through `JsonStore`.
