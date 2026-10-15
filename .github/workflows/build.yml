@@ -76,7 +76,7 @@ jobs:
             name: iOS (no codesign)
             os: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref || github.sha }}
 
@@ -88,7 +88,7 @@ jobs:
 
       - name: Cache Gradle
         if: matrix.platform == 'android' || matrix.platform == 'android-aab'
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.gradle/caches
@@ -165,7 +165,7 @@ jobs:
 
       - name: Upload Windows artifact
         if: inputs.package && matrix.platform == 'windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-release
           path: relay-windows.zip
@@ -179,7 +179,7 @@ jobs:
 
       - name: Upload Linux artifact
         if: inputs.package && matrix.platform == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux-release
           path: relay-linux.tar.gz
@@ -191,7 +191,7 @@ jobs:
 
       - name: Upload Android artifact
         if: inputs.package && matrix.platform == 'android-aab'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: android-release
           path: relay-android.aab

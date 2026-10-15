@@ -59,6 +59,9 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Upgraded the Riverpod stack to 3.4.3 and `riverpod_lint` to 3.1.9, which runs as a native
   analyzer plugin. Analysis now uses `dart analyze --fatal-infos` because `flutter analyze`
   does not load analyzer plugins; the deprecated `unnecessary_await_in_return` lint was removed.
+- Third-party GitHub Actions are pinned to full commit SHAs (with Renovate-maintained `# vX.Y.Z`
+  comments) and upgraded to their current major versions; the release concurrency group now
+  keys off the dispatched tag.
 - GitHub Actions workflows deduplicated into a shared `.github/actions/setup-flutter` composite
   action; the Flutter SDK is now pinned via `.fvmrc` and CI fetches dependencies with
   `flutter pub get --enforce-lockfile`.

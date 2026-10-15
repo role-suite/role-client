@@ -22,6 +22,10 @@ the `.fvmrc` Flutter pin (monthly). It needs the Renovate GitHub App installed o
 repository — that is a one-time manual step in the GitHub UI, not something these files do.
 Renovate PRs run the same CI gates as any other PR, including `--enforce-lockfile`.
 
+Third-party GitHub Actions are pinned to full commit SHAs with a `# vX.Y.Z` comment.
+Renovate's `helpers:pinGitHubActionDigestsToSemver` preset keeps the pins and the version
+comments up to date, so unpinned `@vN` references should not be reintroduced.
+
 ## Toolchain pinning
 
 - The Flutter SDK is pinned in [`.fvmrc`](../../.fvmrc) and installed by
