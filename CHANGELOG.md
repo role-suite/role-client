@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-16
+
+### Added
+
+- In-app release check: an About dialog (account menu) showing the running version, a manual
+  "Check for updates" button, an off-by-default daily automatic check, and a status-bar badge
+  linking to the release page when a newer GitHub release exists. No telemetry; see the README
+  FAQ.
+
 ## [1.1.0] - 2026-10-14
 
 First release since the local-workbench rebuild. The app version line was reset during the
@@ -32,10 +41,6 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Environment variables now support per-row enable/disable, secret masking, and ordering.
 - Version tooling (`tool/version.dart`) and the versioning policy in
   [docs/09-VERSIONING.md](docs/09-VERSIONING.md).
-- In-app release check: an About dialog (account menu) showing the running version, a manual
-  "Check for updates" button, an off-by-default daily automatic check, and a status-bar badge
-  linking to the release page when a newer GitHub release exists. No telemetry; see the README
-  FAQ.
 - CI/CD via GitHub Actions: version validation, format/analyze/test on every push and PR
   (with a coverage artifact and run-summary coverage), compile-only release builds for Windows,
   Linux, macOS, Android, and iOS, a Conventional-Commits PR title check, a nightly check
@@ -83,5 +88,6 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Dependabot: version bumps for `pub` packages and GitHub Actions are no longer opened
   automatically.
 
-[Unreleased]: https://github.com/role-suite/role-client/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/role-suite/role-client/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/role-suite/role-client/releases/tag/v1.1.1
 [1.1.0]: https://github.com/role-suite/role-client/releases/tag/v1.1.0
