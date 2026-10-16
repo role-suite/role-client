@@ -40,7 +40,7 @@ class StatusBar extends ConsumerWidget {
           const SizedBox(width: AppSpacing.lg),
           Text('Environment: ${activeName ?? 'none'}', style: context.type.caption),
           const Spacer(),
-          Text('Röle', style: context.type.caption),
+          _AppVersionLabel(version: update?.versionKnown ?? false ? update!.currentVersion : null),
         ],
       ),
     );
@@ -77,6 +77,31 @@ class _UpdateBadge extends StatelessWidget {
             const SizedBox(width: 4),
             Text('Update $tag', style: context.type.caption.copyWith(color: colors.accent)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The running version, so users can tell which build they are on; opens the
+/// About dialog (where the full version including build number is shown).
+/// Falls back to the plain app name when the platform version is unavailable.
+class _AppVersionLabel extends StatelessWidget {
+  const _AppVersionLabel({this.version});
+
+  final String? version;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = version == null ? 'Röle' : 'Röle v$version';
+    return Tooltip(
+      message: 'About Röle',
+      child: InkWell(
+        onTap: () => showAppAboutDialog(context),
+        borderRadius: AppRadius.smRadius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Text(label, style: context.type.caption),
         ),
       ),
     );
