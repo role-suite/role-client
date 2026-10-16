@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-16
+
+### Added
+
+- The desktop status bar now shows the running version (`Röle vX.Y.Z`) and opens the About
+  dialog when clicked, so it is always clear which build is in use.
+
+### Fixed
+
+- Very large response bodies (multi-megabyte JSON) no longer render corrupted values at the
+  end: the body viewer virtualizes lines instead of handing megabytes to a single text widget,
+  skips pretty-printing above 2 MB, caps the visible text behind a notice, and offers
+  "Copy full body". Response size and pretty-printing are now computed once per response
+  instead of on every rebuild.
+- The update check no longer reports "GitHub rate limit reached" spuriously: it follows the
+  GitHub release-page redirect instead of the rate-limited API, persists failed attempts so the
+  daily interval also throttles retries, and only claims rate limiting when GitHub's headers
+  confirm it.
+
 ## [1.1.1] - 2026-10-16
 
 ### Added
@@ -88,6 +107,7 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Dependabot: version bumps for `pub` packages and GitHub Actions are no longer opened
   automatically.
 
-[Unreleased]: https://github.com/role-suite/role-client/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/role-suite/role-client/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/role-suite/role-client/releases/tag/v1.1.2
 [1.1.1]: https://github.com/role-suite/role-client/releases/tag/v1.1.1
 [1.1.0]: https://github.com/role-suite/role-client/releases/tag/v1.1.0
