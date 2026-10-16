@@ -42,11 +42,9 @@ Future<void> showHistorySnapshotDialog(BuildContext context, ResponseSnapshot sn
               ),
               const Divider(height: AppSpacing.lg),
               Expanded(
-                child: SingleChildScrollView(
-                  child: snapshot.result.errorMessage != null && snapshot.result.body == null
-                      ? Text(snapshot.result.errorMessage!, style: context.type.body.copyWith(color: context.colors.danger))
-                      : MonoText(snapshot.result.prettyBody),
-                ),
+                child: snapshot.result.errorMessage != null && snapshot.result.body == null
+                    ? Text(snapshot.result.errorMessage!, style: context.type.body.copyWith(color: context.colors.danger))
+                    : ResponseBodyView(result: snapshot.result),
               ),
             ],
           ),

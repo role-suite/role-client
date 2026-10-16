@@ -89,7 +89,7 @@ class _ResponseViewerState extends State<ResponseViewer> {
         Expanded(
           child: switch (_tab) {
             _ResponseTab.body when result.isHtml && !_showRawHtml => _HtmlPreview(html: result.prettyBody),
-            _ResponseTab.body => SingleChildScrollView(padding: const EdgeInsets.all(AppSpacing.md), child: MonoText(result.prettyBody)),
+            _ResponseTab.body => ResponseBodyView(result: result),
             _ResponseTab.headers => SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: _HeadersList(headers: result.headers),
