@@ -91,30 +91,40 @@ jobs:
 
       - uses: ./.github/actions/setup-flutter
 
-      # Gradle installs the NDK on first use, and a single corrupted download
-      # fails the whole build during configuration (seen in practice). Install
-      # it up front with retries, reading the exact version Flutter expects.
-      - name: Preinstall Android NDK
+      # Gradle installs SDK components (the NDK, CMake for native plugins) on
+      # first use, and a single corrupted download fails the whole build during
+      # configuration — seen repeatedly on CI runners, for both NDK and CMake.
+      # Install what this project needs up front, with retries.
+      - name: Preinstall Android SDK components
         if: matrix.platform == 'android' || matrix.platform == 'android-aab'
         run: |
+          components=("cmake;3.22.1")
           ndk_version=$(grep -oP 'val ndkVersion: String = "\K[0-9.]+' "$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/kotlin/FlutterExtension.kt" | head -1)
-          if [ -z "$ndk_version" ]; then
+          if [ -n "$ndk_version" ]; then
+            components+=("ndk;$ndk_version")
+          else
             echo "Could not determine the NDK version from the Flutter SDK; letting Gradle install it."
-            exit 0
           fi
+
           sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          for attempt in 1 2 3; do
-            if yes | "$sdkmanager" --install "ndk;$ndk_version" > /tmp/ndk-install.log 2>&1; then
-              echo "Installed Android NDK $ndk_version."
-              exit 0
+          for component in "${components[@]}"; do
+            installed=false
+            for attempt in 1 2 3; do
+              if yes | "$sdkmanager" --install "$component" > /tmp/sdk-install.log 2>&1; then
+                echo "Installed $component."
+                installed=true
+                break
+              fi
+              echo "Attempt $attempt to install $component failed; clearing the partial download and retrying."
+              rm -rf "$ANDROID_HOME/${component%%;*}/${component##*;}" "$ANDROID_HOME/.temp"
+              sleep 5
+            done
+            if [ "$installed" != true ]; then
+              echo "::error::Failed to install $component after 3 attempts."
+              tail -50 /tmp/sdk-install.log
+              exit 1
             fi
-            echo "Attempt $attempt to install NDK $ndk_version failed; clearing the partial download and retrying."
-            rm -rf "$ANDROID_HOME/ndk/$ndk_version" "$ANDROID_HOME/.temp"
-            sleep 5
           done
-          echo "::error::Failed to install Android NDK $ndk_version after 3 attempts."
-          tail -50 /tmp/ndk-install.log
-          exit 1
 
       - name: Build Windows
         if: matrix.platform == 'windows'
