@@ -19,3 +19,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       platforms: '["windows","linux","macos","android","ios"]'
+      # Package on PRs too, so installer/AppImage packaging can never break
+      # silently between releases.
+      package: true
