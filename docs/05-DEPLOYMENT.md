@@ -53,7 +53,7 @@ The workflow:
 1. Fails fast unless the tag matches the `version:` in `pubspec.yaml` **and** the tag is an
    ancestor of `main`.
 2. Calls the reusable `.github/workflows/build.yml` to build and package every platform:
-   Windows (signed if a certificate secret is configured, otherwise unsigned), Linux, macOS
+   Windows (portable zip + per-user Inno Setup installer), Linux (`tar.gz` + AppImage), macOS
    (unsigned), Android APK and AAB, and an unsigned iOS app bundle.
 3. Attaches build-provenance attestations (`gh attestation verify`) and a `SHA256SUMS` file.
 4. Creates a **draft** GitHub Release with versioned assets and auto-generated notes, then

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- In-app desktop updates: **Update now** in About downloads the release asset, verifies it against
+  the release's `SHA256SUMS`, applies it in place, and restarts. Windows uses the new Inno Setup
+  installer; Linux AppImage builds replace themselves. Workspace data is untouched (it lives in
+  the OS user-data directories).
+- `relay-<version>-windows-x64-setup.exe` (per-user Inno Setup installer) and
+  `relay-<version>-x86_64.AppImage` release assets.
+
 ## [1.1.2] - 2026-10-16
 
 ### Added
