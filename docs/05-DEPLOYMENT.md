@@ -79,7 +79,7 @@ watches for Flutter SDK drift.
 
 ## Versioning
 
-- **Version** is set in `pubspec.yaml` (`version: 1.1.2+5`). The optional `+5` is the build
+- **Version** is set in `pubspec.yaml` (`version: 1.1.3+6`). The optional `+6` is the build
   number. Bump before release; Flutter uses this for the app version shown on device and in
   stores. The release workflow rejects tags that don't match this version.
 - The full policy (which part to bump, store mappings, tagging rules, and the release
