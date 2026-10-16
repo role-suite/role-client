@@ -281,8 +281,8 @@ account, and everything you create stays on your device unless you opt into a sy
 
 No. There is no telemetry. The only outbound traffic is the requests you compose, the
 role-node server you optionally configure, and — only when you click **Check for updates** in
-About, or enable the off-by-default daily automatic check — a request to GitHub's public
-releases API.
+About, or enable the off-by-default daily automatic check — a request to the project's public
+GitHub release page (a plain HTTPS redirect check; it does not use the GitHub API).
 
 ## License
 

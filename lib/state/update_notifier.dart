@@ -9,7 +9,8 @@ import '../core/updates/version_compare.dart';
 import 'settings_providers.dart';
 
 const _autoCheckKey = 'updates.autoCheck';
-const _lastCheckedKey = 'updates.lastCheckedAt';
+const _lastAttemptKey = 'updates.lastAttemptAt';
+const _legacyLastCheckedKey = 'updates.lastCheckedAt';
 const _availableTagKey = 'updates.availableTag';
 const _availableUrlKey = 'updates.availableUrl';
 const _dismissedTagKey = 'updates.dismissedTag';
@@ -33,7 +34,7 @@ class UpdateState {
     this.availableTag,
     this.availableUrl,
     this.dismissedTag,
-    this.lastCheckedAt,
+    this.lastAttemptAt,
     this.errorMessage,
   });
 
@@ -51,7 +52,7 @@ class UpdateState {
 
   /// Tag the user dismissed; a later, different release shows the badge again.
   final String? dismissedTag;
-  final DateTime? lastCheckedAt;
+  final DateTime? lastAttemptAt;
   final String? errorMessage;
 
   bool get versionKnown => currentVersion.isNotEmpty;
@@ -76,7 +77,7 @@ class UpdateState {
     Object? availableTag = _unset,
     Object? availableUrl = _unset,
     Object? dismissedTag = _unset,
-    Object? lastCheckedAt = _unset,
+    Object? lastAttemptAt = _unset,
     Object? errorMessage = _unset,
   }) {
     return UpdateState(
@@ -88,7 +89,7 @@ class UpdateState {
       availableTag: identical(availableTag, _unset) ? this.availableTag : availableTag as String?,
       availableUrl: identical(availableUrl, _unset) ? this.availableUrl : availableUrl as String?,
       dismissedTag: identical(dismissedTag, _unset) ? this.dismissedTag : dismissedTag as String?,
-      lastCheckedAt: identical(lastCheckedAt, _unset) ? this.lastCheckedAt : lastCheckedAt as DateTime?,
+      lastAttemptAt: identical(lastAttemptAt, _unset) ? this.lastAttemptAt : lastAttemptAt as DateTime?,
       errorMessage: identical(errorMessage, _unset) ? this.errorMessage : errorMessage as String?,
     );
   }
@@ -122,18 +123,18 @@ class UpdateNotifier extends AsyncNotifier<UpdateState> {
       availableTag: prefs.getString(_availableTagKey),
       availableUrl: prefs.getString(_availableUrlKey),
       dismissedTag: prefs.getString(_dismissedTagKey),
-      lastCheckedAt: DateTime.tryParse(prefs.getString(_lastCheckedKey) ?? ''),
+      lastAttemptAt: DateTime.tryParse(prefs.getString(_lastAttemptKey) ?? prefs.getString(_legacyLastCheckedKey) ?? ''),
     );
 
-    if (state.autoCheckEnabled && state.versionKnown && _isStale(state.lastCheckedAt)) {
+    if (state.autoCheckEnabled && state.versionKnown && _isStale(state.lastAttemptAt)) {
       unawaited(Future.microtask(checkForUpdates));
     }
     return state;
   }
 
-  bool _isStale(DateTime? lastCheckedAt) {
-    if (lastCheckedAt == null) return true;
-    return DateTime.now().difference(lastCheckedAt) >= ref.read(updateCheckIntervalProvider);
+  bool _isStale(DateTime? lastAttemptAt) {
+    if (lastAttemptAt == null) return true;
+    return DateTime.now().difference(lastAttemptAt) >= ref.read(updateCheckIntervalProvider);
   }
 
   Future<void> checkForUpdates() async {
@@ -149,13 +150,18 @@ class UpdateNotifier extends AsyncNotifier<UpdateState> {
         latest: release,
         availableTag: newer ? release.tagName : null,
         availableUrl: newer ? release.htmlUrl : null,
-        lastCheckedAt: DateTime.now(),
+        lastAttemptAt: DateTime.now(),
         errorMessage: null,
       );
       state = AsyncData(next);
       await _persist(next);
     } on ReleaseCheckException catch (error) {
-      state = AsyncData(current.copyWith(isChecking: false, errorMessage: error.message));
+      // A failed attempt still counts against the daily interval: without
+      // this, every launch would retry and can hammer GitHub from a network
+      // that is being rate-limited or blocked.
+      final next = current.copyWith(isChecking: false, errorMessage: error.message, lastAttemptAt: DateTime.now());
+      state = AsyncData(next);
+      await _persist(next);
     }
   }
 
@@ -179,9 +185,9 @@ class UpdateNotifier extends AsyncNotifier<UpdateState> {
 
   Future<void> _persist(UpdateState state) async {
     final prefs = ref.read(sharedPreferencesProvider);
-    final lastCheckedAt = state.lastCheckedAt;
-    if (lastCheckedAt != null) {
-      await prefs.setString(_lastCheckedKey, lastCheckedAt.toIso8601String());
+    final lastAttemptAt = state.lastAttemptAt;
+    if (lastAttemptAt != null) {
+      await prefs.setString(_lastAttemptKey, lastAttemptAt.toIso8601String());
     }
     final tag = state.availableTag;
     final url = state.availableUrl;
