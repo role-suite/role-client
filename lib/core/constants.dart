@@ -12,4 +12,8 @@ abstract class AppConstants {
   /// role-node's fixed API prefix. Bump only for a documented `/api/v2`
   /// breaking change per role-node/docs/compatibility.md.
   static const apiPrefix = '/api/v1';
+
+  /// How often the opt-in automatic release check runs. Manual checks are
+  /// never rate-limited by this.
+  static const updateCheckInterval = Duration(hours: 24);
 }

@@ -32,6 +32,10 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Environment variables now support per-row enable/disable, secret masking, and ordering.
 - Version tooling (`tool/version.dart`) and the versioning policy in
   [docs/09-VERSIONING.md](docs/09-VERSIONING.md).
+- In-app release check: an About dialog (account menu) showing the running version, a manual
+  "Check for updates" button, an off-by-default daily automatic check, and a status-bar badge
+  linking to the release page when a newer GitHub release exists. No telemetry; see the README
+  FAQ.
 - CI/CD via GitHub Actions: version validation, format/analyze/test on every push and PR
   (with a coverage artifact and run-summary coverage), compile-only release builds for Windows,
   Linux, macOS, Android, and iOS, a Conventional-Commits PR title check, a nightly check

@@ -17,6 +17,7 @@ Defined in `lib/core/constants.dart`:
 | `defaultConnectTimeout` | 15 s | HTTP connection timeout. |
 | `defaultReceiveTimeout` | 30 s | HTTP receive timeout. |
 | `maxHistoryEntriesPerRequest` | 20 | Max history entries per request. |
+| `updateCheckInterval` | 24 h | How often the opt-in automatic release check runs (manual checks are unaffected). |
 | `defaultCollectionId` | `default` | Id of the seeded first collection. |
 
 Changing these requires a rebuild. Variable syntax (`{{name}}`) is a fixed regex in `lib/core/network/template_resolver.dart`, not a constant.

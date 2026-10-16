@@ -8,6 +8,8 @@ import '../../state/auth_notifier.dart';
 import '../../state/environments_notifier.dart';
 import '../../state/settings_providers.dart';
 import '../../state/sync_notifier.dart';
+import '../../state/update_notifier.dart';
+import 'about_dialog.dart';
 import 'online_mode_panel.dart';
 
 class StatusBar extends ConsumerWidget {
@@ -21,6 +23,8 @@ class StatusBar extends ConsumerWidget {
     final activeName = environments.where((e) => e.id == activeId).map((e) => e.name).firstOrNull;
     final auth = ref.watch(authNotifierProvider);
     final sync = ref.watch(syncNotifierProvider);
+    final update = ref.watch(updateNotifierProvider).value;
+    final updateTag = update != null && update.showBadge ? update.availableTag : null;
 
     return Container(
       height: AppSizes.statusBarHeight,
@@ -32,6 +36,7 @@ class StatusBar extends ConsumerWidget {
       child: Row(
         children: [
           ..._syncIndicator(context, onlineModeStatus(context, auth, sync)),
+          if (updateTag != null) ...[const SizedBox(width: AppSpacing.lg), _UpdateBadge(tag: updateTag, onTap: () => showAppAboutDialog(context))],
           const SizedBox(width: AppSpacing.lg),
           Text('Environment: ${activeName ?? 'none'}', style: context.type.caption),
           const Spacer(),
@@ -48,4 +53,32 @@ class StatusBar extends ConsumerWidget {
     const SizedBox(width: 4),
     Text(status.label, style: context.type.caption),
   ];
+}
+
+/// Clickable hint that a newer release exists; opens the About dialog, where
+/// the user can dismiss it for that version.
+class _UpdateBadge extends StatelessWidget {
+  const _UpdateBadge({required this.tag, required this.onTap});
+
+  final String tag;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: AppRadius.smRadius,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Row(
+          children: [
+            Icon(Icons.new_releases_outlined, size: 11, color: colors.accent),
+            const SizedBox(width: 4),
+            Text('Update $tag', style: context.type.caption.copyWith(color: colors.accent)),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -25,6 +25,7 @@ dependencies:
   html: ^0.15.6
   http_parser: ^4.1.2
   flutter_secure_storage: ^9.2.4
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:

@@ -39,10 +39,11 @@ role-client/
 │   │   ├── storage/          # JsonStore — local JSON persistence under the workspace dir
 │   │   ├── network/          # HttpClient (Dio wrapper), TemplateResolver, RequestRunner, AssertionEvaluator
 │   │   ├── io/                # Workspace export + Röle/Postman import
+│   │   ├── updates/           # GitHub release check (manual + opt-in automatic)
 │   │   ├── theme/             # Design tokens, colors, typography, ThemeData assembly
 │   │   └── utils/
 │   ├── state/                # Riverpod notifiers (workspace, environments, history,
-│   │                          # runs, flows, settings, workbench UI state)
+│   │                          # runs, flows, settings, updates, workbench UI state)
 │   └── ui/
 │       ├── shell/             # Persistent desktop shell: top bar, rail, sidebar,
 │       │                      # tabbed workbench, inspector, status bar, mobile shell
