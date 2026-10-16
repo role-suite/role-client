@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-16
+
 ### Added
 
 - In-app desktop updates: **Update now** in About downloads the release asset, verifies it against
@@ -15,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the OS user-data directories).
 - `relay-<version>-windows-x64-setup.exe` (per-user Inno Setup installer) and
   `relay-<version>-x86_64.AppImage` release assets.
+- Build checks now also package these artifacts, so installer/AppImage packaging breakage
+  surfaces on pull requests instead of at release time.
+
+### Fixed
+
+- Very large response bodies are shown **complete and pretty-printed** again. The v1.1.2 display
+  cap and pretty-print size limit are gone; the fix for the corrupted tail glyphs (virtualized
+  line rendering) remains. The Android SDK components Gradle needs (NDK and CMake) are also
+  preinstalled with retries in CI, fixing a class of corrupted-download build failures.
 
 ## [1.1.2] - 2026-10-16
 
@@ -116,7 +127,8 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Dependabot: version bumps for `pub` packages and GitHub Actions are no longer opened
   automatically.
 
-[Unreleased]: https://github.com/role-suite/role-client/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/role-suite/role-client/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/role-suite/role-client/releases/tag/v1.1.3
 [1.1.2]: https://github.com/role-suite/role-client/releases/tag/v1.1.2
 [1.1.1]: https://github.com/role-suite/role-client/releases/tag/v1.1.1
 [1.1.0]: https://github.com/role-suite/role-client/releases/tag/v1.1.0
