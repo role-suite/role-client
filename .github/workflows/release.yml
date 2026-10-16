@@ -97,7 +97,9 @@ jobs:
           VERSION="${RELEASE_TAG#v}"
           mkdir -p release-assets
           cp artifacts/windows-release/relay-windows.zip "release-assets/relay-${VERSION}-windows-x64.zip"
+          cp artifacts/windows-installer-release/relay-${VERSION}-windows-x64-setup.exe "release-assets/relay-${VERSION}-windows-x64-setup.exe"
           cp artifacts/linux-release/relay-linux.tar.gz "release-assets/relay-${VERSION}-linux-x64.tar.gz"
+          cp artifacts/linux-appimage-release/relay-${VERSION}-x86_64.AppImage "release-assets/relay-${VERSION}-x86_64.AppImage"
           cp artifacts/macos-release/relay-macos.zip "release-assets/relay-${VERSION}-macos.zip"
           cp artifacts/android-apk-release/relay-android.apk "release-assets/relay-${VERSION}-android.apk"
           cp artifacts/ios-release/relay-ios-unsigned.zip "release-assets/relay-${VERSION}-ios-unsigned.zip"

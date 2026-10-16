@@ -5,6 +5,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/constants.dart';
 import '../core/updates/release_checker.dart';
+import '../core/updates/self_update_service.dart';
+import '../core/updates/update_applier.dart';
+import '../core/updates/update_platform.dart';
 import '../core/updates/version_compare.dart';
 import 'settings_providers.dart';
 
@@ -24,6 +27,25 @@ final updateCheckIntervalProvider = Provider<Duration>((ref) => AppConstants.upd
 
 final releaseCheckerProvider = Provider<ReleaseChecker>((ref) => ReleaseChecker());
 
+/// Which in-app update mechanism applies on this platform. Overridable in
+/// tests.
+final updatePlatformProvider = Provider<UpdatePlatform>((ref) => detectUpdatePlatform());
+
+final updateApplierProvider = Provider<UpdateApplier?>((ref) {
+  return switch (ref.watch(updatePlatformProvider)) {
+    UpdatePlatform.windows => const WindowsInstallerApplier(),
+    UpdatePlatform.macos => const MacOsArchiveApplier(),
+    UpdatePlatform.linux => const LinuxAppImageApplier(),
+    UpdatePlatform.unsupported => null,
+  };
+});
+
+final selfUpdateServiceProvider = Provider<SelfUpdateService?>((ref) {
+  final applier = ref.watch(updateApplierProvider);
+  if (applier == null) return null;
+  return SelfUpdateService(applier: applier);
+});
+
 class UpdateState {
   const UpdateState({
     this.currentVersion = '',
@@ -36,6 +58,10 @@ class UpdateState {
     this.dismissedTag,
     this.lastAttemptAt,
     this.errorMessage,
+    this.selfUpdateSupported = false,
+    this.downloadProgress,
+    this.installing = false,
+    this.installError,
   });
 
   final String currentVersion;
@@ -54,6 +80,17 @@ class UpdateState {
   final String? dismissedTag;
   final DateTime? lastAttemptAt;
   final String? errorMessage;
+
+  /// Whether this platform/build can apply updates in place (see
+  /// [UpdatePlatform]).
+  final bool selfUpdateSupported;
+
+  /// 0..1 while the update is downloading, null otherwise.
+  final double? downloadProgress;
+
+  /// True once the download is verified and the platform applier is running.
+  final bool installing;
+  final String? installError;
 
   bool get versionKnown => currentVersion.isNotEmpty;
 
@@ -79,6 +116,10 @@ class UpdateState {
     Object? dismissedTag = _unset,
     Object? lastAttemptAt = _unset,
     Object? errorMessage = _unset,
+    bool? selfUpdateSupported,
+    Object? downloadProgress = _unset,
+    bool? installing,
+    Object? installError = _unset,
   }) {
     return UpdateState(
       currentVersion: currentVersion,
@@ -91,6 +132,10 @@ class UpdateState {
       dismissedTag: identical(dismissedTag, _unset) ? this.dismissedTag : dismissedTag as String?,
       lastAttemptAt: identical(lastAttemptAt, _unset) ? this.lastAttemptAt : lastAttemptAt as DateTime?,
       errorMessage: identical(errorMessage, _unset) ? this.errorMessage : errorMessage as String?,
+      selfUpdateSupported: selfUpdateSupported ?? this.selfUpdateSupported,
+      downloadProgress: identical(downloadProgress, _unset) ? this.downloadProgress : downloadProgress as double?,
+      installing: installing ?? this.installing,
+      installError: identical(installError, _unset) ? this.installError : installError as String?,
     );
   }
 }
@@ -124,6 +169,7 @@ class UpdateNotifier extends AsyncNotifier<UpdateState> {
       availableUrl: prefs.getString(_availableUrlKey),
       dismissedTag: prefs.getString(_dismissedTagKey),
       lastAttemptAt: DateTime.tryParse(prefs.getString(_lastAttemptKey) ?? prefs.getString(_legacyLastCheckedKey) ?? ''),
+      selfUpdateSupported: ref.watch(updatePlatformProvider) != UpdatePlatform.unsupported,
     );
 
     if (state.autoCheckEnabled && state.versionKnown && _isStale(state.lastAttemptAt)) {
@@ -181,6 +227,46 @@ class UpdateNotifier extends AsyncNotifier<UpdateState> {
     if (current == null || tag == null) return;
     state = AsyncData(current.copyWith(dismissedTag: tag));
     await ref.read(sharedPreferencesProvider).setString(_dismissedTagKey, tag);
+  }
+
+  /// Downloads and applies the available release in place (Windows installer,
+  /// macOS bundle swap, Linux AppImage). On real platforms the app exits as
+  /// part of applying, so the UI only ever shows progress up to the restart.
+  Future<void> startSelfUpdate() async {
+    final current = state.value;
+    final service = ref.read(selfUpdateServiceProvider);
+    if (current == null || service == null || !current.updateAvailable || current.installing || current.downloadProgress != null) {
+      return;
+    }
+
+    final tag = current.availableTag!;
+    final version = tag.startsWith('v') ? tag.substring(1) : tag;
+    final assetName = selfUpdateAssetName(ref.read(updatePlatformProvider), version);
+    if (assetName == null) return;
+
+    state = AsyncData(current.copyWith(downloadProgress: 0.0, installError: null));
+    try {
+      await service.downloadAndInstall(
+        tag: tag,
+        version: version,
+        assetName: assetName,
+        onProgress: (received, total) {
+          final latest = state.value;
+          if (latest == null) return;
+          state = AsyncData(latest.copyWith(downloadProgress: total > 0 ? received / total : 0.0));
+        },
+        onVerified: () {
+          final latest = state.value;
+          if (latest == null) return;
+          state = AsyncData(latest.copyWith(downloadProgress: null, installing: true));
+        },
+      );
+      // Only reached in tests or when the applier returned without exiting.
+      final latest = state.value;
+      if (latest != null) state = AsyncData(latest.copyWith(installing: false, downloadProgress: null));
+    } on SelfUpdateException catch (error) {
+      state = AsyncData(current.copyWith(downloadProgress: null, installing: false, installError: error.message));
+    }
   }
 
   Future<void> _persist(UpdateState state) async {

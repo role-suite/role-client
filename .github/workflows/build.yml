@@ -189,6 +189,26 @@ jobs:
           path: relay-windows.zip
           retention-days: 7
 
+      # Inno Setup is preinstalled on GitHub's Windows runners. The installer
+      # is what the in-app updater downloads and runs silently.
+      - name: Build Windows installer
+        if: inputs.package && matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $line = Get-Content pubspec.yaml | Where-Object { $_ -match '^version:\s*' } | Select-Object -First 1
+          $version = (($line -split '\s+')[1] -split '\+')[0]
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Qp "/DMyAppVersion=$version" packaging\windows\relay.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Rename-Item build\windows\installer\relay-windows-setup.exe "relay-$version-windows-x64-setup.exe"
+
+      - name: Upload Windows installer
+        if: inputs.package && matrix.platform == 'windows'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-installer-release
+          path: build/windows/installer/relay-*-windows-x64-setup.exe
+          retention-days: 7
+
       - name: Package Linux build
         if: inputs.package && matrix.platform == 'linux'
         run: |
@@ -201,6 +221,34 @@ jobs:
         with:
           name: linux-release
           path: relay-linux.tar.gz
+          retention-days: 7
+
+      # An AppImage wraps the same bundle in a single executable that can
+      # replace itself, which is what the in-app updater relies on. Run with
+      # --appimage-extract-and-run so no FUSE is needed on the runner.
+      - name: Build Linux AppImage
+        if: inputs.package && matrix.platform == 'linux'
+        run: |
+          version=$(sed -n 's/^version: \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' pubspec.yaml | head -1)
+          APPDIR=build/linux/AppDir
+          rm -rf "$APPDIR"
+          mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+          cp -r build/linux/x64/release/relay/* "$APPDIR/usr/bin/"
+          cp assets/image/app_logo.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/relay.png"
+          cp assets/image/app_logo.png "$APPDIR/relay.png"
+          printf '#!/bin/sh\nHERE="$(dirname "$(readlink -f "$0")")"\nexec "$HERE/usr/bin/relay" "$@"\n' > "$APPDIR/AppRun"
+          chmod +x "$APPDIR/AppRun"
+          printf '[Desktop Entry]\nName=Röle\nExec=relay\nIcon=relay\nType=Application\nCategories=Development;\n' > "$APPDIR/relay.desktop"
+          curl -sL -o /tmp/appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagetool
+          ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run --no-appstream "$APPDIR" "relay-$version-x86_64.AppImage"
+
+      - name: Upload Linux AppImage
+        if: inputs.package && matrix.platform == 'linux'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: linux-appimage-release
+          path: relay-*-x86_64.AppImage
           retention-days: 7
 
       - name: Package Android AAB

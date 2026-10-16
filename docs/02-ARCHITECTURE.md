@@ -46,9 +46,11 @@ not in the widgets themselves.
 - `lib/state/settings_providers.dart`: theme mode + active environment id, persisted via `SharedPreferences`.
 - `lib/state/update_notifier.dart`: app version (via `package_info_plus`), last known newer
   GitHub release, the opt-in automatic check setting, and dismissed versions — persisted via
-  `SharedPreferences`. `lib/core/updates/` holds the release fetch and version comparison. This
-  is the only non-user-initiated network call in the app, and it only runs when the user enables
-  automatic checks (off by default); see the README FAQ.
+  `SharedPreferences`. `lib/core/updates/` holds the release fetch, version comparison, and the
+  in-place updater (download → SHA-256 verification against the release's `SHA256SUMS` → platform
+  applier: Windows installer, Linux AppImage replacement, macOS bundle swap for unsandboxed
+  builds). The release check is the only non-user-initiated network call in the app, and it only
+  runs when the user enables automatic checks (off by default); see the README FAQ.
 
 There are no repository/usecase layers on top of these — a local-only app's "business logic"
 is the notifier itself, reading and writing through `JsonStore`.

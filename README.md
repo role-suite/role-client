@@ -46,7 +46,7 @@ backend for team-synced workspaces; local-only usage is unaffected either way.
 | 🗂 **Organization & Reuse** | Collections to group requests · environment variables with `{{variableName}}` substitution · active collection/environment selectors · request search & filter |
 | 🔁 **Import & Export** | Import Röle or Postman-style workspace JSON · conflict handling (`Skip`, `Keep both`, `Overwrite`) · export your workspace as JSON |
 | ⚙️ **Execution & Automation** | **Collection Runner** — run a full collection sequentially · **Run History** — pass/fail summaries for past runs · **Flows** — chain multi-step requests with delays and previous-response passing |
-| 🎨 **UX & Platform** | Material 3 UI, responsive desktop/mobile layout · light, dark, and system theme modes · Windows, macOS, Linux, Android, and iOS · in-app About dialog with version info and an update check (manual; optional daily automatic check, off by default) |
+| 🎨 **UX & Platform** | Material 3 UI, responsive desktop/mobile layout · light, dark, and system theme modes · Windows, macOS, Linux, Android, and iOS · in-app About dialog with version info, an update check, and one-click in-place updates on Windows and Linux AppImage (manual; optional daily automatic check, off by default) |
 
 ## Screenshots
 
