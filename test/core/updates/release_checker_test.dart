@@ -22,45 +22,70 @@ ReleaseChecker _checker(Future<ResponseBody> Function(RequestOptions options) re
   return ReleaseChecker(dio: dio);
 }
 
-ResponseBody _json(Object body, {int status = 200}) => ResponseBody.fromString(
-  jsonEncode(body),
+ResponseBody _redirect(String location) => ResponseBody.fromString(
+  '',
+  302,
+  headers: {
+    'location': [location],
+  },
+);
+
+ResponseBody _status(int status, {Map<String, List<String>> headers = const {}}) => ResponseBody.fromString(
+  jsonEncode({'message': 'error'}),
   status,
   headers: {
     Headers.contentTypeHeader: [Headers.jsonContentType],
+    ...headers,
   },
 );
 
 void main() {
-  test('parses the latest release and sends the headers GitHub requires', () async {
+  test('reads the release tag from the redirect and sends the required headers', () async {
     RequestOptions? captured;
     final checker = _checker((options) async {
       captured = options;
-      return _json({
-        'tag_name': 'v1.2.0',
-        'html_url': 'https://github.com/role-suite/role-client/releases/tag/v1.2.0',
-        'name': 'v1.2.0',
-        'body': 'Notes',
-        'published_at': '2026-10-15T00:00:00Z',
-      });
+      return _redirect('https://github.com/role-suite/role-client/releases/tag/v1.2.0');
     });
 
     final release = await checker.fetchLatest();
     expect(release.tagName, 'v1.2.0');
-    expect(release.htmlUrl, contains('/v1.2.0'));
-    expect(release.body, 'Notes');
-    expect(release.publishedAt, DateTime.utc(2026, 10, 15));
+    expect(release.htmlUrl, 'https://github.com/role-suite/role-client/releases/tag/v1.2.0');
     expect(captured?.headers['User-Agent'], 'role-client');
-    expect(captured?.headers['Accept'], 'application/vnd.github+json');
+    expect(captured?.followRedirects, isFalse);
+    expect(captured?.path, ReleaseChecker.latestReleaseUrl);
   });
 
-  test('throws when the payload is not a release', () async {
-    final checker = _checker((_) async => _json({'message': 'hello'}));
+  test('parses relative redirect locations too', () async {
+    final checker = _checker((_) async => _redirect('/role-suite/role-client/releases/tag/v1.2.1'));
+    expect((await checker.fetchLatest()).tagName, 'v1.2.1');
+  });
+
+  test('throws when the redirect has no release tag', () async {
+    final checker = _checker((_) async => _redirect('https://github.com/role-suite/role-client/releases'));
     await expectLater(checker.fetchLatest(), throwsA(isA<ReleaseCheckException>().having((e) => e.message, 'message', contains('unexpected'))));
   });
 
-  test('maps rate limiting to a friendly message', () async {
-    final checker = _checker((_) async => _json({'message': 'rate limited'}, status: 403));
-    await expectLater(checker.fetchLatest(), throwsA(isA<ReleaseCheckException>().having((e) => e.message, 'message', contains('rate limit'))));
+  test('maps 404 to a request-failed message', () async {
+    final checker = _checker((_) async => _status(404));
+    await expectLater(checker.fetchLatest(), throwsA(isA<ReleaseCheckException>().having((e) => e.message, 'message', contains('404'))));
+  });
+
+  test('only claims rate limiting when GitHub says so', () async {
+    final limited = _checker(
+      (_) async => _status(
+        403,
+        headers: {
+          'x-ratelimit-remaining': ['0'],
+        },
+      ),
+    );
+    await expectLater(limited.fetchLatest(), throwsA(isA<ReleaseCheckException>().having((e) => e.message, 'message', contains('rate-limiting'))));
+
+    final refused = _checker((_) async => _status(403));
+    await expectLater(
+      refused.fetchLatest(),
+      throwsA(isA<ReleaseCheckException>().having((e) => e.message, 'message', contains('refused the request'))),
+    );
   });
 
   test('maps connection failures to an offline message', () async {

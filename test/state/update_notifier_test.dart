@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -22,31 +21,28 @@ class _ScriptedAdapter implements HttpClientAdapter {
   Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) => _respond(options);
 }
 
-ResponseBody _release(String tag, {int status = 200}) {
-  final body = tag.isEmpty
-      ? {'message': 'not a release'}
-      : {
-          'tag_name': tag,
-          'html_url': 'https://github.com/role-suite/role-client/releases/tag/$tag',
-          'name': tag,
-          'body': 'notes',
-          'published_at': '2026-10-15T00:00:00Z',
-        };
-  return ResponseBody.fromString(
-    jsonEncode(body),
-    status,
-    headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    },
-  );
-}
+ResponseBody _redirect(String tag) => ResponseBody.fromString(
+  '',
+  302,
+  headers: {
+    'location': ['https://github.com/role-suite/role-client/releases/tag/$tag'],
+  },
+);
+
+ResponseBody _rateLimited() => ResponseBody.fromString(
+  '',
+  403,
+  headers: {
+    'x-ratelimit-remaining': ['0'],
+  },
+);
 
 Future<ProviderContainer> _container({Map<String, Object> prefs = const {}, Future<ResponseBody> Function(RequestOptions options)? respond}) async {
   SharedPreferences.setMockInitialValues(prefs);
   final sharedPreferences = await SharedPreferences.getInstance();
   PackageInfo.setMockInitialValues(appName: 'Röle', packageName: 'com.devora.relay', version: '1.1.0', buildNumber: '3', buildSignature: '');
 
-  final dio = Dio()..httpClientAdapter = _ScriptedAdapter(respond ?? (_) async => _release('v1.1.0'));
+  final dio = Dio()..httpClientAdapter = _ScriptedAdapter(respond ?? (_) async => _redirect('v1.1.0'));
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(sharedPreferences),
@@ -71,7 +67,7 @@ void main() {
   });
 
   test('manual check finds a newer release and persists it', () async {
-    final container = await _container(respond: (_) async => _release('v1.2.0'));
+    final container = await _container(respond: (_) async => _redirect('v1.2.0'));
     await container.read(updateNotifierProvider.future);
 
     await container.read(updateNotifierProvider.notifier).checkForUpdates();
@@ -84,13 +80,13 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('updates.availableTag'), 'v1.2.0');
-    expect(prefs.getString('updates.lastCheckedAt'), isNotNull);
+    expect(prefs.getString('updates.lastAttemptAt'), isNotNull);
   });
 
   test('checking against the running version clears stale update info', () async {
     final container = await _container(
       prefs: {'updates.availableTag': 'v1.1.0', 'updates.availableUrl': 'https://example.com/v1.1.0'},
-      respond: (_) async => _release('v1.1.0'),
+      respond: (_) async => _redirect('v1.1.0'),
     );
     await container.read(updateNotifierProvider.future);
 
@@ -105,18 +101,21 @@ void main() {
     expect(prefs.getString('updates.availableTag'), isNull);
   });
 
-  test('rate limiting surfaces a friendly error without losing prior state', () async {
+  test('a failed check surfaces an error, keeps prior state, and persists the attempt', () async {
     final container = await _container(
       prefs: {'updates.availableTag': 'v1.2.0', 'updates.availableUrl': 'https://example.com/v1.2.0'},
-      respond: (_) async => _release('', status: 403),
+      respond: (_) async => _rateLimited(),
     );
     await container.read(updateNotifierProvider.future);
 
     await container.read(updateNotifierProvider.notifier).checkForUpdates();
 
     final state = container.read(updateNotifierProvider).value!;
-    expect(state.errorMessage, contains('rate limit'));
+    expect(state.errorMessage, contains('rate-limiting'));
     expect(state.updateAvailable, isTrue, reason: 'the previously known release stays visible');
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('updates.lastAttemptAt'), isNotNull);
   });
 
   test('dismiss hides the badge for the current tag only', () async {
@@ -138,7 +137,7 @@ void main() {
     final container = await _container(
       respond: (_) async {
         fetches++;
-        return _release('v1.2.0');
+        return _redirect('v1.2.0');
       },
     );
     await container.read(updateNotifierProvider.future);
@@ -151,14 +150,14 @@ void main() {
     expect(prefs.getBool('updates.autoCheck'), isTrue);
   });
 
-  test('automatic check runs when the last check is stale', () async {
+  test('automatic check runs when the last attempt is stale', () async {
     var fetches = 0;
     final stale = DateTime.now().subtract(const Duration(days: 2)).toIso8601String();
     final container = await _container(
-      prefs: {'updates.autoCheck': true, 'updates.lastCheckedAt': stale},
+      prefs: {'updates.autoCheck': true, 'updates.lastAttemptAt': stale},
       respond: (_) async {
         fetches++;
-        return _release('v1.2.0');
+        return _redirect('v1.2.0');
       },
     );
 
@@ -167,17 +166,17 @@ void main() {
 
     expect(fetches, 1);
     final state = container.read(updateNotifierProvider).value!;
-    expect(state.lastCheckedAt!.isAfter(DateTime.parse(stale)), isTrue);
+    expect(state.lastAttemptAt!.isAfter(DateTime.parse(stale)), isTrue);
     expect(initial.autoCheckEnabled, isTrue);
   });
 
-  test('automatic check is skipped when a recent check exists', () async {
+  test('automatic check is skipped when a recent attempt exists', () async {
     var fetches = 0;
     final container = await _container(
-      prefs: {'updates.autoCheck': true, 'updates.lastCheckedAt': DateTime.now().toIso8601String()},
+      prefs: {'updates.autoCheck': true, 'updates.lastAttemptAt': DateTime.now().toIso8601String()},
       respond: (_) async {
         fetches++;
-        return _release('v1.2.0');
+        return _redirect('v1.2.0');
       },
     );
 
@@ -185,5 +184,28 @@ void main() {
     await pumpEventQueue();
 
     expect(fetches, 0);
+  });
+
+  test('a recent failed attempt also suppresses the next automatic check', () async {
+    var fetches = 0;
+    final failedAt = DateTime.now().subtract(const Duration(hours: 1)).toIso8601String();
+    final container = await _container(
+      prefs: {'updates.autoCheck': true, 'updates.lastAttemptAt': failedAt},
+      respond: (_) async {
+        fetches++;
+        return _rateLimited();
+      },
+    );
+
+    await container.read(updateNotifierProvider.future);
+    await pumpEventQueue();
+
+    expect(fetches, 0, reason: 'failures must not retry on every launch');
+  });
+
+  test('reads the legacy last-checked key written by v1.1.1', () async {
+    final container = await _container(prefs: {'updates.lastCheckedAt': DateTime.now().toIso8601String()});
+    final state = await container.read(updateNotifierProvider.future);
+    expect(state.lastAttemptAt, isNotNull);
   });
 }

@@ -100,8 +100,9 @@ class _StatusBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final lastChecked = update.lastCheckedAt;
-    final checkedLabel = lastChecked == null ? 'Never checked.' : 'Last checked ${formatDateTime(lastChecked)}.';
+    final lastAttempt = update.lastAttemptAt;
+    final checkedLabel = lastAttempt == null ? 'Never checked.' : 'Last checked ${formatDateTime(lastAttempt)}.';
+    final attemptLabel = lastAttempt == null ? 'No attempt recorded yet.' : 'Last attempt ${formatDateTime(lastAttempt)}.';
 
     if (update.isChecking) {
       return Row(
@@ -119,7 +120,7 @@ class _StatusBlock extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(error, style: context.type.body.copyWith(color: colors.danger)),
-          Text(checkedLabel, style: context.type.caption),
+          Text(attemptLabel, style: context.type.caption),
         ],
       );
     }
