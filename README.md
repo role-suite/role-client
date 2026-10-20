@@ -5,7 +5,7 @@
 <h1 align="center">Röle</h1>
 
 <p align="center">
-  <strong>A modern, cross-platform API testing client built with Flutter</strong>
+  <strong>A local-first, cross-platform API client. Your work stays in plain files — no account, no telemetry.</strong>
 </p>
 
 <p align="center">
@@ -17,7 +17,16 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/role-suite/role-client/releases/latest"><strong>Download the latest release →</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#download">What to download</a>
+  &nbsp;·&nbsp;
+  <a href="docs/">Documentation</a>
+</p>
+
+<p align="center">
   <a href="#overview">Overview</a> •
+  <a href="#download">Download</a> •
   <a href="#features">Features</a> •
   <a href="#screenshots">Screenshots</a> •
   <a href="#installation">Installation</a> •
@@ -32,11 +41,21 @@
 
 ## Overview
 
-**Röle** is a lightweight API client for testing REST endpoints across desktop and mobile platforms.
+**Röle** (Turkish for "relay") is a local-first API client for REST endpoints, built with Flutter
+and available on Windows, macOS, Linux, Android, and iOS.
 
-By default, all collections, requests, and environments are stored on your device — no account,
-no sign-in, no backend server. Optionally, sign in and connect to a [`role-node`](https://github.com/role-suite/role-node)
-backend for team-synced workspaces; local-only usage is unaffected either way.
+- **Your data stays yours.** Collections, requests, environments, and history are plain JSON files
+  on your device. No account, no sign-in, no telemetry — version the workspace folder with Git if
+  you like.
+- **Team sync without the vendor cloud.** Optionally connect a self-hosted
+  [`role-node`](https://github.com/role-suite/role-node) server for synced team workspaces.
+  Local-only usage is unaffected.
+- **More than a request sender.** Declarative assertions, a collection runner, multi-step request
+  flows, HTML response preview, environment variables, and in-app updates on Windows and Linux.
+- **Easy to switch to.** Import Postman v2.x collections/environments or a Röle workspace bundle,
+  with conflict handling; export everything as JSON.
+
+No backend is required. Everything you create works offline and stays on your device.
 
 ## Features
 
@@ -92,6 +111,24 @@ backend for team-synced workspaces; local-only usage is unaffected either way.
     </td>
   </tr>
 </table>
+
+## Download
+
+Prebuilt binaries are attached to every [GitHub Release](https://github.com/role-suite/role-client/releases/latest)
+— no build tooling required. Each release also ships `SHA256SUMS`, which the in-app updater verifies.
+
+| Platform | Recommended | Also available |
+|---|---|---|
+| **Windows** | `relay-<version>-windows-x64-setup.exe` — per-user installer, supports in-app updates | `relay-<version>-windows-x64.zip` — portable |
+| **Linux** | `relay-<version>-x86_64.AppImage` — single file, supports in-app updates | `relay-<version>-linux-x64.tar.gz` |
+| **macOS** | `relay-<version>-macos.zip` | — |
+| **Android** | `relay-<version>-android.apk` | — |
+| **iOS** | `relay-<version>-ios-unsigned.zip` — for developers | App Store: not yet |
+
+> [!NOTE]
+> Windows and macOS builds are currently **unsigned**: Windows SmartScreen will warn and macOS
+> Gatekeeper needs right-click → Open. Desktop updates are in-app on Windows and Linux; Android
+> updates are manual unless the app is installed through the Play Store.
 
 ## Installation
 
@@ -149,13 +186,6 @@ flutter build apk --release
 # iOS
 flutter build ios --release
 ```
-
-### Pre-built Releases
-
-Windows and Linux builds are published automatically to [GitHub Releases](https://github.com/role-suite/role-client/releases) on every version tag. macOS can still be built locally from source (see above); it is not currently part of the automated release pipeline. Android and iOS are distributed through their respective app stores rather than through this repository.
-
-> [!TIP]
-> Grab the latest build straight from the [Releases page](https://github.com/role-suite/role-client/releases/latest) — no build tooling required.
 
 ## Getting Started
 
