@@ -16,6 +16,7 @@ This folder contains technical documentation for maintaining and operating the *
 | [08-ONLINE-MODE-INTEGRATION.md](08-ONLINE-MODE-INTEGRATION.md) | Integrating role-node as an optional, additive team-sync layer |
 | [09-VERSIONING.md](09-VERSIONING.md) | Version scheme, Git tags, store build numbers, and release checklist |
 | [10-CODE-SIGNING.md](10-CODE-SIGNING.md) | Windows code signing options, macOS Developer ID signing/notarization, and release trust |
+| [11-PACKAGE-MANAGERS.md](11-PACKAGE-MANAGERS.md) | Homebrew/Scoop/winget manifests and how to publish them |
 
 ## Quick Links by Task
 
@@ -25,6 +26,7 @@ This folder contains technical documentation for maintaining and operating the *
 - **Build online/team-sync mode (role-node integration):** [08-ONLINE-MODE-INTEGRATION.md](08-ONLINE-MODE-INTEGRATION.md)
 - **Cut a release / bump the version:** [09-VERSIONING.md](09-VERSIONING.md)
 - **Set up code signing / notarization:** [10-CODE-SIGNING.md](10-CODE-SIGNING.md)
+- **Publish to package managers:** [11-PACKAGE-MANAGERS.md](11-PACKAGE-MANAGERS.md)
 
 ## Conventions
 
