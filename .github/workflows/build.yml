@@ -40,6 +40,18 @@ on:
         required: false
       ANDROID_KEY_PASSWORD:
         required: false
+      MACOS_CERTIFICATE_P12_BASE64:
+        required: false
+      MACOS_CERTIFICATE_PASSWORD:
+        required: false
+      MACOS_PROVISIONING_PROFILE_BASE64:
+        required: false
+      APP_STORE_CONNECT_API_KEY_KEY_ID:
+        required: false
+      APP_STORE_CONNECT_API_KEY_ISSUER_ID:
+        required: false
+      APP_STORE_CONNECT_API_KEY_KEY:
+        required: false
 
 permissions:
   contents: read
@@ -64,6 +76,7 @@ jobs:
     env:
       HAS_WINDOWS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' }}
       HAS_ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+      HAS_MAC_SIGNING: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -135,6 +148,23 @@ jobs:
           FLUTTER_XCODE_CODE_SIGNING_REQUIRED: "NO"
           FLUTTER_XCODE_CODE_SIGNING_ALLOWED: "NO"
 
+      # Release builds are signed with the Developer ID identity and notarized
+      # so Gatekeeper opens them without a warning. The build above stays
+      # unsigned (works for PR compile checks, and macOS builds are faster to
+      # sign once, at the end, than to configure Xcode's signing for CI).
+      - name: Sign and notarize macOS build
+        if: inputs.sign && inputs.package && matrix.platform == 'macos' && env.HAS_MAC_SIGNING == 'true'
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.MACOS_PROVISIONING_PROFILE_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+        run: |
+          app=$(ls -d build/macos/Build/Products/Release/*.app)
+          bash packaging/macos/sign_and_notarize.sh "$app" macos/Runner/Release.entitlements "$GITHUB_WORKSPACE/relay-macos.zip"
+
       - name: Build Android
         if: matrix.platform == 'android'
         run: flutter build apk --release
@@ -200,6 +230,38 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Qp "/DMyAppVersion=$version" packaging\windows\relay.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Rename-Item build\windows\installer\relay-windows-setup.exe "relay-$version-windows-x64-setup.exe"
+
+      - name: Sign Windows installer
+        if: inputs.sign && matrix.platform == 'windows' && env.HAS_WINDOWS_CERT == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          [IO.File]::WriteAllBytes("certificate.pfx", [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          $signtool = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" |
+            Where-Object { $_.FullName -match "x64" } | Select-Object -First 1).FullName
+          $installer = (Get-ChildItem -Path "build\windows\installer" -Filter "relay-*-windows-x64-setup.exe" | Select-Object -First 1).FullName
+          & $signtool sign /f certificate.pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td sha256 /fd sha256 $installer
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Remove-Item certificate.pfx
+
+      - name: Verify Windows signatures
+        if: inputs.sign && matrix.platform == 'windows' && env.HAS_WINDOWS_CERT == 'true'
+        shell: pwsh
+        run: |
+          $targets = @(
+            "build\windows\x64\runner\Release\relay.exe",
+            (Get-ChildItem -Path "build\windows\installer" -Filter "relay-*-windows-x64-setup.exe" | Select-Object -First 1).FullName
+          )
+          foreach ($target in $targets) {
+            $signature = Get-AuthenticodeSignature $target
+            if ($signature.Status -ne 'Valid') {
+              Write-Error "$target signature is not valid: $($signature.Status)"
+              exit 1
+            }
+            Write-Host "$target signed by $($signature.SignerCertificate.Subject)"
+          }
 
       - name: Upload Windows installer
         if: inputs.package && matrix.platform == 'windows'
@@ -276,7 +338,7 @@ jobs:
           retention-days: 7
 
       - name: Package macOS build (unsigned)
-        if: inputs.package && matrix.platform == 'macos'
+        if: inputs.package && matrix.platform == 'macos' && (!inputs.sign || env.HAS_MAC_SIGNING != 'true')
         run: |
           cd build/macos/Build/Products/Release
           app=$(ls -d *.app)

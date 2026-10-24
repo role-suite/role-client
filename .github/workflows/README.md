@@ -52,12 +52,30 @@ compile all five platforms).
 
 ### Windows (optional for the `windows` job)
 
-If `WINDOWS_CERTIFICATE_BASE64` is not set, the workflow still builds and packages the app, just unsigned.
+If `WINDOWS_CERTIFICATE_BASE64` is not set, the workflow still builds and packages the app, just
+unsigned. When it is set, both `relay.exe` and the installer are signed and verified before the
+artifacts are published — see [docs/10-CODE-SIGNING.md](../../docs/10-CODE-SIGNING.md) for the
+options (Microsoft Store, SignPath Foundation for OSS, Azure, OV) and their eligibility.
 
 | Secret | Value |
 |---|---|
-| `WINDOWS_CERTIFICATE_BASE64` | base64-encoded `.pfx` code-signing certificate |
+| `WINDOWS_CERTIFICATE_BASE64` | base64-encoded `.pfx` code-signing certificate (single line) |
 | `WINDOWS_CERTIFICATE_PASSWORD` | password for the `.pfx` |
+
+### macOS signing & notarization (optional for the `macos` job)
+
+Without these secrets the macOS zip is unsigned. With them, the app is signed with a Developer ID
+Application identity, notarized by Apple, stapled, and verified. The full one-time setup is in
+[docs/10-CODE-SIGNING.md](../../docs/10-CODE-SIGNING.md).
+
+| Secret | Value |
+|---|---|
+| `MACOS_CERTIFICATE_P12_BASE64` | base64 of the Developer ID Application `.p12` |
+| `MACOS_CERTIFICATE_PASSWORD` | `.p12` password |
+| `MACOS_PROVISIONING_PROFILE_BASE64` | base64 of the Developer ID `.mobileprovision` |
+| `APP_STORE_CONNECT_API_KEY_KEY_ID` | App Store Connect API key ID |
+| `APP_STORE_CONNECT_API_KEY_ISSUER_ID` | App Store Connect API issuer ID |
+| `APP_STORE_CONNECT_API_KEY_KEY` | `.p8` contents (newlines preserved) |
 
 ### Linux
 

@@ -15,6 +15,7 @@ This folder contains technical documentation for maintaining and operating the *
 | [07-MAINTENANCE.md](07-MAINTENANCE.md) | Extending the app and troubleshooting |
 | [08-ONLINE-MODE-INTEGRATION.md](08-ONLINE-MODE-INTEGRATION.md) | Integrating role-node as an optional, additive team-sync layer |
 | [09-VERSIONING.md](09-VERSIONING.md) | Version scheme, Git tags, store build numbers, and release checklist |
+| [10-CODE-SIGNING.md](10-CODE-SIGNING.md) | Windows code signing options, macOS Developer ID signing/notarization, and release trust |
 
 ## Quick Links by Task
 
@@ -23,6 +24,7 @@ This folder contains technical documentation for maintaining and operating the *
 - **Add a new feature:** [07-MAINTENANCE.md](07-MAINTENANCE.md)
 - **Build online/team-sync mode (role-node integration):** [08-ONLINE-MODE-INTEGRATION.md](08-ONLINE-MODE-INTEGRATION.md)
 - **Cut a release / bump the version:** [09-VERSIONING.md](09-VERSIONING.md)
+- **Set up code signing / notarization:** [10-CODE-SIGNING.md](10-CODE-SIGNING.md)
 
 ## Conventions
 
