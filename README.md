@@ -19,6 +19,8 @@
 <p align="center">
   <a href="https://github.com/role-suite/role-client/releases/latest"><strong>Download the latest release →</strong></a>
   &nbsp;·&nbsp;
+  <a href="https://devoradigital.dev/products/role">Website</a>
+  &nbsp;·&nbsp;
   <a href="#download">What to download</a>
   &nbsp;·&nbsp;
   <a href="docs/">Documentation</a>

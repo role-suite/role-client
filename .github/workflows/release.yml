@@ -109,6 +109,105 @@ jobs:
           cd release-assets
           sha256sum relay-* > SHA256SUMS
 
+      # Attached so package-manager manifests stay in lockstep with each
+      # release without hardcoding versions in the repo. See
+      # docs/11-PACKAGE-MANAGERS.md for the publishing paths (tap/bucket/
+      # winget-pkgs submission).
+      - name: Generate package-manager manifests
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          cd release-assets
+          mac_sha=$(awk -v n="relay-${VERSION}-macos.zip" '$2 == n { print $1 }' SHA256SUMS)
+          win_zip_sha=$(awk -v n="relay-${VERSION}-windows-x64.zip" '$2 == n { print $1 }' SHA256SUMS)
+          win_setup_sha=$(awk -v n="relay-${VERSION}-windows-x64-setup.exe" '$2 == n { print $1 }' SHA256SUMS)
+          base="https://github.com/role-suite/role-client/releases/download/v${VERSION}"
+
+          cat > role.rb <<EOF
+          cask "role" do
+            version "${VERSION}"
+            sha256 "${mac_sha}"
+
+            url "${base}/relay-#{version}-macos.zip"
+            name "Röle"
+            desc "Local-first cross-platform API client"
+            homepage "https://github.com/role-suite/role-client"
+
+            app "Runner.app", target: "Röle.app"
+          end
+          EOF
+
+          python3 - <<PY
+          import json
+
+          manifest = {
+              "version": "${VERSION}",
+              "description": "Local-first cross-platform API client",
+              "homepage": "https://github.com/role-suite/role-client",
+              "license": "MIT",
+              "architecture": {
+                  "64bit": {
+                      "url": "${base}/relay-${VERSION}-windows-x64.zip",
+                      "hash": "${win_zip_sha}",
+                  }
+              },
+              "bin": "relay.exe",
+              "shortcuts": [["relay.exe", "Röle"]],
+              "checkver": {"github": "https://github.com/role-suite/role-client"},
+              "autoupdate": {
+                  "architecture": {
+                      "64bit": {
+                          "url": "https://github.com/role-suite/role-client/releases/download/v\$version/relay-\$version-windows-x64.zip"
+                      }
+                  }
+              },
+          }
+          with open("role.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+              f.write("\n")
+          PY
+
+          mkdir -p winget
+          cat > winget/RoleSuite.Role.yaml <<EOF
+          PackageIdentifier: RoleSuite.Role
+          PackageVersion: ${VERSION}
+          DefaultLocale: en-US
+          ManifestType: version
+          ManifestVersion: 1.6.0
+          EOF
+          cat > winget/RoleSuite.Role.installer.yaml <<EOF
+          PackageIdentifier: RoleSuite.Role
+          PackageVersion: ${VERSION}
+          InstallerType: inno
+          Installers:
+            - Architecture: x64
+              InstallerUrl: ${base}/relay-${VERSION}-windows-x64-setup.exe
+              InstallerSha256: ${win_setup_sha}
+              InstallerSwitches:
+                Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+                SilentWithProgress: /SILENT
+          ManifestType: installer
+          ManifestVersion: 1.6.0
+          EOF
+          cat > winget/RoleSuite.Role.locale.en-US.yaml <<EOF
+          PackageIdentifier: RoleSuite.Role
+          PackageVersion: ${VERSION}
+          PackageLocale: en-US
+          Publisher: Röle
+          PackageName: Röle
+          License: MIT
+          ShortDescription: Local-first cross-platform API client
+          Moniker: role
+          Tags:
+            - api
+            - api-client
+            - rest
+            - developer-tools
+          ManifestType: defaultLocale
+          ManifestVersion: 1.6.0
+          EOF
+          (cd winget && zip -qry ../relay-winget-manifests.zip .)
+          rm -rf winget
+
       - name: Attest build provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
