@@ -158,7 +158,7 @@ This triggers `release.yml`, which:
 | `relay-<version>-windows-x64-setup.exe` | Inno Setup installer (per-user); what the in-app updater downloads |
 | `relay-<version>-linux-x64.tar.gz` | extracts to a `relay/` folder with the binary and libs |
 | `relay-<version>-x86_64.AppImage` | single-file Linux build; supports in-app self-update |
-| `relay-<version>-macos.zip` | unsigned `Runner.app` (no signing/notarization) |
+| `relay-<version>-macos.zip` | unsigned `relay.app`, displayed as Röle (no signing/notarization) |
 | `relay-<version>-android.apk` | release APK; debug-signed unless the Android keystore secrets are set |
 | `relay-<version>-ios-unsigned.zip` | unsigned `Runner.app` for developers; not installable on devices as-is |
 | `SHA256SUMS` | checksums for all of the above; the updater verifies downloads against this |

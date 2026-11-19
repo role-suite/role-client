@@ -26,4 +26,4 @@ Changing these requires a rebuild. Variable syntax (`{{name}}`) is a fixed regex
 
 - **Paths**: Workspace files live under `path_provider`'s `getApplicationSupportDirectory()` (see `lib/core/storage/json_store.dart`). No config file for paths.
 - **Network**: Timeouts and behavior are controlled by Dio (`lib/core/network/http_client.dart`) and the constants above; no separate network config file.
-- **File access**: Import/export uses `file_picker`'s native save/open dialogs. On macOS this requires the sandbox entitlements `com.apple.security.files.user-selected.read-write` and `com.apple.security.files.downloads.read-write` (see `macos/Runner/*.entitlements`).
+- **File access**: Import/export uses `file_picker`'s native save/open dialogs. On macOS this requires only the sandbox entitlement `com.apple.security.files.user-selected.read-write` (see `macos/Runner/*.entitlements`). Do not add the downloads-folder entitlement or Xcode's `ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER` setting; the app has no functionality that needs it, and App Review rejects unused entitlements (guideline 2.4.5(i)).

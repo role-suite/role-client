@@ -1,10 +1,8 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
-import '../../core/constants.dart';
-import '../../core/remote/api_client.dart';
 import '../../core/remote/auth/auth_state.dart';
+import '../../core/remote/server_health.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/role_theme.dart';
 import '../../state/auth_notifier.dart';
@@ -53,9 +51,8 @@ class _ServerSettingsDialogState extends ConsumerState<_ServerSettingsDialog> {
       return;
     }
 
-    final normalized = raw.replaceFirst(RegExp(r'/+$'), '');
-    final uri = Uri.tryParse(normalized);
-    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https') || uri.host.isEmpty) {
+    final normalized = normalizeRoleNodeBaseUrl(raw);
+    if (normalized == null) {
       setState(() => _error = 'Enter a full URL, e.g. https://role.example.com');
       return;
     }
@@ -65,7 +62,7 @@ class _ServerSettingsDialogState extends ConsumerState<_ServerSettingsDialog> {
       _error = null;
     });
     try {
-      await _checkHealth(normalized);
+      await checkRoleNodeHealth(normalized);
       // Tokens are scoped to whichever server was configured before —
       // best-effort, same as logout() already handles a server that's
       // unreachable or gone.
@@ -87,22 +84,6 @@ class _ServerSettingsDialogState extends ConsumerState<_ServerSettingsDialog> {
     }
     await ref.read(remoteBaseUrlProvider.notifier).setRemoteBaseUrl(null);
     if (mounted) Navigator.of(context).pop();
-  }
-
-  /// `GET /health` is mounted at the bare app root in role-node
-  /// (`src/app.ts`), *not* under `/api/v1` like everything `RemoteApiClient`
-  /// talks to — so this needs its own interceptor-free `Dio` pointed at the
-  /// raw base URL, same pattern `AuthNotifier._rawRefresh` already uses.
-  Future<void> _checkHealth(String baseUrl) async {
-    final dio = Dio(
-      BaseOptions(baseUrl: baseUrl, connectTimeout: AppConstants.defaultConnectTimeout, receiveTimeout: AppConstants.defaultReceiveTimeout),
-    );
-    try {
-      final response = await dio.get('/health');
-      parseEnvelope(response.data);
-    } on DioException catch (error) {
-      throw mapDioError(error);
-    }
   }
 
   @override

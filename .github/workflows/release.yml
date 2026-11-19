@@ -132,7 +132,7 @@ jobs:
             desc "Local-first cross-platform API client"
             homepage "https://github.com/role-suite/role-client"
 
-            app "Runner.app", target: "Röle.app"
+            app "relay.app", target: "Röle.app"
           end
           EOF
 

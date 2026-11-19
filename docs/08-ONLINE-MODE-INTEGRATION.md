@@ -609,7 +609,10 @@ self-hosting is a real scenario for a team tool:
   `RemoteBaseUrlNotifier` in `lib/state/settings_providers.dart`), defaulting to unset/empty
   (= online mode simply isn't offered until configured), with a settings screen field
   (`lib/ui/shell/server_settings_dialog.dart`) to point at a self-hosted or hosted role-node
-  instance plus a `GET /health` check before saving it.
+  instance plus a `GET /health` check before saving it. The sign-in dialog also prompts for the
+  same URL when none is configured (`lib/ui/auth/sign_in_dialog.dart`), so account creation on a
+  fresh install never fails with a raw "no server configured" error; local-only features remain
+  usable without it.
 
 ## 10. UI touch points (additive)
 

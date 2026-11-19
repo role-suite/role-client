@@ -9,6 +9,7 @@ import '../core/remote/api_client.dart';
 import '../core/remote/auth/auth_interceptor.dart';
 import '../core/remote/auth/auth_state.dart';
 import '../core/remote/auth/token_store.dart';
+import '../core/remote/remote_api_exception.dart';
 import '../core/remote/workspace_permissions.dart';
 import '../core/utils/logger.dart';
 
@@ -42,7 +43,10 @@ class AuthNotifier extends Notifier<AuthState> {
   RemoteApiClient _requireClient() {
     final client = ref.read(remoteApiClientProvider);
     if (client == null) {
-      throw StateError('No remote base URL configured; online mode is unavailable.');
+      throw const RemoteApiException(
+        code: 'SERVER_NOT_CONFIGURED',
+        message: 'No role-node server is configured. Open Server settings to connect to one.',
+      );
     }
     return client;
   }

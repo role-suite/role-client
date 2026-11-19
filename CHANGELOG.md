@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped the pinned Flutter SDK to `3.50.0` and migrated Material imports from the deprecated
+  `package:flutter/material.dart` to `package:material_ui/material_ui.dart`.
+- Updated Android tooling to Gradle 9.5, AGP 9.3.1, and Kotlin 2.4.20 for the current Java 25 CI
+  runners, and bumped `flutter_secure_storage` to 10.x for Linux/Clang compatibility.
+
+### Fixed
+
+- macOS App Store review issues: removed the unused downloads-folder sandbox entitlement
+  (`com.apple.security.files.downloads.read-write`, guideline 2.4.5(i)); the installed app now
+  displays as **Röle** via localized `CFBundleName`/`CFBundleDisplayName` while the signed bundle
+  keeps its ASCII filename (guideline 2.3.8); and account creation on a fresh install now prompts
+  for the role-node server URL and health-checks it instead of failing with a raw configuration
+  error (guideline 2.1(a)).
+
 ## [1.1.3] - 2026-10-16
 
 ### Added
