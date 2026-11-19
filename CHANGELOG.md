@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-11-19
+
 ### Changed
 
 - Bumped the pinned Flutter SDK to `3.50.0` and migrated Material imports from the deprecated
@@ -143,7 +145,8 @@ see [docs/09-VERSIONING.md](docs/09-VERSIONING.md) for the policy.
 - Dependabot: version bumps for `pub` packages and GitHub Actions are no longer opened
   automatically.
 
-[Unreleased]: https://github.com/role-suite/role-client/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/role-suite/role-client/compare/v1.1.4...HEAD
+[1.1.4]: https://github.com/role-suite/role-client/releases/tag/v1.1.4
 [1.1.3]: https://github.com/role-suite/role-client/releases/tag/v1.1.3
 [1.1.2]: https://github.com/role-suite/role-client/releases/tag/v1.1.2
 [1.1.1]: https://github.com/role-suite/role-client/releases/tag/v1.1.1

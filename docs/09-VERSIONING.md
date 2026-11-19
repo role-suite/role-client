@@ -28,14 +28,14 @@ version: MAJOR.MINOR.PATCH+BUILD
 
 ## Store mapping
 
-| Store field | Source | Example (`1.1.3+6`) |
+| Store field | Source | Example (`1.1.4+7`) |
 |---|---|---|
-| Android `versionName` | `release` | `1.1.3` |
-| Android `versionCode` | `build` | `6` |
-| iOS `CFBundleShortVersionString` | `release` | `1.1.3` |
-| iOS `CFBundleVersion` | `build` | `6` |
-| Git tag | `v` + `release` | `v1.1.3` |
-| Release asset filenames | `release` | `relay-1.1.3-windows-x64.zip` |
+| Android `versionName` | `release` | `1.1.4` |
+| Android `versionCode` | `build` | `7` |
+| iOS `CFBundleShortVersionString` | `release` | `1.1.4` |
+| iOS `CFBundleVersion` | `build` | `7` |
+| Git tag | `v` + `release` | `v1.1.4` |
+| Release asset filenames | `release` | `relay-1.1.4-windows-x64.zip` |
 
 The build number only ever moves forward; when in doubt, bump **build** instead of reusing a
 version. Store submissions are effectively irreversible.
