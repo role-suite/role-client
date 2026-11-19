@@ -101,7 +101,7 @@ ordering, App Store Connect's monotonic version requirement, and Android's monot
 
 ## Flutter SDK pinning
 
-The Flutter SDK is pinned separately in [`.fvmrc`](../.fvmrc) (currently `3.47.2`). CI installs
+The Flutter SDK is pinned separately in [`.fvmrc`](../.fvmrc) (currently `3.50.0`). CI installs
 exactly that version; devs should match it (`fvm use`, or install that SDK directly). Keeping the
 formatter (`dart format`) version-identical between local and CI prevents spurious formatting
 failures, since formatter output can change between SDK releases. Bumping the SDK is a deliberate

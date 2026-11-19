@@ -12,7 +12,7 @@
   <a href="https://github.com/role-suite/role-client/actions/workflows/ci.yml"><img src="https://github.com/role-suite/role-client/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/role-suite/role-client/releases"><img src="https://img.shields.io/github/v/release/role-suite/role-client?label=release" alt="Latest Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <a href="https://docs.flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.47.2-02569B?logo=flutter&logoColor=white" alt="Flutter"></a>
+  <a href="https://docs.flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.50.0-02569B?logo=flutter&logoColor=white" alt="Flutter"></a>
   <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-informational" alt="Platforms">
 </p>
 
@@ -136,7 +136,7 @@ Prebuilt binaries are attached to every [GitHub Release](https://github.com/role
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.47.2` — the exact version pinned in [`.fvmrc`](.fvmrc); run `fvm use` or install it directly so local tooling matches CI
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.50.0` — the exact version pinned in [`.fvmrc`](.fvmrc); run `fvm use` or install it directly so local tooling matches CI
 - Platform development tooling:
   - **Windows**: Visual Studio 2022 with C++ workload
   - **macOS**: Xcode 14+

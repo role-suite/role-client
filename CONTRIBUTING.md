@@ -69,7 +69,7 @@ We actively welcome pull requests! Here's how:
 
 ### Prerequisites
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.47.2` — the exact version pinned in [`.fvmrc`](.fvmrc). Run `fvm use` (or install that SDK directly) so `dart format` output matches CI.
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) `3.50.0` — the exact version pinned in [`.fvmrc`](.fvmrc). Run `fvm use` (or install that SDK directly) so `dart format` output matches CI.
 - An IDE with Flutter support (VS Code, Android Studio, or IntelliJ)
 - Git
 

@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- Flutter SDK 3.47.2 — the exact version pinned in [`.fvmrc`](../.fvmrc). Use `fvm use` (or
+- Flutter SDK 3.50.0 — the exact version pinned in [`.fvmrc`](../.fvmrc). Use `fvm use` (or
   install that SDK directly) so local `dart format` output matches CI.
-- Dart 3.13+ (included with Flutter)
+- Dart 3.14+ (included with Flutter)
 
 ## Local Setup
 

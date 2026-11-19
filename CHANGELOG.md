@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped the pinned Flutter SDK to `3.50.0` and migrated Material imports from the deprecated
+  `package:flutter/material.dart` to `package:material_ui/material_ui.dart`.
+
 ## [1.1.3] - 2026-10-16
 
 ### Added
