@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Bumped the pinned Flutter SDK to `3.50.0` and migrated Material imports from the deprecated
   `package:flutter/material.dart` to `package:material_ui/material_ui.dart`.
+- Updated Android tooling to Gradle 9.5, AGP 9.3.1, and Kotlin 2.4.20 for the current Java 25 CI
+  runners, and bumped `flutter_secure_storage` to 10.x for Linux/Clang compatibility.
 
 ### Fixed
 
