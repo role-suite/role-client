@@ -97,6 +97,15 @@ embeds the profile, notarizes with `notarytool --wait`, staples the ticket, and 
 `relay-<version>-macos.zip`. The job fails if notarization is not `Accepted` or Gatekeeper
 assessment fails.
 
+### App name and localization
+
+The signed bundle keeps the ASCII name `relay.app`. Do **not** set `PRODUCT_NAME` to `Röle`:
+non-ASCII product names break Xcode's CodeSign step on macOS (Unicode normalization mismatch).
+The user-facing installed name is localized to `Röle` through
+`macos/Runner/{en,Base}.lproj/InfoPlist.strings` plus `LSHasLocalizedDisplayName` in `Info.plist`,
+so Finder, the Dock, and the menu bar show Röle while the bundle filename stays ASCII. This
+keeps the installed name aligned with the App Store name for guideline 2.3.8.
+
 ### App Store builds
 
 Mac App Store builds are signed and notarized by Apple and updated by the App Store. The in-app
@@ -120,9 +129,9 @@ Get-AuthenticodeSignature .\relay-<version>-windows-x64-setup.exe | Format-List 
 ```bash
 # macOS
 unzip relay-<version>-macos.zip
-codesign --verify --deep --strict --verbose=2 Runner.app
-spctl --assess --type execute --verbose=2 Runner.app
-xcrun stapler validate Runner.app
+codesign --verify --deep --strict --verbose=2 relay.app
+spctl --assess --type execute --verbose=2 relay.app
+xcrun stapler validate relay.app
 ```
 
 ## Security rules
